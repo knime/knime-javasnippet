@@ -92,9 +92,8 @@ public class ColumnCalculator implements CellFactory {
      * @param newColSpec the column spec for the newly generated column
      * @throws InstantiationException if the instance cannot be instantiated.
      */
-    protected ColumnCalculator(final Expression expression,
-            final Class<?> rType, final DataTableSpec spec,
-            final DataColumnSpec newColSpec)
+    protected ColumnCalculator(final Expression expression, final Class rType,
+            final DataTableSpec spec, final DataColumnSpec newColSpec)
             throws InstantiationException {
         if (expression == null) {
             throw new NullPointerException("Expression must not be null.");
@@ -113,21 +112,21 @@ public class ColumnCalculator implements CellFactory {
     }
 
     /**
-     * {@inheritDoc}
+     * @see org.knime.core.data.container.CellFactory#getColumnSpecs()
      */
     public DataColumnSpec[] getColumnSpecs() {
         return m_colSpec;
     }
 
     /**
-     * {@inheritDoc}
+     * @see CellFactory#getCells(DataRow)
      */
     public DataCell[] getCells(final DataRow row) {
         return new DataCell[]{calculate(row)};
     }
 
     /**
-     * {@inheritDoc}
+     * @see CellFactory#setProgress(int, int, RowKey, ExecutionMonitor)
      */
     public void setProgress(final int curRowNr, final int rowCount,
             final RowKey lastKey, final ExecutionMonitor exec) {

@@ -142,7 +142,7 @@ public class JavaScriptingNodeDialog extends NodeDialogPane {
     }
 
     /**
-     * {@inheritDoc}
+     * @see NodeDialogPane#loadSettingsFrom(NodeSettingsRO, DataTableSpec[])
      */
     @Override
     protected void loadSettingsFrom(final NodeSettingsRO settings,
@@ -170,7 +170,7 @@ public class JavaScriptingNodeDialog extends NodeDialogPane {
         }
         m_expEdit.setText(exp);
         ButtonModel firstButton = null;
-        for (Enumeration<?> e = m_returnTypeButtonGroup.getElements(); e
+        for (Enumeration e = m_returnTypeButtonGroup.getElements(); e
                 .hasMoreElements();) {
             AbstractButton b = (AbstractButton)e.nextElement();
             if (firstButton == null) {
@@ -194,7 +194,7 @@ public class JavaScriptingNodeDialog extends NodeDialogPane {
     }
 
     /**
-     * {@inheritDoc}
+     * @see NodeDialogPane#saveSettingsTo(NodeSettingsWO)
      */
     @Override
     protected void saveSettingsTo(final NodeSettingsWO settings)
@@ -217,7 +217,7 @@ public class JavaScriptingNodeDialog extends NodeDialogPane {
             try {
                 tempFile = File.createTempFile("javascripting", ".java");
                 tempFile.deleteOnExit();
-                Class<?> rType = JavaScriptingNodeModel.getReturnType(type);
+                Class rType = JavaScriptingNodeModel.getReturnType(type);
                 JavaScriptingNodeModel.compile(exp, m_currenteSpec, rType,
                         tempFile);
             } catch (CompilationFailedException cfe) {
@@ -252,7 +252,7 @@ public class JavaScriptingNodeDialog extends NodeDialogPane {
 
         JPanel returnType = new JPanel(new GridLayout(0, 2));
         returnType.setBorder(BorderFactory.createTitledBorder("Return type"));
-        for (Enumeration<?> e = m_returnTypeButtonGroup.getElements(); e
+        for (Enumeration e = m_returnTypeButtonGroup.getElements(); e
                 .hasMoreElements();) {
             returnType.add((AbstractButton)e.nextElement());
         }
@@ -268,7 +268,8 @@ public class JavaScriptingNodeDialog extends NodeDialogPane {
      */
     private static class ListRenderer extends DataColumnSpecListCellRenderer {
         /**
-         * {@inheritDoc}
+         * @see DataColumnSpecListCellRenderer#getListCellRendererComponent(
+         *      JList, Object, int, boolean, boolean)
          */
         @Override
         public Component getListCellRendererComponent(final JList list,
