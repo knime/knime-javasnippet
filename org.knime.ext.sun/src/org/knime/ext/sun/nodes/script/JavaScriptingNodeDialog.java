@@ -3,7 +3,7 @@
  * This source code, its documentation and all appendant files
  * are protected by copyright law. All rights reserved.
  *
- * Copyright, 2003 - 2007
+ * Copyright, 2003 - 2008
  * University of Konstanz, Germany
  * Chair for Bioinformatics and Information Mining (Prof. M. Berthold)
  * and KNIME GmbH, Konstanz, Germany
@@ -112,6 +112,9 @@ public class JavaScriptingNodeDialog extends NodeDialogPane {
         });
         m_colList.setCellRenderer(new ListRenderer());
         m_expEdit = new JEditorPane();
+        Font font = m_expEdit.getFont();
+        m_expEdit.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 
+                (font == null ? 12 : font.getSize())));
         m_newColNameField = new JTextField(10);
         m_appendRadio = new JRadioButton("Append Column: ");
         m_appendRadio.setToolTipText("Appends a new column to the input "
