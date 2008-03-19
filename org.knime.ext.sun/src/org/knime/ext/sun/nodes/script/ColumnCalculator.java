@@ -3,7 +3,7 @@
  * This source code, its documentation and all appendant files
  * are protected by copyright law. All rights reserved.
  *
- * Copyright, 2003 - 2008
+ * Copyright, 2003 - 2007
  * University of Konstanz, Germany
  * Chair for Bioinformatics and Information Mining (Prof. M. Berthold)
  * and KNIME GmbH, Konstanz, Germany
@@ -22,7 +22,6 @@
  */
 package org.knime.ext.sun.nodes.script;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 
 import org.knime.core.data.DataCell;
@@ -179,17 +178,11 @@ public class ColumnCalculator implements CellFactory {
                 o = null;
             }
         } catch (EvaluationFailedException ee) {
-            Throwable cause = ee.getCause();
-            if (cause instanceof InvocationTargetException) {
-                cause = ((InvocationTargetException)cause).getCause();
-            }
-            String message = 
-                cause != null ? cause.getMessage() : ee.getMessage();
             LOGGER.warn("Evaluation of expression failed for row \""
-                    + row.getKey().getId() + "\": " + message, ee);
+                    + row.getKey().getId() + "\": " + ee.getMessage());
         } catch (IllegalPropertyException ipe) {
             LOGGER.warn("Evaluation of expression failed for row \""
-                    + row.getKey().getId() + "\": " + ipe.getMessage(), ipe);
+                    + row.getKey().getId() + "\": " + ipe.getMessage());
         }
         DataCell result;
         if (m_returnType.equals(Integer.class)) {
