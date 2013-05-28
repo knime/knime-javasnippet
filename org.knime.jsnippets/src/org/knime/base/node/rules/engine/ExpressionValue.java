@@ -40,84 +40,66 @@
  *  License, the License does not apply to Nodes, you are not required to
  *  license Nodes under the License, and you are granted a license to
  *  prepare and propagate Nodes, in each case even if such Nodes are
- *  propagated with or for interoperation with KNIME. The owner of a Node
+ *  propagated with or for interoperation with KNIME.  The owner of a Node
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
- * ------------------------------------------------------------------------
+ * ---------------------------------------------------------------------
  *
- * History
- *   24.11.2011 (hofer): created
+ * Created on 2013.05.03. by Gabor
  */
-package org.knime.base.node.jsnippet.ui;
+package org.knime.base.node.rules.engine;
 
-import java.awt.Color;
+import java.io.Serializable;
+import java.util.Collections;
+import java.util.Map;
 
-import org.fife.ui.rsyntaxtextarea.Token;
-import org.fife.ui.rsyntaxtextarea.folding.FoldParserManager;
-import org.knime.base.node.jsnippet.JavaSnippet;
-import org.knime.base.node.jsnippet.JavaSnippetDocument;
-import org.knime.base.node.jsnippet.guarded.GuardedDocument;
-import org.knime.base.node.jsnippet.guarded.GuardedSection;
-import org.knime.base.node.jsnippet.guarded.GuardedSectionsFoldParser;
-import org.knime.base.node.util.KnimeSyntaxTextArea;
+import org.knime.core.data.DataCell;
+import org.knime.core.data.DataRow;
 
 /**
- * A text area for the java snippet expression.
+ * The result of an {@link Expression} {@link Expression#evaluate(DataRow, VariableProvider) evaluation}.
  *
- * @author Heiko Hofer
+ * @author Gabor Bakos
+ * @since 2.8
  */
-@SuppressWarnings("serial")
-public class JSnippetTextArea extends KnimeSyntaxTextArea {
+public final class ExpressionValue implements Serializable {
+    private static final long serialVersionUID = -6280095542337802583L;
+
+    private final DataCell m_value;
+
+    private final Map<String, Map<String, String>> m_matchedObjects;
 
     /**
-     * Create a new component.
-     * @param snippet the snippet
+     * Constructs the result.
+     *
+     * @param value The value of the expression.
+     * @param matchedObjects The additional objects that might get bound.
      */
-    public JSnippetTextArea(final JavaSnippet snippet) {
-        // initial text != null causes a null pointer exception
-        super(new JavaSnippetDocument(), null, 20, 60);
-
-        setDocument(snippet.getDocument());
-        addParser(snippet.getParser());
-
-        boolean parserInstalled = FoldParserManager.get().getFoldParser(
-                SYNTAX_STYLE_JAVA) instanceof GuardedSectionsFoldParser;
-        if (!parserInstalled) {
-            FoldParserManager.get().addFoldParserMapping(SYNTAX_STYLE_JAVA,
-                    new GuardedSectionsFoldParser());
-        }
-        setCodeFoldingEnabled(true);
-        setSyntaxEditingStyle(SYNTAX_STYLE_JAVA);
+    public ExpressionValue(final DataCell value, final Map<String, Map<String, String>> matchedObjects) {
+        super();
+        this.m_value = value;
+        this.m_matchedObjects = Collections.unmodifiableMap(Util.clone(matchedObjects));
     }
 
+    /**
+     * @return the value
+     */
+    public DataCell getValue() {
+        return m_value;
+    }
+
+    /**
+     * @return the matchedObjects
+     */
+    public Map<String, Map<String, String>> getMatchedObjects() {
+        return m_matchedObjects;
+    }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public Color getForegroundForToken(final Token t) {
-        if (isInGuardedSection(t.offset)) {
-            return Color.gray;
-        } else {
-            return super.getForegroundForToken(t);
-        }
-    }
-
-    /**
-     * Returns true when offset is within a guarded section.
-     *
-     * @param offset the offset to test
-     * @return true when offset is within a guarded section.
-     */
-    private boolean isInGuardedSection(final int offset) {
-        GuardedDocument doc = (GuardedDocument)getDocument();
-
-        for (String name : doc.getGuardedSections()) {
-            GuardedSection gs = doc.getGuardedSection(name);
-            if (gs.contains(offset)) {
-                return true;
-            }
-        }
-        return false;
+    public String toString() {
+        return "ExpressionValue [value=" + m_value + ", matchedObjects=" + m_matchedObjects + "]";
     }
 }
