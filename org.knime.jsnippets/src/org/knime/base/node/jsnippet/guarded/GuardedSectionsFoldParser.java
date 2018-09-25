@@ -47,16 +47,6 @@
  */
 package org.knime.base.node.jsnippet.guarded;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.swing.text.BadLocationException;
-
-import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
-import org.fife.ui.rsyntaxtextarea.folding.Fold;
-import org.fife.ui.rsyntaxtextarea.folding.FoldParser;
-import org.fife.ui.rsyntaxtextarea.folding.FoldType;
-import org.knime.core.node.NodeLogger;
 
 /**
  * A FoldParser that gives folds for every guarded section.
@@ -67,27 +57,11 @@ import org.knime.core.node.NodeLogger;
  * @noextend This class is not intended to be subclassed by clients.
  * @noinstantiate This class is not intended to be instantiated by clients.
  * @noreference This class is not intended to be referenced by clients.
+ * @deprecated
  */
-public class GuardedSectionsFoldParser implements FoldParser {
-    private static final NodeLogger LOGGER = NodeLogger.getLogger(
-            GuardedSectionsFoldParser.class);
+@Deprecated
+public class GuardedSectionsFoldParser extends org.knime.core.node.util.rsyntaxtextarea.guarded.GuardedSectionsFoldParser {
 
-    @Override
-    public List<Fold> getFolds(final RSyntaxTextArea textArea) {
-        final List<Fold> folds = new ArrayList<>();
-
-        final GuardedDocument doc = (GuardedDocument)textArea.getDocument();
-        for (final String name : doc.getGuardedSections()) {
-            final GuardedSection guard = doc.getGuardedSection(name);
-            try {
-                final Fold fold = new Fold(FoldType.FOLD_TYPE_USER_DEFINED_MIN, textArea, guard.getStart().getOffset());
-                fold.setEndOffset(guard.getEnd().getOffset());
-                folds.add(fold);
-            } catch (BadLocationException e) {
-                LOGGER.debug(e.getMessage());
-            }
-        }
-        return folds;
-    }
+    /* empty implementation for backwards compatibility */
 
 }
