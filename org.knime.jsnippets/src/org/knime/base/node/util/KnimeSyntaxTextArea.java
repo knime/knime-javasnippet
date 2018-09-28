@@ -46,18 +46,10 @@
  */
 package org.knime.base.node.util;
 
-import java.io.IOException;
-import java.io.InputStream;
-
-import javax.swing.ToolTipManager;
-
-import org.fife.rsta.ac.LanguageSupportFactory;
 import org.fife.ui.rsyntaxtextarea.RSyntaxDocument;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
-import org.fife.ui.rsyntaxtextarea.Theme;
 import org.fife.ui.rtextarea.RTextArea;
 import org.knime.base.node.jsnippet.ui.JSnippetTextArea;
-import org.knime.core.node.NodeLogger;
 
 /**
  * A base class for {@link JSnippetTextArea}, but this can be used for non-Java editors too. This class loads the
@@ -65,11 +57,11 @@ import org.knime.core.node.NodeLogger;
  *
  * @author Gabor Bakos
  * @since 2.8
+ * @deprecated Use {@link org.knime.core.node.util.rsyntaxtextarea.KnimeSyntaxTextArea} instead
  */
+@Deprecated
 @SuppressWarnings("serial")
-public class KnimeSyntaxTextArea extends RSyntaxTextArea {
-    private static final NodeLogger LOGGER = NodeLogger.getLogger(KnimeSyntaxTextArea.class);
-
+public class KnimeSyntaxTextArea extends org.knime.core.node.util.rsyntaxtextarea.KnimeSyntaxTextArea {
     /**
      * No-arg constructor for {@link KnimeSyntaxTextArea}.
      */
@@ -136,32 +128,5 @@ public class KnimeSyntaxTextArea extends RSyntaxTextArea {
      */
     public KnimeSyntaxTextArea(final RSyntaxDocument document, final String text, final int rows, final int columns) {
         super(document, text, rows, columns);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void init() {
-        super.init();
-        try {
-            applySyntaxColors();
-        } catch (Exception e) {
-            LOGGER.debug(e.getMessage(), e);
-        }
-
-        ToolTipManager.sharedInstance().registerComponent(this);
-        LanguageSupportFactory.get().register(this);
-    }
-
-    /**
-     * Loads the theme from the {@link JSnippetTextArea}'s class package's {@code eclipse.xml} file.
-     *
-     * @throws IOException Problem with loading.
-     */
-    protected void applySyntaxColors() throws IOException {
-        InputStream in = JSnippetTextArea.class.getResourceAsStream("eclipse.xml");
-        Theme theme = Theme.load(in);
-        theme.apply(this);
     }
 }
