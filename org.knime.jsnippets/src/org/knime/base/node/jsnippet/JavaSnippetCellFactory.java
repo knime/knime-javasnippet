@@ -400,11 +400,6 @@ public class JavaSnippetCellFactory extends AbstractCellFactory {
     }
 
     @Override
-    public void afterProcessing() {
-        m_snippet.close();
-    }
-
-    @Override
     public DataColumnSpec[] getColumnSpecs() {
         OutColList outFields = m_snippet.getSystemFields().getOutColFields();
         DataColumnSpec[] cols = new DataColumnSpec[outFields.size()];

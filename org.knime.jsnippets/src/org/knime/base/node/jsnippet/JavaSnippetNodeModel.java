@@ -77,8 +77,8 @@ import org.knime.core.node.workflow.FlowVariable.Type;
  */
 public class JavaSnippetNodeModel extends AbstractConditionalStreamingNodeModel {
 
-    private JavaSnippetSettings m_settings;
-    private JavaSnippet m_snippet;
+    private final JavaSnippetSettings m_settings;
+    private final JavaSnippet m_snippet;
     /**
      * Create a new instance.
      */
@@ -244,6 +244,12 @@ public class JavaSnippetNodeModel extends AbstractConditionalStreamingNodeModel 
     @Override
     protected void reset() {
         // no internals, nothing to reset.
+    }
+
+    @Override
+    protected void onDispose() {
+        super.onDispose();
+        m_snippet.close();
     }
 
     /**

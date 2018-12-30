@@ -283,8 +283,8 @@ public final class JavaSnippet implements JSnippet<JavaSnippetTemplate>, Closeab
 
     private final SnippetCache m_snippetCache = new SnippetCache();
 
-    /* ClassLoader used to load the compiled JavaSnippet class */
-    private URLClassLoader m_classLoader = null;
+    /** ClassLoader used to load the compiled JavaSnippet class */
+    private URLClassLoader m_classLoader;
 
     /**
      * Create a new snippet.
@@ -614,10 +614,9 @@ public final class JavaSnippet implements JSnippet<JavaSnippetTemplate>, Closeab
             jar.putNextEntry(entry);
 
             ClassLoader loader = cl.getClassLoader();
-            InputStream inStream = loader.getResourceAsStream(cl.getName().replace('.', '/') + ".class");
-
-            FileUtil.copy(inStream, jar);
-            inStream.close();
+            try (InputStream inStream = loader.getResourceAsStream(cl.getName().replace('.', '/') + ".class")) {
+                FileUtil.copy(inStream, jar);
+            }
             jar.flush();
             jar.closeEntry();
 
@@ -956,8 +955,6 @@ public final class JavaSnippet implements JSnippet<JavaSnippetTemplate>, Closeab
             createSnippetClass();
         } catch (Exception e) {
             errors.add(e.getMessage());
-        } finally {
-            close();
         }
         return new ValidationReport(errors.toArray(new String[errors.size()]),
             warnings.toArray(new String[warnings.size()]));

@@ -77,8 +77,8 @@ import org.knime.core.node.workflow.FlowVariable.Type;
  * @author Heiko Hofer
  */
 public class JavaEditVarNodeModel extends NodeModel {
-    private JavaSnippetSettings m_settings;
-    private JavaSnippet m_snippet;
+    private final JavaSnippetSettings m_settings;
+    private final JavaSnippet m_snippet;
 
     /**
      * Create a new instance.
@@ -200,7 +200,11 @@ public class JavaEditVarNodeModel extends NodeModel {
         // no internals, nothing to reset.
     }
 
-
+    @Override
+    protected void onDispose() {
+        super.onDispose();
+        m_snippet.close();
+    }
     /**
      * {@inheritDoc}
      */
