@@ -53,7 +53,6 @@ import static org.knime.base.node.jsnippet.guarded.JavaSnippetDocument.GUARDED_F
 import static org.knime.base.node.jsnippet.guarded.JavaSnippetDocument.GUARDED_IMPORTS;
 
 import java.io.BufferedWriter;
-import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -167,7 +166,7 @@ import org.osgi.framework.wiring.BundleWiring;
  * @author Heiko Hofer
  */
 @SuppressWarnings("restriction")
-public final class JavaSnippet implements JSnippet<JavaSnippetTemplate>, Closeable {
+public final class JavaSnippet implements JSnippet<JavaSnippetTemplate> {
 
     /**
      * Check whether a given source version sufficiently matches a certain target version.
@@ -187,17 +186,31 @@ public final class JavaSnippet implements JSnippet<JavaSnippetTemplate>, Closeab
 
         private Class<? extends AbstractJSnippet> m_snippetClass;
 
+        /** ClassLoader used to load the compiled JavaSnippet class */
+        private URLClassLoader m_classLoader;
+
         private boolean m_hasCustomFields;
 
         void invalidate() {
             m_snippetCode = null;
             m_snippetClass = null;
+            if (m_classLoader != null) {
+                // The class loader may still have opened some jar files which lie in
+                // temporary directories, because downloaded from an external URL.
+                try {
+                    m_classLoader.close();
+                    m_classLoader = null;
+                } catch (IOException e) {
+                    LOGGER.warn("Could not close Java Snippet URLClassLoader.", e);
+                }
+            }
         }
 
         boolean isValid(final Document snippetDoc) {
+
             try {
                 String currentCode = snippetDoc.getText(0, snippetDoc.getLength());
-                return Objects.equals(currentCode, m_snippetCode);
+                return m_snippetClass != null && Objects.equals(currentCode, m_snippetCode);
             } catch (BadLocationException ex) {
                 return false;
             }
@@ -207,28 +220,39 @@ public final class JavaSnippet implements JSnippet<JavaSnippetTemplate>, Closeab
             return m_hasCustomFields;
         }
 
-        void update(final Document snippetDoc, final Class<? extends AbstractJSnippet> snippetClass,
-            final JavaSnippetSettings settings) {
+        Class<? extends AbstractJSnippet> update(final Document snippetDoc,
+            final JavaSnippetSettings settings, final JavaSnippetCompiler compiler,
+            final MultiParentClassLoader customTypeLoader) {
             try {
-                m_snippetCode = snippetDoc.getText(0, snippetDoc.getLength());
-                m_snippetClass = snippetClass;
+                URLClassLoader classLoader = compiler.createClassLoader(customTypeLoader);
+                @SuppressWarnings("unchecked")
+                Class<? extends AbstractJSnippet> snippetClass =
+                    (Class<? extends AbstractJSnippet>)classLoader.loadClass("JSnippet");
+                String snippetCode = snippetDoc.getText(0, snippetDoc.getLength());
 
-                m_hasCustomFields = false;
+                boolean hasCustomFields = false;
                 JavaSnippetFields systemFields = settings.getJavaSnippetFields();
                 for (Field f : snippetClass.getDeclaredFields()) {
                     if (!isSystemField(systemFields.getInColFields(), f.getName())
                         && !isSystemField(systemFields.getOutColFields(), f.getName())
                         && !isSystemField(systemFields.getInVarFields(), f.getName())
                         && !isSystemField(systemFields.getOutVarFields(), f.getName())) {
-                        m_hasCustomFields = true;
+                        hasCustomFields = true;
                         break;
                     }
 
                 }
+                m_snippetCode = snippetCode;
+                m_classLoader = classLoader;
+                m_snippetClass = snippetClass;
+                m_hasCustomFields = hasCustomFields;
+                return m_snippetClass;
             } catch (BadLocationException ex) {
-                // ignore and clear cache
-                m_snippetCode = null;
-                m_snippetClass = null;
+                throw new IllegalStateException("Unable to read snippet source", ex);
+            } catch (ClassNotFoundException e) {
+                throw new IllegalStateException("Could not load class file.", e);
+            } catch (IOException e) {
+                throw new IllegalStateException("Could not load jar files.", e);
             }
         }
 
@@ -283,9 +307,6 @@ public final class JavaSnippet implements JSnippet<JavaSnippetTemplate>, Closeab
 
     private final SnippetCache m_snippetCache = new SnippetCache();
 
-    /** ClassLoader used to load the compiled JavaSnippet class */
-    private URLClassLoader m_classLoader;
-
     /**
      * Create a new snippet.
      */
@@ -304,22 +325,10 @@ public final class JavaSnippet implements JSnippet<JavaSnippetTemplate>, Closeab
     }
 
     /**
-     * {@inheritDoc}
-     *
-     * Closes the URLClassLoader used to load the compiled Java Snippet, if open.
+     * Invalidates the currently compiled classes and resets any class loader (releasing resources).
      */
-    @Override
-    public void close() {
-        if (m_classLoader != null) {
-            // The class loader may still have opened some jar files which lie in
-            // temporary directories, because downloaded from an external URL.
-            try {
-                m_classLoader.close();
-                m_classLoader = null;
-            } catch (IOException e) {
-                LOGGER.warn("Could not close Java Snippet URLClassLoader.", e);
-            }
-        }
+    public void invalidate() {
+        m_snippetCache.invalidate();
     }
 
     /**
@@ -1124,8 +1133,8 @@ public final class JavaSnippet implements JSnippet<JavaSnippetTemplate>, Closeab
     private synchronized Class<? extends AbstractJSnippet> createSnippetClass() {
         JavaSnippetCompiler compiler = new JavaSnippetCompiler(this);
 
-        /* Recompile/Reload either if the code changed or the class loader has been closed since */
-        if (m_classLoader != null && m_snippetCache.isValid(getDocument())) {
+        /* Recompile/Reload either if code changed */
+        if (m_snippetCache.isValid(getDocument())) {
             if (!m_snippetCache.hasCustomFields()) {
                 return m_snippetCache.getSnippetClass();
             }
@@ -1162,41 +1171,30 @@ public final class JavaSnippet implements JSnippet<JavaSnippetTemplate>, Closeab
             }
         }
 
-        try {
-            close();
+        invalidate();
 
-            final LinkedHashSet<ClassLoader> customTypeClassLoaders = new LinkedHashSet<>();
-            customTypeClassLoaders.add(JavaSnippet.class.getClassLoader());
+        final LinkedHashSet<ClassLoader> customTypeClassLoaders = new LinkedHashSet<>();
+        customTypeClassLoaders.add(JavaSnippet.class.getClassLoader());
 
-            for (final InCol col : m_fields.getInColFields()) {
-                customTypeClassLoaders.addAll(getClassLoadersFor(col.getConverterFactoryId()));
-            }
-            for (final OutCol col : m_fields.getOutColFields()) {
-                customTypeClassLoaders.addAll(getClassLoadersFor(col.getConverterFactoryId()));
-            }
-
-            /* Add class loaders of additional bundles */
-            customTypeClassLoaders.addAll(getAdditionalBundlesClassLoaders());
-
-            // remove core class loader:
-            //   (a) it's referenced via JavaSnippet.class classloader and
-            //   (b) it would collect buddies when used directly (see support ticket #1943)
-            customTypeClassLoaders.remove(DataCellToJavaConverterRegistry.class.getClassLoader());
-
-            final MultiParentClassLoader customTypeLoader = new MultiParentClassLoader(
-                customTypeClassLoaders.stream().toArray(ClassLoader[]::new));
-
-            // TODO (Next version bump) change return value of createClassLoader instead of cast
-            m_classLoader = (URLClassLoader)compiler.createClassLoader(customTypeLoader);
-            Class<? extends AbstractJSnippet> snippetClass =
-                (Class<? extends AbstractJSnippet>)m_classLoader.loadClass("JSnippet");
-            m_snippetCache.update(getDocument(), snippetClass, m_settings);
-            return snippetClass;
-        } catch (ClassNotFoundException e) {
-            throw new IllegalStateException("Could not load class file.", e);
-        } catch (IOException e) {
-            throw new IllegalStateException("Could not load jar files.", e);
+        for (final InCol col : m_fields.getInColFields()) {
+            customTypeClassLoaders.addAll(getClassLoadersFor(col.getConverterFactoryId()));
         }
+        for (final OutCol col : m_fields.getOutColFields()) {
+            customTypeClassLoaders.addAll(getClassLoadersFor(col.getConverterFactoryId()));
+        }
+
+        /* Add class loaders of additional bundles */
+        customTypeClassLoaders.addAll(getAdditionalBundlesClassLoaders());
+
+        // remove core class loader:
+        //   (a) it's referenced via JavaSnippet.class classloader and
+        //   (b) it would collect buddies when used directly (see support ticket #1943)
+        customTypeClassLoaders.remove(DataCellToJavaConverterRegistry.class.getClassLoader());
+
+        final MultiParentClassLoader customTypeLoader = new MultiParentClassLoader(
+            customTypeClassLoaders.stream().toArray(ClassLoader[]::new));
+
+        return m_snippetCache.update(getDocument(), m_settings, compiler, customTypeLoader);
     }
 
     /**
@@ -1211,11 +1209,11 @@ public final class JavaSnippet implements JSnippet<JavaSnippetTemplate>, Closeab
             instance = jsnippetClass.newInstance();
         } catch (InstantiationException e) {
             // cannot happen, but rethrow and close resources just in case
-            close();
+            invalidate();
             throw new RuntimeException(e);
         } catch (IllegalAccessException e) {
             // cannot happen, but rethrow and close resources just in case
-            close();
+            invalidate();
             throw new RuntimeException(e);
         }
         if (m_logger != null) {
@@ -1236,11 +1234,7 @@ public final class JavaSnippet implements JSnippet<JavaSnippetTemplate>, Closeab
     @Override
     protected void finalize() throws Throwable {
         FileUtil.deleteRecursively(m_tempClassPathDir);
-
-        if (m_classLoader != null) {
-            LOGGER.debug("Java Snippet URLClassLoader was not closed properly.");
-            close();
-        }
+        m_snippetCache.invalidate();
 
         super.finalize();
     }

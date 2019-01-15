@@ -88,7 +88,7 @@ public class JavaSnippetTest {
     /** Close the JavaSnippet instance */
     @After
     public void after() {
-         snippet.close();
+         snippet.invalidate();
     }
 
     /**
@@ -119,7 +119,7 @@ public class JavaSnippetTest {
      */
     @Test
     public void testEncoding() throws Exception {
-        final JavaSnippetSettings settings = new JavaSnippetSettings("outString = \"äüö\";");
+        final JavaSnippetSettings settings = new JavaSnippetSettings("outString = \"ï¿½ï¿½ï¿½\";");
 
         final OutCol outCol = new OutCol();
         outCol.setJavaName("outString");
@@ -135,7 +135,7 @@ public class JavaSnippetTest {
         final Field outStringField = s.getClass().getField("outString");
         final String string = (String)outStringField.get(s);
 
-        assertEquals(string, "äüö");
+        assertEquals(string, "ï¿½ï¿½ï¿½");
     }
 
     /**

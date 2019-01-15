@@ -689,6 +689,11 @@ public class JavaSnippetNodeDialog extends NodeDialogPane implements TemplateNod
         collapseAllFolds();
     }
 
+    @Override
+    public void onClose() {
+        m_snippet.invalidate();
+    }
+
     /* Collapse all folds */
     private void collapseAllFolds() {
         final FoldManager foldManager = m_snippetTextArea.getFoldManager();

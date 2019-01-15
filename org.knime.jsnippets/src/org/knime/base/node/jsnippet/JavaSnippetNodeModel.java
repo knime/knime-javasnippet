@@ -249,7 +249,7 @@ public class JavaSnippetNodeModel extends AbstractConditionalStreamingNodeModel 
     @Override
     protected void onDispose() {
         super.onDispose();
-        m_snippet.close();
+        m_snippet.invalidate();
     }
 
     /**

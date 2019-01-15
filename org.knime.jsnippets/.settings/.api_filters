@@ -132,6 +132,14 @@
             </message_arguments>
         </filter>
     </resource>
+    <resource path="src/org/knime/base/node/jsnippet/util/JavaSnippetCompiler.java" type="org.knime.base.node.jsnippet.util.JavaSnippetCompiler">
+        <filter id="338792546">
+            <message_arguments>
+                <message_argument value="org.knime.base.node.jsnippet.util.JavaSnippetCompiler"/>
+                <message_argument value="createClassLoader(ClassLoader)"/>
+            </message_arguments>
+        </filter>
+    </resource>
     <resource path="src/org/knime/base/node/jsnippet/util/field/InCol.java" type="org.knime.base.node.jsnippet.util.field.InCol">
         <filter id="338792546">
             <message_arguments>

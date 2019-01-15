@@ -203,7 +203,7 @@ public class JavaEditVarNodeModel extends NodeModel {
     @Override
     protected void onDispose() {
         super.onDispose();
-        m_snippet.close();
+        m_snippet.invalidate();
     }
     /**
      * {@inheritDoc}

@@ -144,7 +144,7 @@ public class JavaSnippetCompiler {
      * @return the class loader
      * @throws IOException if compiled classes cannot be accessed.
      */
-    public ClassLoader createClassLoader(final ClassLoader parent)
+    public URLClassLoader createClassLoader(final ClassLoader parent)
         throws IOException {
         final File[] classpaths = m_snippet.getRuntimeClassPath();
         final URL[] urls = new URL[classpaths.length + 1];
