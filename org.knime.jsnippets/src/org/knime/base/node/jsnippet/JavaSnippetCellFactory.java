@@ -80,6 +80,7 @@ import org.knime.core.data.convert.datacell.JavaToDataCellConverter;
 import org.knime.core.data.convert.datacell.JavaToDataCellConverterFactory;
 import org.knime.core.data.convert.java.DataCellToJavaConverter;
 import org.knime.core.data.convert.java.DataCellToJavaConverterFactory;
+import org.knime.core.data.filestore.FileStoreFactory;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeLogger;
@@ -105,8 +106,6 @@ public class JavaSnippetCellFactory extends AbstractCellFactory {
     private final int m_rowCount;
 
     private final List<String> m_columns;
-
-    private final ExecutionContext m_context;
 
     private final List<DataCellToJavaConverter<?, ?>> m_inConverters = new ArrayList<>();
 
@@ -163,7 +162,6 @@ public class JavaSnippetCellFactory extends AbstractCellFactory {
         m_flowVars = flowVariableRepository;
         m_rowIndex = 0;
         m_rowCount = rowCount;
-        m_context = context;
 
         /* One time snippet instance preparation */
         try {
@@ -226,6 +224,8 @@ public class JavaSnippetCellFactory extends AbstractCellFactory {
             }
         }
 
+
+        final FileStoreFactory fileStoreFactory = FileStoreFactory.createFileStoreFactory(context);
         final OutColList outFields = m_snippet.getSystemFields().getOutColFields();
         m_numOutFields = outFields.size();
         for (final OutCol outField : outFields) {
@@ -236,7 +236,7 @@ public class JavaSnippetCellFactory extends AbstractCellFactory {
             if (!factory.isPresent()) {
                 throw new RuntimeException("Missing converter factory with ID: " + id);
             }
-            m_outConverters.add(((JavaToDataCellConverterFactory<?>)factory.get()).create(m_context));
+            m_outConverters.add(((JavaToDataCellConverterFactory<?>)factory.get()).create(fileStoreFactory));
             try {
                 m_outJavaFields.add(m_jsnippet.getClass().getField(outField.getJavaName()));
             } catch (NoSuchFieldException e) {
