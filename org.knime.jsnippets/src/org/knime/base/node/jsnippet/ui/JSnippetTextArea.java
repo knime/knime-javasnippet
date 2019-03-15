@@ -51,12 +51,12 @@ import java.awt.Color;
 
 import org.fife.ui.rsyntaxtextarea.Token;
 import org.fife.ui.rsyntaxtextarea.folding.FoldParserManager;
-import org.knime.base.node.jsnippet.guarded.GuardedSectionsFoldParser;
 import org.knime.base.node.jsnippet.guarded.JavaSnippetDocument;
 import org.knime.base.node.jsnippet.util.JSnippet;
 import org.knime.rsyntaxtextarea.KnimeSyntaxTextArea;
 import org.knime.rsyntaxtextarea.guarded.GuardedDocument;
 import org.knime.rsyntaxtextarea.guarded.GuardedSection;
+import org.knime.rsyntaxtextarea.guarded.GuardedSectionsFoldParser;
 
 /**
  * A text area for the java snippet expression.

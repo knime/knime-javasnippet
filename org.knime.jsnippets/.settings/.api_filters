@@ -1,118 +1,50 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <component id="org.knime.jsnippets" version="2">
+    <resource path="META-INF/MANIFEST.MF" type="org.knime.base.node.jsnippet.guarded.GuardedDocument">
+        <filter comment="rsyntaxtextarea moved to separate plugin, see AP-11155" id="305324134">
+            <message_arguments>
+                <message_argument value="org.knime.base.node.jsnippet.guarded.GuardedDocument"/>
+                <message_argument value="org.knime.jsnippets_3.8.0"/>
+            </message_arguments>
+        </filter>
+    </resource>
+    <resource path="META-INF/MANIFEST.MF" type="org.knime.base.node.jsnippet.guarded.GuardedSection">
+        <filter comment="rsyntaxtextarea moved to separate plugin, see AP-11155" id="305324134">
+            <message_arguments>
+                <message_argument value="org.knime.base.node.jsnippet.guarded.GuardedSection"/>
+                <message_argument value="org.knime.jsnippets_3.8.0"/>
+            </message_arguments>
+        </filter>
+    </resource>
+    <resource path="META-INF/MANIFEST.MF" type="org.knime.base.node.jsnippet.guarded.GuardedSectionsFoldParser">
+        <filter comment="rsyntaxtextarea moved to separate plugin, see AP-11155" id="305324134">
+            <message_arguments>
+                <message_argument value="org.knime.base.node.jsnippet.guarded.GuardedSectionsFoldParser"/>
+                <message_argument value="org.knime.jsnippets_3.8.0"/>
+            </message_arguments>
+        </filter>
+    </resource>
+    <resource path="META-INF/MANIFEST.MF" type="org.knime.base.node.util.KnimeCompletionProvider">
+        <filter comment="rsyntaxtextarea moved to separate plugin, see AP-11155" id="305324134">
+            <message_arguments>
+                <message_argument value="org.knime.base.node.util.KnimeCompletionProvider"/>
+                <message_argument value="org.knime.jsnippets_3.8.0"/>
+            </message_arguments>
+        </filter>
+    </resource>
+    <resource path="META-INF/MANIFEST.MF" type="org.knime.base.node.util.KnimeSyntaxTextArea">
+        <filter comment="rsyntaxtextarea moved to separate plugin, see AP-11155" id="305324134">
+            <message_arguments>
+                <message_argument value="org.knime.base.node.util.KnimeSyntaxTextArea"/>
+                <message_argument value="org.knime.jsnippets_3.8.0"/>
+            </message_arguments>
+        </filter>
+    </resource>
     <resource path="META-INF/MANIFEST.MF" type="org.knime.ext.sun.nodes.script.compile.InMemorySourceJavaFileObject">
         <filter id="305422471">
             <message_arguments>
                 <message_argument value="org.knime.ext.sun.nodes.script.compile.InMemorySourceJavaFileObject"/>
                 <message_argument value="org.knime.jsnippets_3.5.0"/>
-            </message_arguments>
-        </filter>
-    </resource>
-    <resource path="src/org/knime/base/node/jsnippet/guarded/GuardedDocument.java" type="org.knime.base.node.jsnippet.guarded.GuardedDocument">
-        <filter id="338792546">
-            <message_arguments>
-                <message_argument value="org.knime.base.node.jsnippet.guarded.GuardedDocument"/>
-                <message_argument value="addDocumentListener(DocumentListener)"/>
-            </message_arguments>
-        </filter>
-        <filter id="338792546">
-            <message_arguments>
-                <message_argument value="org.knime.base.node.jsnippet.guarded.GuardedDocument"/>
-                <message_argument value="addGuardedFooterSection(String, int)"/>
-            </message_arguments>
-        </filter>
-        <filter id="338792546">
-            <message_arguments>
-                <message_argument value="org.knime.base.node.jsnippet.guarded.GuardedDocument"/>
-                <message_argument value="addGuardedSection(String, int)"/>
-            </message_arguments>
-        </filter>
-        <filter id="338792546">
-            <message_arguments>
-                <message_argument value="org.knime.base.node.jsnippet.guarded.GuardedDocument"/>
-                <message_argument value="getBreakGuarded()"/>
-            </message_arguments>
-        </filter>
-        <filter id="338792546">
-            <message_arguments>
-                <message_argument value="org.knime.base.node.jsnippet.guarded.GuardedDocument"/>
-                <message_argument value="getGuardedSection(String)"/>
-            </message_arguments>
-        </filter>
-        <filter id="338792546">
-            <message_arguments>
-                <message_argument value="org.knime.base.node.jsnippet.guarded.GuardedDocument"/>
-                <message_argument value="getGuardedSections()"/>
-            </message_arguments>
-        </filter>
-        <filter id="338792546">
-            <message_arguments>
-                <message_argument value="org.knime.base.node.jsnippet.guarded.GuardedDocument"/>
-                <message_argument value="getTextBetween(String, String)"/>
-            </message_arguments>
-        </filter>
-        <filter id="338792546">
-            <message_arguments>
-                <message_argument value="org.knime.base.node.jsnippet.guarded.GuardedDocument"/>
-                <message_argument value="insertString(int, String, AttributeSet)"/>
-            </message_arguments>
-        </filter>
-        <filter id="338792546">
-            <message_arguments>
-                <message_argument value="org.knime.base.node.jsnippet.guarded.GuardedDocument"/>
-                <message_argument value="remove(int, int)"/>
-            </message_arguments>
-        </filter>
-        <filter id="338792546">
-            <message_arguments>
-                <message_argument value="org.knime.base.node.jsnippet.guarded.GuardedDocument"/>
-                <message_argument value="replace(int, int, String, AttributeSet)"/>
-            </message_arguments>
-        </filter>
-        <filter id="338792546">
-            <message_arguments>
-                <message_argument value="org.knime.base.node.jsnippet.guarded.GuardedDocument"/>
-                <message_argument value="replaceBetween(String, String, String)"/>
-            </message_arguments>
-        </filter>
-        <filter id="338792546">
-            <message_arguments>
-                <message_argument value="org.knime.base.node.jsnippet.guarded.GuardedDocument"/>
-                <message_argument value="setBreakGuarded(boolean)"/>
-            </message_arguments>
-        </filter>
-        <filter id="571473929">
-            <message_arguments>
-                <message_argument value="GuardedDocument"/>
-                <message_argument value="GuardedDocument"/>
-            </message_arguments>
-        </filter>
-    </resource>
-    <resource path="src/org/knime/base/node/jsnippet/guarded/GuardedSection.java" type="org.knime.base.node.jsnippet.guarded.GuardedSection">
-        <filter id="338792546">
-            <message_arguments>
-                <message_argument value="org.knime.base.node.jsnippet.guarded.GuardedSection"/>
-                <message_argument value="create(Position, Position, GuardedDocument)"/>
-            </message_arguments>
-        </filter>
-        <filter id="338792546">
-            <message_arguments>
-                <message_argument value="org.knime.base.node.jsnippet.guarded.GuardedSection"/>
-                <message_argument value="createFooter(Position, Position, GuardedDocument)"/>
-            </message_arguments>
-        </filter>
-        <filter id="571473929">
-            <message_arguments>
-                <message_argument value="GuardedSection"/>
-                <message_argument value="GuardedSection"/>
-            </message_arguments>
-        </filter>
-    </resource>
-    <resource path="src/org/knime/base/node/jsnippet/guarded/GuardedSectionsFoldParser.java" type="org.knime.base.node.jsnippet.guarded.GuardedSectionsFoldParser">
-        <filter id="571473929">
-            <message_arguments>
-                <message_argument value="GuardedSectionsFoldParser"/>
-                <message_argument value="GuardedSectionsFoldParser"/>
             </message_arguments>
         </filter>
     </resource>
@@ -234,20 +166,6 @@
             <message_arguments>
                 <message_argument value="org.knime.base.node.util.JSnippetPanel"/>
                 <message_argument value="getCompletionProvider()"/>
-            </message_arguments>
-        </filter>
-    </resource>
-    <resource path="src/org/knime/base/node/util/KnimeSyntaxTextArea.java" type="org.knime.base.node.util.KnimeSyntaxTextArea">
-        <filter id="338792546">
-            <message_arguments>
-                <message_argument value="org.knime.base.node.util.KnimeSyntaxTextArea"/>
-                <message_argument value="applySyntaxColors()"/>
-            </message_arguments>
-        </filter>
-        <filter id="338792546">
-            <message_arguments>
-                <message_argument value="org.knime.base.node.util.KnimeSyntaxTextArea"/>
-                <message_argument value="init()"/>
             </message_arguments>
         </filter>
     </resource>

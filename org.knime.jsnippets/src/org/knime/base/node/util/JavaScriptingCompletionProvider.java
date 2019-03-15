@@ -49,6 +49,7 @@ package org.knime.base.node.util;
 
 import org.fife.ui.autocomplete.BasicCompletion;
 import org.knime.ext.sun.nodes.script.expression.Expression;
+import org.knime.rsyntaxtextarea.KnimeCompletionProvider;
 
 /**
  * A completion provider that can be used in Java snippet editors.

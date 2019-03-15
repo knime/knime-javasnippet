@@ -141,7 +141,7 @@ public class JSnippetPanel extends JPanel {
      *            available functions
      * @param completionProvider a completion provider used for autocompletion
      *            in the editor
-     * @since 3.7
+     * @since 3.8
      */
     public JSnippetPanel(final ManipulatorProvider manipulatorProvider,
                          final KnimeCompletionProvider completionProvider) {
@@ -156,7 +156,7 @@ public class JSnippetPanel extends JPanel {
      * @param completionProvider a completion provider used for autocompletion
      *            in the editor
      * @param showColumns Show the columns panel, or hide it?
-     * @since 3.7
+     * @since 3.8
      */
     public JSnippetPanel(final ManipulatorProvider manipulatorProvider,
         final KnimeCompletionProvider completionProvider, final boolean showColumns) {
@@ -171,7 +171,7 @@ public class JSnippetPanel extends JPanel {
      *            in the editor
      * @param showColumns Show the columns panel, or hide it?
      * @param showFlowVariables Show the flow variables panel, or hide it?
-     * @since 3.7
+     * @since 3.8
      */
     public JSnippetPanel(final ManipulatorProvider manipulatorProvider,
             final KnimeCompletionProvider completionProvider, final boolean showColumns, final boolean showFlowVariables) {
@@ -781,7 +781,7 @@ public class JSnippetPanel extends JPanel {
 
     /**
      * @return the completionProvider
-     * @since 3.7
+     * @since 3.8
      */
     protected KnimeCompletionProvider getCompletionProvider() {
         return m_completionProvider;
