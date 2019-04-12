@@ -60,9 +60,10 @@ node {
             mvn --settings /var/cache/m2/settings.xml clean install
             rm -rf "${TEMP}"
           '''
-	}
+	      }
       }
 
+      try{
       stage('Stage Build Artifacts') {
         sh '''
           #!/bin/bash -eux
@@ -76,6 +77,12 @@ node {
           cp -a ${WORKSPACE}/org.knime.update.javasnippet/target/repository/ /var/cache/build_artifacts/${JOB_NAME}
         '''
       }
+    	} catch (ex) {
+				currentBuild.result = 'FAILED'
+				throw ex
+			} finally {
+				notifications.notifyBuild(currentBuild.result);
+			} 
     }
   }
 }
