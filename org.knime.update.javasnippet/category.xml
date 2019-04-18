@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <site>
-   <bundle id="org.knime.jsnippets" version="3.8.0.qualifier"/>
-   <bundle id="org.knime.ext.sun" version="3.8.0.qualifier"/>
+   <feature id="org.knime.features.javasnippet" version="0.0.0"> 
+   		<category name="knime-javasnippet"/>
+   </feature>
+   <feature id="org.knime.features.javasnippet.source" version="0.0.0"> 
+   		<category name="knime-javasnippet"/>
+   </feature>
+   <category-def name="knime-javasnippet" label="Build artifacts from knime-javasnippet">
+      <description>
+         Build artifacts from knime-javasnippet
+      </description>
+   </category-def>
 </site>

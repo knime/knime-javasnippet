@@ -4,87 +4,31 @@ def BN = BRANCH_NAME == "master" || BRANCH_NAME.startsWith("releases/") ? BRANCH
 library "knime-pipeline@$BN"
 
 properties([
-  parameters([
-    stringParam(
-      name: 'KNIME_TP_P2',
-      defaultValue: '${P2_REPO}/knime-tp/' + env.BRANCH_NAME.replaceAll("/", "%252F") + '/repository/',
-      description: 'KNIME Target Platform P2 update site url.'
-    ),
-    stringParam(
-      name: 'KNIME_SHARED_P2',
-      defaultValue: '${P2_REPO}/knime-shared/'+ env.BRANCH_NAME.replaceAll("/", "%252F") + '/repository/',
-      description: 'org.knime.update.shared site url.'
-    ),
-    stringParam(
-      name: 'KNIME_CORE_P2',
-      defaultValue: '${P2_REPO}/knime-core/'+ env.BRANCH_NAME.replaceAll("/", "%252F") + '/repository/',
-      description: 'org.knime.update.core site url.'
-    ),
-    stringParam(
-      name: 'KNIME_EXPRESSIONS_P2',
-      defaultValue: '${P2_REPO}/knime-expressions/'+ env.BRANCH_NAME.replaceAll("/", "%252F") + '/repository/',
-      description: 'org.knime.update.expressions site url.'
-    ),
-    stringParam(
-      name: 'KNIME_BASE_P2',
-      defaultValue: '${P2_REPO}/knime-base/'+ env.BRANCH_NAME.replaceAll("/", "%252F") + '/repository/',
-      description: 'org.knime.update.base site url.'
-    )
-  ]),
-
-  pipelineTriggers([
-    triggers: [
-      [
-        $class: 'jenkins.triggers.ReverseBuildTrigger',
-        upstreamProjects: "knime-base/" + env.BRANCH_NAME.replaceAll("/", "%2F"), threshold: hudson.model.Result.SUCCESS
-      ]
-    ]
-  ]),
-
-  buildDiscarder(logRotator(numToKeepStr: '5')),
+	pipelineTriggers([
+	upstream('knime-base/' + env.BRANCH_NAME.replaceAll('/', '%2F'))]),
+	buildDiscarder(logRotator(numToKeepStr: '5')),
+	disableConcurrentBuilds()
 ])
 
-node {
-  docker.withServer('tcp://proxy1:2375') {
-    docker.image(slaves.DEFAULT_JAVA).inside {
-      stage('Checkout Sources') {
-        checkout scm
-      }
+try {
+	knimetools.defaultTychoBuild('org.knime.update.javasnippet')
 
-      stage('Maven/Tycho Build') {
-        withMavenJarsignerCredentials {
-          sh '''
-            export TEMP="${WORKSPACE}/tmp"
-            rm -rf "${TEMP}"
-            mkdir "${TEMP}"
-            mvn --settings /var/cache/m2/settings.xml clean install
-            rm -rf "${TEMP}"
-          '''
-	      }
-      }
+    /* workflowTests.runTests( */
+    /*        "org.knime.features.core.testing.feature.group", */
+    /*        false, */
+    /*        ["knime-core", "knime-shared", "knime-tp"], */
+    /* ) */
 
-      try{
-      stage('Stage Build Artifacts') {
-        sh '''
-          #!/bin/bash -eux
+    /* stage('Sonarqube analysis') { */
+    /*        env.lastStage = env.STAGE_NAME */
+    /*        workflowTests.runSonar() */
+    /* } */
 
-          if [[ ! -d "/var/cache/build_artifacts/${JOB_NAME}/" ]]; then
-            mkdir -p "/var/cache/build_artifacts/${JOB_NAME}/"
-          else
-            rm -Rf /var/cache/build_artifacts/${JOB_NAME}/*
-          fi
-
-          cp -a ${WORKSPACE}/org.knime.update.javasnippet/target/repository/ /var/cache/build_artifacts/${JOB_NAME}
-        '''
-      }
-    	} catch (ex) {
-				currentBuild.result = 'FAILED'
-				throw ex
-			} finally {
-				notifications.notifyBuild(currentBuild.result);
-			} 
-    }
-  }
-}
+ } catch (ex) {
+	 currentBuild.result = 'FAILED'
+	 throw ex
+ } finally {
+	 notifications.notifyBuild(currentBuild.result);
+ }
 
 /* vim: set ts=4: */
