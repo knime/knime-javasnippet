@@ -55,8 +55,6 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
@@ -88,8 +86,8 @@ import javax.swing.text.html.StyleSheet;
 import org.fife.ui.autocomplete.AutoCompletion;
 import org.fife.ui.autocomplete.BasicCompletion;
 import org.fife.ui.autocomplete.Completion;
-import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
+import org.fife.ui.rtextarea.RTextScrollPane;
 import org.knime.base.node.preproc.stringmanipulation.manipulator.Manipulator;
 import org.knime.core.data.DataColumnSpec;
 import org.knime.core.data.DataTableSpec;
@@ -98,6 +96,7 @@ import org.knime.core.node.util.FlowVariableListCellRenderer;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.ext.sun.nodes.script.expression.Expression;
 import org.knime.rsyntaxtextarea.KnimeCompletionProvider;
+import org.knime.rsyntaxtextarea.KnimeSyntaxTextArea;
 
 /**
  * This class is a sophisticated panel that offers an editor for almost
@@ -107,6 +106,9 @@ import org.knime.rsyntaxtextarea.KnimeCompletionProvider;
  * or extend the layout using the {@link #initSubComponents()},
  * {@link #layoutLeftComponent()} and {@link #layoutRightComponent()} methods.
  *
+ * Consumers of this class should ensure that they invoke {@link #installAutoCompletion()} prior to the UI display
+ *  lest they run into issues described here: https://knime-com.atlassian.net/browse/AP-10515
+ *
  * @author Heiko Hofer
  * @author Thorsten Meinl, University of Konstanz
  * @author Marcel Hanser
@@ -114,15 +116,15 @@ import org.knime.rsyntaxtextarea.KnimeCompletionProvider;
  */
 @SuppressWarnings("serial")
 public class JSnippetPanel extends JPanel {
-    private JList m_colList;
+    private JList<Object> m_colList;
 
-    private JList m_flowVarsList;
+    private JList<Object> m_flowVarsList;
 
     private JTextComponent m_expEdit;
 
-    private JComboBox m_categories;
+    private JComboBox<String> m_categories;
 
-    private JList m_manipulators;
+    private JList<Manipulator> m_manipulators;
 
     private JTextPane m_description;
 
@@ -133,6 +135,9 @@ public class JSnippetPanel extends JPanel {
     private final boolean m_showColumns;
 
     private final boolean m_showFlowVariables;
+
+    private KnimeSyntaxTextArea m_syntaxTextArea;
+    private AutoCompletion m_autoCompletion;
 
     /**
      * Create new instance.
@@ -256,7 +261,7 @@ public class JSnippetPanel extends JPanel {
     }
 
     private void initComponents() {
-        m_colList = new JList(new DefaultListModel());
+        m_colList = new JList<>(new DefaultListModel<Object>());
         m_colList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         m_colList.addKeyListener(new KeyAdapter() {
             /** {@inheritDoc} */
@@ -283,7 +288,7 @@ public class JSnippetPanel extends JPanel {
             }
         });
         m_colList.setCellRenderer(new ListRenderer());
-        m_flowVarsList = new JList(new DefaultListModel());
+        m_flowVarsList = new JList<>(new DefaultListModel<Object>());
         m_flowVarsList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         m_flowVarsList.setToolTipText(""); // enable tooltip
         m_flowVarsList.addKeyListener(new KeyAdapter() {
@@ -312,17 +317,14 @@ public class JSnippetPanel extends JPanel {
         });
         m_flowVarsList.setCellRenderer(new FlowVariableListCellRenderer());
 
-        m_categories = new JComboBox(m_manipProvider.getCategories().toArray());
-        m_categories.addActionListener(new ActionListener() {
-
-            @Override
-            public void actionPerformed(final ActionEvent e) {
-                JComboBox cb = (JComboBox)e.getSource();
-                String category = (String)cb.getSelectedItem();
-                updateManipulatorList(category);
-            }
+        m_categories = new JComboBox<>(m_manipProvider.getCategories().toArray(new String[0]));
+        m_categories.addActionListener((e) -> {
+            @SuppressWarnings("unchecked")
+            final JComboBox<String> cb = (JComboBox<String>)e.getSource();
+            final String category = (String)cb.getSelectedItem();
+            updateManipulatorList(category);
         });
-        m_manipulators = new JList(new DefaultListModel());
+        m_manipulators = new JList<>(new DefaultListModel<Manipulator>());
         m_manipulators.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         m_manipulators.setCellRenderer(new ManipulatorListCellRenderer());
         m_manipulators.addKeyListener(new KeyAdapter() {
@@ -378,28 +380,29 @@ public class JSnippetPanel extends JPanel {
     }
 
     /**
-     * Creates the text editor component along with the scrollpane.
+     * Creates the text editor component along with the scrollpane; this method should only be called once per instance
+     *  lifespan. If this class is overridden without calling super, the implementation must make sure that it
+     *  it calls {@link #setTextEditor(KnimeSyntaxTextArea)} and then invokes both {@link #installAutoCompletion()}
+     *  and {@link #setExpEdit(JTextComponent)}. After this method exits, {@link #getTextEditor()} will return
+     *  a valid instance.
      *
-     * @return The {@link RSyntaxTextArea} wrapped within a {@link JScrollPane}.
+     * @return The {@link KnimeSyntaxTextArea} wrapped within a {@link RTextScrollPane}.
+     * @throws IllegalStateException if this method has already been called
      * @since 2.8
      */
     protected JComponent createEditorComponent() {
-        RSyntaxTextArea textArea = new RSyntaxTextArea(20, 60);
-        textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVA);
-        JScrollPane scroller = new JScrollPane(textArea);
+        if (m_syntaxTextArea != null) {
+            throw new IllegalStateException("Editor component construction has already been called.");
+        }
 
-        // An AutoCompletion acts as a "middle-man" between a text component
-        // and a CompletionProvider. It manages any options associated with
-        // the auto-completion (the popup trigger key, whether to display a
-        // documentation window along with completion choices, etc.). Unlike
-        // CompletionProviders, instances of AutoCompletion cannot be shared
-        // among multiple text components.
-        AutoCompletion ac = new AutoCompletion(m_completionProvider);
-        ac.setShowDescWindow(true);
+        m_syntaxTextArea = new KnimeSyntaxTextArea(20, 60);
+        m_syntaxTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVA);
+        final RTextScrollPane scroller = new RTextScrollPane(m_syntaxTextArea);
 
-        ac.install(textArea);
+        installAutoCompletion();
 
-        setExpEdit(textArea);
+        setExpEdit(m_syntaxTextArea);
+
         return scroller;
     }
 
@@ -416,11 +419,10 @@ public class JSnippetPanel extends JPanel {
     }
 
     private void updateManipulatorList(final String category) {
-        Object selected = m_manipulators.getSelectedValue();
-        DefaultListModel model = (DefaultListModel)m_manipulators.getModel();
+        final Object selected = m_manipulators.getSelectedValue();
+        final DefaultListModel<Manipulator> model = (DefaultListModel<Manipulator>)m_manipulators.getModel();
         model.clear();
-        for (Manipulator manipulator : m_manipProvider
-                .getManipulators(category)) {
+        for (final Manipulator manipulator : m_manipProvider.getManipulators(category)) {
             model.addElement(manipulator);
         }
         m_manipulators.setSelectedValue(selected, true);
@@ -606,8 +608,8 @@ public class JSnippetPanel extends JPanel {
         // we have Expression.VERSION_2X
         final String[] expressions = new String[] {Expression.ROWID, Expression.ROWINDEX, Expression.ROWCOUNT};
         update(expression, spec, flowVariables, expressions);
-
     }
+
     /**
      * Updates the contents of the panel with new values.
      *
@@ -624,7 +626,7 @@ public class JSnippetPanel extends JPanel {
         m_expEdit.setText(expression);
         m_expEdit.requestFocus();
 
-        DefaultListModel listModel = (DefaultListModel)m_colList.getModel();
+        DefaultListModel<Object> listModel = (DefaultListModel<Object>)m_colList.getModel();
         listModel.removeAllElements();
 
         // we have Expression.VERSION_2X
@@ -637,8 +639,7 @@ public class JSnippetPanel extends JPanel {
             listModel.addElement(colSpec);
         }
         m_completionProvider.setColumns(spec);
-        DefaultListModel fvListModel =
-                (DefaultListModel)m_flowVarsList.getModel();
+        DefaultListModel<Object> fvListModel = (DefaultListModel<Object>)m_flowVarsList.getModel();
         fvListModel.removeAllElements();
         for (FlowVariable v : flowVariables.values()) {
             fvListModel.addElement(v);
@@ -666,10 +667,61 @@ public class JSnippetPanel extends JPanel {
     }
 
     /**
+     * @return the syntax text area used in this instance
+     * @since 3.8
+     */
+    public KnimeSyntaxTextArea getTextEditor () {
+        return m_syntaxTextArea;
+    }
+
+    /**
+     * Consumers of this class should invoke this method when they are about to display; subclassers should invoke
+     *  super prior to affecting the <code>AutoCompletion</code> instance which may be fetched via
+     *  {@link #getAutoCompletion()}
+     *
+     * @since 3.8
+     */
+    public void installAutoCompletion() {
+        if (m_autoCompletion != null) {
+            m_autoCompletion.uninstall();
+        }
+
+        // An AutoCompletion acts as a "middle-man" between a text component
+        // and a CompletionProvider. It manages any options associated with
+        // the auto-completion (the popup trigger key, whether to display a
+        // documentation window along with completion choices, etc.). Unlike
+        // CompletionProviders, instances of AutoCompletion cannot be shared
+        // among multiple text components.
+        m_autoCompletion = new AutoCompletion(m_completionProvider);
+        m_autoCompletion.setShowDescWindow(true);
+
+        m_autoCompletion.install(m_syntaxTextArea);
+    }
+
+    /**
+     * @return the instance of <code>AutoCompletion</code> created via {@link #installAutoCompletion()}
+     * @since 3.8
+     */
+    protected AutoCompletion getAutoCompletion () {
+        return m_autoCompletion;
+    }
+
+    /**
+     * Subclasses which override {@link #createEditorComponent()} without calling super should invoke this method
+     *  to set the instance of <code>KnimeSyntaxTextArea</code> which they've created.
+     *
+     * @param textArea
+     * @since 3.8
+     */
+    protected void setTextEditor (final KnimeSyntaxTextArea textArea) {
+        m_syntaxTextArea = textArea;
+    }
+
+    /**
      * @return the colList
      * @since 2.10
      */
-    protected JList getColList() {
+    protected JList<Object> getColList() {
         return m_colList;
     }
 
@@ -677,7 +729,7 @@ public class JSnippetPanel extends JPanel {
      * @return the flowVarsList
      * @since 2.10
      */
-    protected JList getFlowVarsList() {
+    protected JList<Object> getFlowVarsList() {
         return m_flowVarsList;
     }
 
@@ -693,7 +745,7 @@ public class JSnippetPanel extends JPanel {
      * @return the categories
      * @since 2.10
      */
-    protected JComboBox getCategories() {
+    protected JComboBox<String> getCategories() {
         return m_categories;
     }
 
@@ -701,7 +753,7 @@ public class JSnippetPanel extends JPanel {
      * @return the manipulators
      * @since 2.10
      */
-    protected JList getManipulators() {
+    protected JList<Manipulator> getManipulators() {
         return m_manipulators;
     }
 
@@ -738,12 +790,9 @@ public class JSnippetPanel extends JPanel {
          * {@inheritDoc}
          */
         @Override
-        public Component getListCellRendererComponent(final JList list,
-                final Object value, final int index, final boolean isSelected,
-                final boolean cellHasFocus) {
-            Component c =
-                    super.getListCellRendererComponent(list, value, index,
-                            isSelected, cellHasFocus);
+        public Component getListCellRendererComponent(final JList<?> list, final Object value, final int index,
+            final boolean isSelected, final boolean cellHasFocus) {
+            Component c = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
             if (value instanceof String) {
                 c.setFont(list.getFont().deriveFont(Font.ITALIC));
             }
@@ -754,20 +803,15 @@ public class JSnippetPanel extends JPanel {
     /**
      * Renderer the name of string manipulators.
      */
-    private static class ManipulatorListCellRenderer extends
-            DefaultListCellRenderer {
+    private static class ManipulatorListCellRenderer extends DefaultListCellRenderer {
         /**
          * {@inheritDoc}
          */
         @Override
-        public Component getListCellRendererComponent(final JList list,
-                final Object value, final int index, final boolean isSelected,
-                final boolean cellHasFocus) {
-            Manipulator m = (Manipulator)value;
-            Component c =
-                    super.getListCellRendererComponent(list,
-                            m.getDisplayName(), index, isSelected, cellHasFocus);
-            return c;
+        public Component getListCellRendererComponent(final JList<?> list, final Object value, final int index,
+            final boolean isSelected, final boolean cellHasFocus) {
+            final Manipulator m = (Manipulator)value;
+            return super.getListCellRendererComponent(list, m.getDisplayName(), index, isSelected, cellHasFocus);
         }
     }
 

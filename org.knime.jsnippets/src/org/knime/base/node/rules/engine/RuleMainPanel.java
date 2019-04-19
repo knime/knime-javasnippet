@@ -51,6 +51,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.Date;
+import java.util.Optional;
 
 import javax.swing.AbstractAction;
 import javax.swing.Icon;
@@ -58,8 +59,6 @@ import javax.swing.ImageIcon;
 import javax.swing.JComponent;
 import javax.swing.text.BadLocationException;
 
-import org.fife.ui.autocomplete.AutoCompletion;
-import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rtextarea.Gutter;
 import org.fife.ui.rtextarea.IconRowHeader;
 import org.fife.ui.rtextarea.RTextArea;
@@ -91,16 +90,110 @@ public class RuleMainPanel extends JSnippetPanel {
         try {
             icon = new ImageIcon(RuleMainPanel.class.getResource("error_obj.png"));
         } catch (RuntimeException e) {
-            icon = KNIMEConstants.KNIME16X16;
+            final Optional<ImageIcon> oii = KNIMEConstants.getKNIMEIcon16X16();
+
+            icon = oii.isPresent() ? oii.get() : null;
         }
         ERROR_ICON = icon;
     }
 
-    private KnimeSyntaxTextArea m_textEditor;
 
     private Gutter m_gutter;
 
     private final String m_syntaxStyle;
+
+    /**
+     * @param nodeType
+     */
+    public RuleMainPanel(final RuleNodeSettings nodeType) {
+        super(RuleManipulatorProvider.getProvider(nodeType), nodeType.completionProvider(), nodeType.allowColumns(), nodeType.allowFlowVariables());
+        m_syntaxStyle = nodeType.syntaxKey();
+        getTextEditor().setSyntaxEditingStyle(m_syntaxStyle);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected JComponent createEditorComponent() {
+        final RTextScrollPane tsp = (RTextScrollPane)super.createEditorComponent();
+        final KnimeSyntaxTextArea textArea = getTextEditor();
+
+        textArea.getPopupMenu().add(new ToggleRuleAction("Toggle comment", textArea));
+
+        tsp.setLineNumbersEnabled(true);
+        tsp.setIconRowHeaderEnabled(true);
+        m_gutter = tsp.getGutter();
+        addRowHeaderMouseListener(new MouseAdapter() {
+            /**
+             * {@inheritDoc}
+             */
+            @Override
+            public void mouseClicked(final MouseEvent e) {
+                if ((e.getClickCount() == 2) && (e.getButton() == MouseEvent.BUTTON1)) {
+                    try {
+                        new ToggleRuleAction(textArea).actionPerformed(new ToggleRuleAction.LinePosition(textArea,
+                            (int)(new Date().getTime() & 0x7fffffff), "toggle comment", e.getModifiers(),
+                            textArea.getLineOfOffset(textArea.viewToModel(e.getPoint()))));
+                    } catch (BadLocationException e1) {
+                        LOGGER.debug(e1.getMessage(), e1);
+                    }
+                }
+            }
+        });
+
+        return tsp;
+    }
+
+    /**
+     * Adds a {@link MouseListener} to the row header.
+     *
+     * @param listener A {@link MouseListener} to handle clicks on the row header.
+     */
+    public void addRowHeaderMouseListener(final MouseListener listener) {
+        final IconRowHeader rowHeader = Util.findComponent(m_gutter.getComponents(), IconRowHeader.class);
+        if (rowHeader != null) {
+            rowHeader.addMouseListener(listener);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void onSelectionInManipulatorList(final Object selected) {
+        if (selected instanceof InfixManipulator) {
+            final InfixManipulator infix = (InfixManipulator)selected;
+            final KnimeSyntaxTextArea textArea = getTextEditor();
+            String textToInsert = infix.getName() + " ";
+            try {
+                if ((textArea.getCaretPosition() == 0) || textArea.getText().isEmpty()
+                    || (textArea.getText(textArea.getCaretPosition(), 1).charAt(0) != ' ')) {
+                    textToInsert = " " + textToInsert;
+                }
+            } catch (BadLocationException e) {
+                LOGGER.coding("Not fatal error, but should not happen, requires no action.", e);
+            }
+            textArea.insert(textToInsert, textArea.getCaretPosition());
+            textArea.requestFocus();
+        } else if (selected instanceof PrefixUnaryManipulator || selected instanceof ConstantManipulator) {
+            final Manipulator prefix = (Manipulator)selected;
+            final KnimeSyntaxTextArea textArea = getTextEditor();
+            textArea.replaceSelection(prefix.getName() + " ");
+
+            textArea.requestFocus();
+        } else {
+            super.onSelectionInManipulatorList(selected);
+        }
+    }
+
+    /**
+     * @return the gutter
+     */
+    public Gutter getGutter() {
+        return m_gutter;
+    }
+
 
     private static class ToggleRuleAction extends AbstractAction {
         private static final long serialVersionUID = 5930758516767278299L;
@@ -122,7 +215,7 @@ public class RuleMainPanel extends JSnippetPanel {
             public LinePosition(final Object source, final int id, final String command, final int modifiers,
                 final int lineNumber) {
                 super(source, id, command, modifiers);
-                this.m_lineNumber = lineNumber;
+                m_lineNumber = lineNumber;
             }
 
             /**
@@ -156,8 +249,8 @@ public class RuleMainPanel extends JSnippetPanel {
          */
         @Override
         public void actionPerformed(final ActionEvent e) {
-            Object source = e.getSource();
-            RTextArea textArea;
+            final Object source = e.getSource();
+            final RTextArea textArea;
             if (source instanceof RTextArea) {
                 textArea = (RTextArea)source;
             } else {
@@ -165,8 +258,8 @@ public class RuleMainPanel extends JSnippetPanel {
             }
             try {
                 if (e instanceof LinePosition) {
-                    LinePosition linePosition = (LinePosition)e;
-                    int line = linePosition.getLineNumber();
+                    final LinePosition linePosition = (LinePosition)e;
+                    final int line = linePosition.getLineNumber();
                     toggle(textArea, line);
                 } else {
                     int line = textArea.getLineOfOffset(textArea.getLineStartOffsetOfCurrentLine());
@@ -187,7 +280,7 @@ public class RuleMainPanel extends JSnippetPanel {
             int lineStart;
             try {
                 lineStart = textArea.getLineStartOffset(line);
-                String ruleText = textArea.getText().substring(lineStart, textArea.getLineEndOffset(line));
+                final String ruleText = textArea.getText().substring(lineStart, textArea.getLineEndOffset(line));
                 if (RuleSupport.isComment(ruleText)) {
                     int l = 0;
                     while (ruleText.charAt(l) == '/') {
@@ -201,113 +294,5 @@ public class RuleMainPanel extends JSnippetPanel {
                 LOGGER.debug(e1.getMessage(), e1);
             }
         }
-    }
-
-    /**
-     * @param nodeType
-     */
-    public RuleMainPanel(final RuleNodeSettings nodeType) {
-        super(RuleManipulatorProvider.getProvider(nodeType), nodeType.completionProvider(), nodeType.allowColumns(), nodeType.allowFlowVariables());
-        m_syntaxStyle = nodeType.syntaxKey();
-        m_textEditor.setSyntaxEditingStyle(m_syntaxStyle);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected JComponent createEditorComponent() {
-        m_textEditor = new KnimeSyntaxTextArea(20, 60);
-        final RSyntaxTextArea textArea = m_textEditor;
-        // An AutoCompletion acts as a "middle-man" between a text component
-        // and a CompletionProvider. It manages any options associated with
-        // the auto-completion (the popup trigger key, whether to display a
-        // documentation window along with completion choices, etc.). Unlike
-        // CompletionProviders, instances of AutoCompletion cannot be shared
-        // among multiple text components.
-        AutoCompletion ac = new AutoCompletion(getCompletionProvider());
-        ac.setShowDescWindow(true);
-
-        ac.install(textArea);
-        setExpEdit(textArea);
-        textArea.setSyntaxEditingStyle(m_syntaxStyle);
-
-        textArea.getPopupMenu().add(new ToggleRuleAction("Toggle comment", textArea));
-        RTextScrollPane textScrollPane = new RTextScrollPane(textArea);
-        textScrollPane.setLineNumbersEnabled(true);
-        textScrollPane.setIconRowHeaderEnabled(true);
-        m_gutter = textScrollPane.getGutter();
-        addRowHeaderMouseListener(new MouseAdapter() {
-            /**
-             * {@inheritDoc}
-             */
-            @Override
-            public void mouseClicked(final MouseEvent e) {
-                if (e.getClickCount() == 2 && e.getButton() == MouseEvent.BUTTON1) {
-                    try {
-                        new ToggleRuleAction(textArea).actionPerformed(new ToggleRuleAction.LinePosition(textArea,
-                            (int)(new Date().getTime() & 0x7fffffff), "toggle comment", e.getModifiers(), textArea
-                                .getLineOfOffset(textArea.viewToModel(e.getPoint()))));
-                    } catch (BadLocationException e1) {
-                        LOGGER.debug(e1.getMessage(), e1);
-                    }
-                }
-            }
-        });
-        return textScrollPane;
-    }
-
-    /**
-     * Adds a {@link MouseListener} to the row header.
-     *
-     * @param listener A {@link MouseListener} to handle clicks on the row header.
-     */
-    public void addRowHeaderMouseListener(final MouseListener listener) {
-        final IconRowHeader rowHeader = Util.findComponent(m_gutter.getComponents(), IconRowHeader.class);
-        if (rowHeader != null) {
-            rowHeader.addMouseListener(listener);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void onSelectionInManipulatorList(final Object selected) {
-        if (selected instanceof InfixManipulator) {
-            InfixManipulator infix = (InfixManipulator)selected;
-            String textToInsert = infix.getName() + " ";
-            try {
-                if (m_textEditor.getCaretPosition() == 0 || m_textEditor.getText().isEmpty()
-                    || m_textEditor.getText(m_textEditor.getCaretPosition(), 1).charAt(0) != ' ') {
-                    textToInsert = " " + textToInsert;
-                }
-            } catch (BadLocationException e) {
-                LOGGER.coding("Not fatal error, but should not happen, requires no action.", e);
-            }
-            m_textEditor.insert(textToInsert, m_textEditor.getCaretPosition());
-            m_textEditor.requestFocus();
-        } else if (selected instanceof PrefixUnaryManipulator || selected instanceof ConstantManipulator) {
-            Manipulator prefix = (Manipulator)selected;
-            m_textEditor.replaceSelection(prefix.getName() + " ");
-
-            m_textEditor.requestFocus();
-        } else {
-            super.onSelectionInManipulatorList(selected);
-        }
-    }
-
-    /**
-     * @return the textEditor
-     */
-    public KnimeSyntaxTextArea getTextEditor() {
-        return m_textEditor;
-    }
-
-    /**
-     * @return the gutter
-     */
-    public Gutter getGutter() {
-        return m_gutter;
     }
 }

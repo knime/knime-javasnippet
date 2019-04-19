@@ -306,7 +306,6 @@ public class RulePanel extends JPanel {
         m_replaceColRadio.addActionListener(actionListener);
         m_outputGroup.add(newColumn);
         m_outputGroup.add(m_replaceColRadio);
-        @SuppressWarnings("unchecked")
         ColumnSelectionPanel colSelectionPanel =
             new ColumnSelectionPanel((Border)null, DoubleValue.class, IntValue.class, StringValue.class,
                 BooleanValue.class);
@@ -647,6 +646,7 @@ public class RulePanel extends JPanel {
                 m_bottom.setSelected(!defaultTop);
             }
         }
+        m_mainPanel.installAutoCompletion();
         updateText(text.toString());
     }
 }

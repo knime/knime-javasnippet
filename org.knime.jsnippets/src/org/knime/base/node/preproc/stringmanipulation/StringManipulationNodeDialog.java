@@ -234,6 +234,7 @@ public class StringManipulationNodeDialog extends NodeDialogPane {
 
     /**
      * @since 3.3
+     * @return the <code>JPanel</code>instance containing the UI for this dialog
      */
     protected JPanel createPanel() {
         JPanel southPanel = new JPanel(new GridLayout(0, 2));
@@ -381,6 +382,7 @@ public class StringManipulationNodeDialog extends NodeDialogPane {
             String newNameString = (newName != null ? newName : defaultNewName);
             m_newNameField.setText(newNameString);
         }
+        m_snippetPanel.installAutoCompletion();
         m_snippetPanel.update(exp, spec, availableFlowVariables);
 
         m_compileOnCloseChecker.setSelected(isTestCompilation);
