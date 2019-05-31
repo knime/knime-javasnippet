@@ -216,7 +216,7 @@ public class StringManipulationNodeDialog extends NodeDialogPane {
      * Create a simple provider that adds some Java-related completions.
      *
      * @return The completion provider.
-     * @since 3.8
+     * @since 4.0
      */
     protected KnimeCompletionProvider createCompletionProvider() {
         m_completionProvider = new JavaScriptingCompletionProvider();

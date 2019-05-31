@@ -146,7 +146,7 @@ public class JSnippetPanel extends JPanel {
      *            available functions
      * @param completionProvider a completion provider used for autocompletion
      *            in the editor
-     * @since 3.8
+     * @since 4.0
      */
     public JSnippetPanel(final ManipulatorProvider manipulatorProvider,
                          final KnimeCompletionProvider completionProvider) {
@@ -161,7 +161,7 @@ public class JSnippetPanel extends JPanel {
      * @param completionProvider a completion provider used for autocompletion
      *            in the editor
      * @param showColumns Show the columns panel, or hide it?
-     * @since 3.8
+     * @since 4.0
      */
     public JSnippetPanel(final ManipulatorProvider manipulatorProvider,
         final KnimeCompletionProvider completionProvider, final boolean showColumns) {
@@ -176,7 +176,7 @@ public class JSnippetPanel extends JPanel {
      *            in the editor
      * @param showColumns Show the columns panel, or hide it?
      * @param showFlowVariables Show the flow variables panel, or hide it?
-     * @since 3.8
+     * @since 4.0
      */
     public JSnippetPanel(final ManipulatorProvider manipulatorProvider,
             final KnimeCompletionProvider completionProvider, final boolean showColumns, final boolean showFlowVariables) {
@@ -668,7 +668,7 @@ public class JSnippetPanel extends JPanel {
 
     /**
      * @return the syntax text area used in this instance
-     * @since 3.8
+     * @since 4.0
      */
     public KnimeSyntaxTextArea getTextEditor () {
         return m_syntaxTextArea;
@@ -679,7 +679,7 @@ public class JSnippetPanel extends JPanel {
      *  super prior to affecting the <code>AutoCompletion</code> instance which may be fetched via
      *  {@link #getAutoCompletion()}
      *
-     * @since 3.8
+     * @since 4.0
      */
     public void installAutoCompletion() {
         if (m_autoCompletion != null) {
@@ -700,7 +700,7 @@ public class JSnippetPanel extends JPanel {
 
     /**
      * @return the instance of <code>AutoCompletion</code> created via {@link #installAutoCompletion()}
-     * @since 3.8
+     * @since 4.0
      */
     protected AutoCompletion getAutoCompletion () {
         return m_autoCompletion;
@@ -711,7 +711,7 @@ public class JSnippetPanel extends JPanel {
      *  to set the instance of <code>KnimeSyntaxTextArea</code> which they've created.
      *
      * @param textArea
-     * @since 3.8
+     * @since 4.0
      */
     protected void setTextEditor (final KnimeSyntaxTextArea textArea) {
         m_syntaxTextArea = textArea;
@@ -825,7 +825,7 @@ public class JSnippetPanel extends JPanel {
 
     /**
      * @return the completionProvider
-     * @since 3.8
+     * @since 4.0
      */
     protected KnimeCompletionProvider getCompletionProvider() {
         return m_completionProvider;
