@@ -2,7 +2,8 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: KNIME JavaScripting node
 Bundle-SymbolicName: org.knime.ext.sun;singleton:=true
-Bundle-Version: 3.8.0.qualifier
+Bundle-Version: 4.0.0.qualifier
+Bundle-ClassPath: .
 Bundle-Vendor: KNIME AG, Zurich, Switzerland
 Export-Package: org.knime.ext.sun.nodes.script,
   org.knime.ext.sun.nodes.script.calculator,
@@ -18,6 +19,5 @@ Require-Bundle: org.eclipse.core.runtime;bundle-version="[3.6.0,4.0.0)",
   org.apache.commons.lang3;bundle-version="[3.3.1,4.0.0)",
   org.knime.core;bundle-version="[3.7.0,4.0.0)"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
-Bundle-ActivationPolicy: lazy
 Eclipse-RegisterBuddy: org.knime.base
-Bundle-ClassPath: .
+Bundle-ActivationPolicy: lazy
