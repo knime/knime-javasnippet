@@ -107,10 +107,10 @@ public class RegexReplaceManipulator implements Manipulator {
         // TODO Auto-generated method stub
         return "Applies regex to string and replaces str if regex matches. " + "<br/><br/>"
             + "<strong>Examples:</strong>" + "<br/>" + "<table>" + "<tr><td>regexReplace(" + "\"abc\", "
-            + "\"[a-zA-Z]{3}\", \"cba\")</td>" + "<td>=&nbsp;\"cba\"</td></tr>" + "<tr><td>regexReplacer("
+            + "\"[a-zA-Z]{3}\", \"cba\")</td>" + "<td>=&nbsp;\"cba\"</td></tr>" + "<tr><td>regexReplace("
             + "\"aBc\", " + "\"[a-zA-Z]{3}\", \"AbC\")</td>" + "<td>=&nbsp;\"AbC\"</td></tr>"
-            + "<tr><td>regexReplacer(" + "\"abcd\", " + "\"[a-zA-Z]{3}\", \"ABC\")</td>"
-            + "<td>=&nbsp;\"abcd\"</td></tr>" + "</table>";
+            + "<tr><td>regexReplace(" + "\"abcd\", " + "\"[a-zA-Z]{3}\", \"ABC\")</td>"
+            + "<td>=&nbsp;\"ABCd\"</td></tr>" + "</table>";
     }
 
     /**
