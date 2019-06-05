@@ -13,10 +13,9 @@
 			The first matching rule will determine the outcome.
 			<p>
 				Each rule is represented by a row.
-				The comments start with
+				To add comments, start a line in a (condition) cell with
 				<tt>//</tt>
-				in a condition cell, and anything after that is not interpreted as a rule in
-				that row.
+				(comments can not be placed in the same line as a rule). Anything after <tt>//</tt> will not be interpreted as a rule.
 				Rules consist of a condition part (antecedent), which must
 				evaluate to
 				<i>true</i>

@@ -18,9 +18,10 @@
             The first matching rule in order of definition determines the outcome.
             <p>
                 Each rule is represented by a row, new line characters are replaced by spaces, even in string constants.
-                The comments start with
+                To add comments, start a line in a (condition) cell with
                 <tt>//</tt>
-                in a (condition) cell, and anything after that is not interpreted as a rule in that row. Rules consist
+                (comments can not be placed in the same line as a rule). Anything after <tt>//</tt> will not be interpreted as a rule.
+                Rules consist
                 of a condition part (antecedent), which must evaluate to
                 <i>true</i> or <i>false</i>, and an outcome (consequent, after the <tt>=&gt;</tt> symbol) which is 
                 put into the new column if the rule matches.

@@ -13,10 +13,9 @@
 			The first matching rule will determine the outcome.
 			<p>
 				Each rule is represented by a line.
-				The comments start with
+				To add comments, start a line with
 				<tt>//</tt>
-				in a line, and anything after that is not interpreted as a rule in
-				that line.
+				(comments can not be placed in the same line as a rule). Anything after <tt>//</tt> will not be interpreted as a rule.
 				Rules consist of a condition part (antecedent), which must
 				evaluate to
 				<i>true</i>
