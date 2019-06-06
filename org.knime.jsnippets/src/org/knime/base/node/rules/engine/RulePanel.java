@@ -100,7 +100,6 @@ import org.knime.core.node.util.ColumnSelectionPanel;
 import org.knime.core.node.util.ViewUtils;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.util.ThreadUtils;
-import org.knime.rsyntaxtextarea.KnimeSyntaxTextArea;
 
 /**
  * A Rule panel with a {@link RuleMainPanel} with further controls for output.
@@ -399,7 +398,7 @@ public class RulePanel extends JPanel {
      * @param outputTypes The new output type.
      */
     protected synchronized void setOutputMarkers(final long startDate, final DataType[] outputTypes) {
-        final KnimeSyntaxTextArea textArea = m_mainPanel.getTextEditor();
+        final RSyntaxTextArea textArea = m_mainPanel.getTextEditor();
         if (startDate - m_outputMarkersLastSet > 0 && !textArea.getText().isEmpty()) {
             final Gutter gutter = m_mainPanel.getGutter();
             gutter.removeAllTrackingIcons();
@@ -616,7 +615,7 @@ public class RulePanel extends JPanel {
         }
         m_disallowLongOutputForCompatibility = ruleSettings.isDisallowLongOutputForCompatibility();
         update(m_spec, availableFlowVariables);
-        final KnimeSyntaxTextArea textEditor = m_mainPanel.getTextEditor();
+        final RSyntaxTextArea textEditor = m_mainPanel.getTextEditor();
         textEditor.setText("");
         StringBuilder text = new StringBuilder();
         for (Iterator<String> it = ruleSettings.rules().iterator(); it.hasNext();) {

@@ -86,6 +86,7 @@ import javax.swing.text.html.StyleSheet;
 import org.fife.ui.autocomplete.AutoCompletion;
 import org.fife.ui.autocomplete.BasicCompletion;
 import org.fife.ui.autocomplete.Completion;
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rtextarea.RTextScrollPane;
 import org.knime.base.node.preproc.stringmanipulation.manipulator.Manipulator;
@@ -96,7 +97,6 @@ import org.knime.core.node.util.FlowVariableListCellRenderer;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.ext.sun.nodes.script.expression.Expression;
 import org.knime.rsyntaxtextarea.KnimeCompletionProvider;
-import org.knime.rsyntaxtextarea.KnimeSyntaxTextArea;
 
 /**
  * This class is a sophisticated panel that offers an editor for almost
@@ -136,7 +136,7 @@ public class JSnippetPanel extends JPanel {
 
     private final boolean m_showFlowVariables;
 
-    private KnimeSyntaxTextArea m_syntaxTextArea;
+    private RSyntaxTextArea m_syntaxTextArea;
     private AutoCompletion m_autoCompletion;
 
     /**
@@ -382,21 +382,21 @@ public class JSnippetPanel extends JPanel {
     /**
      * Creates the text editor component along with the scrollpane; this method should only be called once per instance
      *  lifespan. If this class is overridden without calling super, the implementation must make sure that it
-     *  it calls {@link #setTextEditor(KnimeSyntaxTextArea)} and then invokes both {@link #installAutoCompletion()}
+     *  it calls {@link #setTextEditor(RSyntaxTextArea)} and then invokes both {@link #installAutoCompletion()}
      *  and {@link #setExpEdit(JTextComponent)}. After this method exits, {@link #getTextEditor()} will return
      *  a valid instance.
      *
-     * @return The {@link KnimeSyntaxTextArea} wrapped within a {@link RTextScrollPane}.
+     * @return The {@link RSyntaxTextArea} wrapped within a {@link RTextScrollPane}.
      * @throws IllegalStateException if this method has already been called
      * @since 2.8
+     * @see #createTextArea()
      */
     protected JComponent createEditorComponent() {
         if (m_syntaxTextArea != null) {
             throw new IllegalStateException("Editor component construction has already been called.");
         }
 
-        m_syntaxTextArea = new KnimeSyntaxTextArea(20, 60);
-        m_syntaxTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVA);
+        m_syntaxTextArea = createTextArea();
         final RTextScrollPane scroller = new RTextScrollPane(m_syntaxTextArea);
 
         installAutoCompletion();
@@ -404,6 +404,19 @@ public class JSnippetPanel extends JPanel {
         setExpEdit(m_syntaxTextArea);
 
         return scroller;
+    }
+
+    /**
+     * Subclasses may override this to affect the specific class of text area which is created during the invocation of
+     * {@link #createEditorComponent()}; this should also set syntax editing style.
+     *
+     * @return an instance of {@link RSyntaxTextArea} or a subclass of it.
+     * @since 4.0
+     */
+    protected RSyntaxTextArea createTextArea() {
+        final RSyntaxTextArea textArea = new RSyntaxTextArea(20, 60);
+        textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVA);
+        return textArea;
     }
 
     private void initCompletionProvider() {
@@ -670,7 +683,7 @@ public class JSnippetPanel extends JPanel {
      * @return the syntax text area used in this instance
      * @since 4.0
      */
-    public KnimeSyntaxTextArea getTextEditor () {
+    public RSyntaxTextArea getTextEditor () {
         return m_syntaxTextArea;
     }
 
@@ -708,12 +721,12 @@ public class JSnippetPanel extends JPanel {
 
     /**
      * Subclasses which override {@link #createEditorComponent()} without calling super should invoke this method
-     *  to set the instance of <code>KnimeSyntaxTextArea</code> which they've created.
+     *  to set the instance of {@link RSyntaxTextArea} which they've created.
      *
      * @param textArea
      * @since 4.0
      */
-    protected void setTextEditor (final KnimeSyntaxTextArea textArea) {
+    protected void setTextEditor (final RSyntaxTextArea textArea) {
         m_syntaxTextArea = textArea;
     }
 

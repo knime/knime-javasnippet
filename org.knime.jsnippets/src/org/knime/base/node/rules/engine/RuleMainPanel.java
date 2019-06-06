@@ -59,6 +59,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JComponent;
 import javax.swing.text.BadLocationException;
 
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rtextarea.Gutter;
 import org.fife.ui.rtextarea.IconRowHeader;
 import org.fife.ui.rtextarea.RTextArea;
@@ -71,7 +72,6 @@ import org.knime.base.node.rules.engine.manipulator.RuleManipulatorProvider;
 import org.knime.base.node.util.JSnippetPanel;
 import org.knime.core.node.KNIMEConstants;
 import org.knime.core.node.NodeLogger;
-import org.knime.rsyntaxtextarea.KnimeSyntaxTextArea;
 
 /**
  * The main panel (manipulators, columns, flow variables and the editor) of the rule engine node dialogs.
@@ -117,7 +117,7 @@ public class RuleMainPanel extends JSnippetPanel {
     @Override
     protected JComponent createEditorComponent() {
         final RTextScrollPane tsp = (RTextScrollPane)super.createEditorComponent();
-        final KnimeSyntaxTextArea textArea = getTextEditor();
+        final RSyntaxTextArea textArea = getTextEditor();
 
         textArea.getPopupMenu().add(new ToggleRuleAction("Toggle comment", textArea));
 
@@ -164,7 +164,7 @@ public class RuleMainPanel extends JSnippetPanel {
     protected void onSelectionInManipulatorList(final Object selected) {
         if (selected instanceof InfixManipulator) {
             final InfixManipulator infix = (InfixManipulator)selected;
-            final KnimeSyntaxTextArea textArea = getTextEditor();
+            final RSyntaxTextArea textArea = getTextEditor();
             String textToInsert = infix.getName() + " ";
             try {
                 if ((textArea.getCaretPosition() == 0) || textArea.getText().isEmpty()
@@ -178,7 +178,7 @@ public class RuleMainPanel extends JSnippetPanel {
             textArea.requestFocus();
         } else if (selected instanceof PrefixUnaryManipulator || selected instanceof ConstantManipulator) {
             final Manipulator prefix = (Manipulator)selected;
-            final KnimeSyntaxTextArea textArea = getTextEditor();
+            final RSyntaxTextArea textArea = getTextEditor();
             textArea.replaceSelection(prefix.getName() + " ");
 
             textArea.requestFocus();
