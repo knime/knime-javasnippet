@@ -54,7 +54,7 @@ import org.knime.core.util.string.KnimeStringUtils;
  *
  * @author Heiko Hofer
  */
-public class ReplaceModifiersManipulator implements Manipulator {
+public class ReplaceModifiersManipulator extends AbstractDefaultToStringManipulator {
 
     /**
      * Replaces all occurrences of a String within another String..

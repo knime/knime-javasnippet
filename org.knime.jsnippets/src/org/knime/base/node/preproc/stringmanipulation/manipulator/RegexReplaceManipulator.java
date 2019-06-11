@@ -55,7 +55,7 @@ import org.knime.core.util.string.KnimeStringUtils;
  * @author Tim-Oliver Buchholz
  * @since 2.11
  */
-public class RegexReplaceManipulator implements Manipulator {
+public class RegexReplaceManipulator extends AbstractDefaultToStringManipulator {
 
     /**
      * @param str input string (must not be null)

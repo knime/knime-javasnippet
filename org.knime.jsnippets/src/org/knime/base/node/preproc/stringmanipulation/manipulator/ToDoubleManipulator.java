@@ -54,7 +54,7 @@ package org.knime.base.node.preproc.stringmanipulation.manipulator;
  * @author Heiko Hofer
  * @since 2.6
  */
-public class ToDoubleManipulator implements Manipulator {
+public class ToDoubleManipulator extends AbstractDefaultToStringManipulator {
     /**
      * Converts input to a double value.
      *

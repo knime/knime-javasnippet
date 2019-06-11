@@ -55,7 +55,7 @@ import org.apache.commons.lang3.StringUtils;
  *
  * @author Heiko Hofer
  */
-public class LengthManipulator implements Manipulator {
+public class LengthManipulator extends AbstractDefaultToStringManipulator {
 
     /**
      * Get the length of the string.

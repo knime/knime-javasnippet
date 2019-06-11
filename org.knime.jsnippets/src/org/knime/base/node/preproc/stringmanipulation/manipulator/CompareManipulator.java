@@ -54,7 +54,7 @@ import org.knime.core.util.string.KnimeStringUtils;
  *
  * @author Heiko Hofer
  */
-public class CompareManipulator implements Manipulator {
+public class CompareManipulator extends AbstractDefaultToStringManipulator {
 
     /**
      * Compares two strings lexicographically.

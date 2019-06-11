@@ -44,81 +44,31 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   10.10.2014 (tibuch): created
+ *   Jun 11, 2019 (loki): created
  */
 package org.knime.base.node.preproc.stringmanipulation.manipulator;
 
-import org.knime.core.util.string.KnimeStringUtils;
-
 /**
- * This manipulator computs the md5 checksum of the input string.
- * @author Tim-Oliver Buchholz
- * @since 2.11
+ * The genesis of this is https://knime-com.atlassian.net/browse/AP-11994 which relies on
+ *  {@link javax.swing.JList#getNextMatch(String, int, javax.swing.text.Position.Bias)} operating correctly, however
+ *  for it to operate correctly, if the list element is not of type {@link String} it must return a coherent
+ *  value for <code>toString()</code>.
+ *
+ * I was on the fence between adding altering all three thousand {@link Manipulator} implementing classes to add
+ *  this method versus altering them all to subclass a new layer. I like this fashion better.
+ *
+ * @author loki der quaeler
+ * @since 4.0
  */
-public class MD5ChecksumManipulator extends AbstractDefaultToStringManipulator {
+public abstract class AbstractDefaultToStringManipulator implements Manipulator {
     /**
-     * @param str input string (must not be null)
-     * @return md5 checksum as string (never null)
-     */
-    public static String md5Checksum(final String str) {
-        return KnimeStringUtils.md5Checksum(str);
-    }
-
-    /**
+     * Note, overriding this override will potentially break the function-list-jump-to-on-key-press-functionality
+     *  of {@link javax.swing.JList}. Future developers beware!
+     *
      * {@inheritDoc}
      */
     @Override
-    public String getCategory() {
-        return "Checksum";
+    public String toString() {
+        return getDisplayName();
     }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String getName() {
-        return "md5Checksum";
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getNrArgs() {
-        return 1;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String getDisplayName() {
-        return getName() + "(str)";
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String getDescription() {
-        // TODO Auto-generated method stub
-        return "Computes MD5 checksum of string. "
-                + "<br/><br/>"
-                + "<strong>Examples:</strong>"
-                + "<br/>"
-                + "<table>"
-                + "<tr><td>md5Checksum("
-                + "\"String Manipulation\")</td>"
-                + "<td>=&nbsp;\"42c8ef474007167a212baf402ce2dca1\"</td></tr>"
-                + "</table>";
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Class<?> getReturnType() {
-        return String.class;
-    }
-
 }

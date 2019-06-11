@@ -55,7 +55,7 @@ import org.knime.core.util.string.KnimeStringUtils;
  *
  * @author Heiko Hofer
  */
-public class IndexOfOffsetModifiersManipulator implements Manipulator {
+public class IndexOfOffsetModifiersManipulator extends AbstractDefaultToStringManipulator {
 
     /**
      * Gives the first index of toSearch in the string or -1 if toSearch is

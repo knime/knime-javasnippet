@@ -55,7 +55,7 @@ import org.knime.core.util.string.KnimeStringUtils;
  *
  * @author Heiko Hofer
  */
-public class StripEndManipulator implements Manipulator {
+public class StripEndManipulator extends AbstractDefaultToStringManipulator {
 
     /**
      * Strips any whitespace characters from the end of string.

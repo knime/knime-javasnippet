@@ -54,7 +54,7 @@ package org.knime.base.node.preproc.stringmanipulation.manipulator;
  * @author Heiko Hofer
  * @since 2.6
  */
-public class ToLongManipulator implements Manipulator {
+public class ToLongManipulator extends AbstractDefaultToStringManipulator {
     /**
      * Converts input to a long value.
      *

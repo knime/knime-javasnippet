@@ -55,7 +55,7 @@ import org.knime.core.util.string.KnimeStringUtils;
  *
  * @author Heiko Hofer
  */
-public class StripStartManipulator implements Manipulator {
+public class StripStartManipulator extends AbstractDefaultToStringManipulator {
 
     /**
      * Strips any whitespace characters from the start of string.

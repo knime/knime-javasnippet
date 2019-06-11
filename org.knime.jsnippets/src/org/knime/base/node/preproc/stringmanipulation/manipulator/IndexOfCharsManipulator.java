@@ -54,7 +54,7 @@ import org.knime.core.util.string.KnimeStringUtils;
  *
  * @author Heiko Hofer
  */
-public class IndexOfCharsManipulator implements Manipulator {
+public class IndexOfCharsManipulator extends AbstractDefaultToStringManipulator {
 
     /**
      * Gives the first index of toSearch in the string or -1 if toSearch is

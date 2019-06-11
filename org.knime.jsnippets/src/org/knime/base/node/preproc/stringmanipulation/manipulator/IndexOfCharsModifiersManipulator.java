@@ -55,7 +55,7 @@ import org.knime.core.util.string.KnimeStringUtils;
  *
  * @author Heiko Hofer
  */
-public class IndexOfCharsModifiersManipulator implements Manipulator {
+public class IndexOfCharsModifiersManipulator extends AbstractDefaultToStringManipulator {
 
     /**
      * Gives the occurrence of a character in searchChars in the string or
