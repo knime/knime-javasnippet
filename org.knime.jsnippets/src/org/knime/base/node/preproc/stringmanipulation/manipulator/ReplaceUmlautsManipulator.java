@@ -55,7 +55,7 @@ import org.knime.core.util.string.KnimeStringUtils;
  * @author Tim-Oliver Buchholz
  * @since 2.11
  */
-public class ReplaceUmlautsManipulator implements Manipulator {
+public class ReplaceUmlautsManipulator extends AbstractDefaultToStringManipulator {
 
     /**
      * @param str where all umlauts should be replaced (must be not null)

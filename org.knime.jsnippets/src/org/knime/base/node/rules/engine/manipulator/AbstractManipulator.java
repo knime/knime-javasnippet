@@ -46,6 +46,7 @@
  */
 package org.knime.base.node.rules.engine.manipulator;
 
+import org.knime.base.node.preproc.stringmanipulation.manipulator.AbstractDefaultToStringManipulator;
 import org.knime.base.node.preproc.stringmanipulation.manipulator.Manipulator;
 
 /**
@@ -54,7 +55,7 @@ import org.knime.base.node.preproc.stringmanipulation.manipulator.Manipulator;
  * @author Gabor Bakos
  * @since 2.8
  */
-public abstract class AbstractManipulator implements Manipulator {
+public abstract class AbstractManipulator extends AbstractDefaultToStringManipulator {
 
     private final String m_name;
 

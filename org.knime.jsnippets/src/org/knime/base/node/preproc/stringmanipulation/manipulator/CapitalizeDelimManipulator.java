@@ -55,7 +55,7 @@ import org.knime.core.util.string.KnimeStringUtils;
  *
  * @author Heiko Hofer
  */
-public class CapitalizeDelimManipulator implements Manipulator {
+public class CapitalizeDelimManipulator extends AbstractDefaultToStringManipulator {
 
     /**
      * Capitalizes all delimiter separated words in a string.

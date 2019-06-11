@@ -54,7 +54,7 @@ import org.knime.core.util.string.KnimeStringUtils;
  *
  * @author Heiko Hofer
  */
-public class JoinManipulator implements Manipulator {
+public class JoinManipulator extends AbstractDefaultToStringManipulator {
 
     /**
      * Concatenates strings.

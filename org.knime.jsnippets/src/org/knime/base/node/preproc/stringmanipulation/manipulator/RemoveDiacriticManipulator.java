@@ -57,7 +57,7 @@ import org.knime.core.util.string.KnimeStringUtils;
  * @author Tim-Oliver Buchholz
  * @since 2.11
  */
-public class RemoveDiacriticManipulator implements Manipulator {
+public class RemoveDiacriticManipulator extends AbstractDefaultToStringManipulator {
 
     /**
      * @param str input string (must not be null)

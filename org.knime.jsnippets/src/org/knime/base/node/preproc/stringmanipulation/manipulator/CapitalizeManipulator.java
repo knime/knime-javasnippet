@@ -55,7 +55,7 @@ import org.knime.core.util.string.KnimeStringUtils;
  *
  * @author Heiko Hofer
  */
-public class CapitalizeManipulator implements Manipulator {
+public class CapitalizeManipulator extends AbstractDefaultToStringManipulator {
 
     /**
      * Capitalizes all white space separated words in a string.

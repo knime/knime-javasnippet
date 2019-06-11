@@ -55,7 +55,7 @@ import org.apache.commons.lang3.StringUtils;
  *
  * @author Heiko Hofer
  */
-public class LowerCaseManipulator implements Manipulator {
+public class LowerCaseManipulator extends AbstractDefaultToStringManipulator {
 
     /**
      * Convert characters in a string to lower case.

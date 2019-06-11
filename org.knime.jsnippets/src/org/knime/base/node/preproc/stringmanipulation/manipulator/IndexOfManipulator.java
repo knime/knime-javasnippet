@@ -54,7 +54,7 @@ import org.apache.commons.lang3.StringUtils;
  *
  * @author Heiko Hofer
  */
-public class IndexOfManipulator implements Manipulator {
+public class IndexOfManipulator extends AbstractDefaultToStringManipulator {
 
     /**
      * Gives the first index of toSearch in the string or -1 if toSearch is

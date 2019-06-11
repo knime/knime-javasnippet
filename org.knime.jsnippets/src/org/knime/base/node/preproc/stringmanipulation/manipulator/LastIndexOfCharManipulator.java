@@ -53,7 +53,7 @@ package org.knime.base.node.preproc.stringmanipulation.manipulator;
  * @author Tim-Oliver Buchholz
  * @since 2.11
  */
-public class LastIndexOfCharManipulator implements Manipulator {
+public class LastIndexOfCharManipulator extends AbstractDefaultToStringManipulator {
 
     /**
      * @param str the string

@@ -63,6 +63,7 @@ import java.util.jar.JarOutputStream;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 
+import org.knime.base.node.preproc.stringmanipulation.manipulator.AbstractDefaultToStringManipulator;
 import org.knime.base.node.preproc.stringmanipulation.manipulator.CapitalizeDelimManipulator;
 import org.knime.base.node.preproc.stringmanipulation.manipulator.CapitalizeManipulator;
 import org.knime.base.node.preproc.stringmanipulation.manipulator.CompareManipulator;
@@ -85,10 +86,10 @@ import org.knime.base.node.preproc.stringmanipulation.manipulator.LengthManipula
 import org.knime.base.node.preproc.stringmanipulation.manipulator.LowerCaseManipulator;
 import org.knime.base.node.preproc.stringmanipulation.manipulator.MD5ChecksumManipulator;
 import org.knime.base.node.preproc.stringmanipulation.manipulator.Manipulator;
-import org.knime.base.node.preproc.stringmanipulation.manipulator.PadLeftManipulator;
 import org.knime.base.node.preproc.stringmanipulation.manipulator.PadLeftCharsManipulator;
-import org.knime.base.node.preproc.stringmanipulation.manipulator.PadRightManipulator;
+import org.knime.base.node.preproc.stringmanipulation.manipulator.PadLeftManipulator;
 import org.knime.base.node.preproc.stringmanipulation.manipulator.PadRightCharsManipulator;
+import org.knime.base.node.preproc.stringmanipulation.manipulator.PadRightManipulator;
 import org.knime.base.node.preproc.stringmanipulation.manipulator.RegexMatcherManipulator;
 import org.knime.base.node.preproc.stringmanipulation.manipulator.RegexReplaceManipulator;
 import org.knime.base.node.preproc.stringmanipulation.manipulator.RemoveCharsManipulator;
@@ -266,6 +267,7 @@ public final class StringManipulatorProvider implements ManipulatorProvider {
                     true);
             Collection<Object> classes = new ArrayList<Object>();
             classes.add(Manipulator.class);
+            classes.add(AbstractDefaultToStringManipulator.class);
             classes.addAll(m_manipulators.get(ALL_CATEGORY));
             // create tree structure for classes
             DefaultMutableTreeNode root = createTree(classes);
@@ -336,15 +338,11 @@ public final class StringManipulatorProvider implements ManipulatorProvider {
             jar.putNextEntry(entry);
 
             ClassLoader loader = cl.getClassLoader();
-            InputStream inStream =
-                    loader.getResourceAsStream(cl.getName().replace('.', '/')
-                            + ".class");
-
-            FileUtil.copy(inStream, jar);
-            inStream.close();
+            try (final InputStream inStream = loader.getResourceAsStream(cl.getName().replace('.', '/') + ".class")) {
+                FileUtil.copy(inStream, jar);
+            }
             jar.flush();
             jar.closeEntry();
-
         }
     }
 
