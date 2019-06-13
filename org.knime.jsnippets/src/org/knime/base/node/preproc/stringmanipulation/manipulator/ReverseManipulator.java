@@ -54,7 +54,7 @@ import org.knime.core.util.string.KnimeStringUtils;
  *
  * @author Heiko Hofer
  */
-public class ReverseManipulator extends AbstractDefaultToStringManipulator {
+public class ReverseManipulator implements Manipulator {
 
     /**
      * Get the reverse of the string.

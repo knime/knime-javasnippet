@@ -53,7 +53,7 @@ package org.knime.base.node.preproc.stringmanipulation.manipulator;
  *
  * @author Heiko Hofer
  */
-public class StringManipulator extends AbstractDefaultToStringManipulator {
+public class StringManipulator implements Manipulator {
     /**
      * Converts input to string.
      *

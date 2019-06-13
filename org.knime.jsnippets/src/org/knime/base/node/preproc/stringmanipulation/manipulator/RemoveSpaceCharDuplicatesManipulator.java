@@ -54,7 +54,7 @@ import org.knime.core.util.string.KnimeStringUtils;
  * string.
  * @author Heiko Hofer
  */
-public class RemoveSpaceCharDuplicatesManipulator extends AbstractDefaultToStringManipulator {
+public class RemoveSpaceCharDuplicatesManipulator implements Manipulator {
 
     /**
      * Remove duplicated spaces in a string.

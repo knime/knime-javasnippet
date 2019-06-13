@@ -55,7 +55,7 @@ import org.apache.commons.lang3.StringUtils;
  *
  * @author Heiko Hofer
  */
-public class UpperCaseManipulator extends AbstractDefaultToStringManipulator {
+public class UpperCaseManipulator implements Manipulator {
 
     /**
      * Convert characters in a string to upper case.

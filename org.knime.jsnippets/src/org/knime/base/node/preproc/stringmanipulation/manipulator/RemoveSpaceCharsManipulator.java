@@ -54,7 +54,7 @@ import org.knime.core.util.string.KnimeStringUtils;
  *
  * @author Heiko Hofer
  */
-public class RemoveSpaceCharsManipulator extends AbstractDefaultToStringManipulator {
+public class RemoveSpaceCharsManipulator implements Manipulator {
 
     /**
      * Remove all space characters from a string.

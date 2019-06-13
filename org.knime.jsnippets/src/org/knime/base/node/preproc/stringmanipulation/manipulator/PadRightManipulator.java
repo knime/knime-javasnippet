@@ -55,7 +55,7 @@ import org.apache.commons.lang3.StringUtils;
  * @author Moritz Heine, KNIME GmbH, Konstanz, Germany
  * @since 3.6
  */
-public class PadRightManipulator extends AbstractDefaultToStringManipulator {
+public class PadRightManipulator implements Manipulator {
 
     /**
      * Pads the string to the given size.

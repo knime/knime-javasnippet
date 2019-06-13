@@ -55,7 +55,8 @@ import org.knime.core.util.string.KnimeStringUtils;
  *
  * @author Heiko Hofer
  */
-public class IndexOfCharsOffsetModifiersManipulator extends AbstractDefaultToStringManipulator {
+public class IndexOfCharsOffsetModifiersManipulator
+    implements Manipulator {
 
     /**
      * Gives the occurrence of a character in searchChars in the string or

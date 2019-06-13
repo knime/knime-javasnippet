@@ -54,7 +54,7 @@ import org.apache.commons.lang3.StringUtils;
  *
  * @author Heiko Hofer
  */
-public class SubstringOffsetLengthManipulator extends AbstractDefaultToStringManipulator {
+public class SubstringOffsetLengthManipulator implements Manipulator {
 
     /**
      * Get a substring.

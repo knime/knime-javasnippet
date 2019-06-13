@@ -48,6 +48,7 @@
  */
 package org.knime.base.node.preproc.stringmanipulation.manipulator;
 
+import org.knime.core.node.NodeLogger;
 import org.knime.core.util.string.KnimeStringUtils;
 
 /**
@@ -55,7 +56,10 @@ import org.knime.core.util.string.KnimeStringUtils;
  * @author Tim-Oliver Buchholz
  * @since 2.11
  */
-public class MD5ChecksumManipulator extends AbstractDefaultToStringManipulator {
+public class MD5ChecksumManipulator implements Manipulator {
+
+    private static NodeLogger logger = NodeLogger.getLogger(MD5ChecksumManipulator.class);
+
     /**
      * @param str input string (must not be null)
      * @return md5 checksum as string (never null)

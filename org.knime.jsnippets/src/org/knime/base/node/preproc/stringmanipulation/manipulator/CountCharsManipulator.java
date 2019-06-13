@@ -54,7 +54,7 @@ import org.knime.core.util.string.KnimeStringUtils;
  *
  * @author Heiko Hofer
  */
-public class CountCharsManipulator extends AbstractDefaultToStringManipulator {
+public class CountCharsManipulator implements Manipulator {
 
     /**
      * Count specific characters in the string.

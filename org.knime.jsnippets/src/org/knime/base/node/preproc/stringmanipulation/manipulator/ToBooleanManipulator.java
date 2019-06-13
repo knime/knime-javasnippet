@@ -54,7 +54,7 @@ package org.knime.base.node.preproc.stringmanipulation.manipulator;
  * @author Heiko Hofer
  * @since 2.6
  */
-public class ToBooleanManipulator extends AbstractDefaultToStringManipulator {
+public class ToBooleanManipulator implements Manipulator {
     /**
      * Converts input to a boolean value.
      *

@@ -54,7 +54,7 @@ import org.knime.core.util.string.KnimeStringUtils;
  *
  * @author Heiko Hofer
  */
-public class JoinSepManipulator extends AbstractDefaultToStringManipulator {
+public class JoinSepManipulator implements Manipulator {
 
     /**
      * Concatenates strings using the given separator.

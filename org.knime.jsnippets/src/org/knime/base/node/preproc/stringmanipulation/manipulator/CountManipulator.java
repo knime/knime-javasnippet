@@ -54,7 +54,7 @@ import org.knime.core.util.string.KnimeStringUtils;
  *
  * @author Heiko Hofer
  */
-public class CountManipulator extends AbstractDefaultToStringManipulator {
+public class CountManipulator implements Manipulator {
 
     /**
      * Count substrings in the string.

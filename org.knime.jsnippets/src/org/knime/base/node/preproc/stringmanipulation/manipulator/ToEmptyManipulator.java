@@ -54,7 +54,7 @@ import org.knime.core.util.string.KnimeStringUtils;
  *
  * @author Heiko Hofer
  */
-public class ToEmptyManipulator extends AbstractDefaultToStringManipulator {
+public class ToEmptyManipulator implements Manipulator {
     /**
      * Converts null input to an empty string.
      *

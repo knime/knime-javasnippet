@@ -54,7 +54,7 @@ package org.knime.base.node.preproc.stringmanipulation.manipulator;
  * @author Heiko Hofer
  * @since 2.6
  */
-public class ToIntManipulator extends AbstractDefaultToStringManipulator {
+public class ToIntManipulator implements Manipulator {
     /**
      * Converts input to an integer value.
      *

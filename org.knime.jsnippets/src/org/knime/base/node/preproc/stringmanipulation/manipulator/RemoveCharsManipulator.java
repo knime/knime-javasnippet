@@ -55,7 +55,7 @@ import org.knime.core.util.string.KnimeStringUtils;
  *
  * @author Heiko Hofer
  */
-public class RemoveCharsManipulator extends AbstractDefaultToStringManipulator {
+public class RemoveCharsManipulator implements Manipulator {
 
     /**
      * Remove all occurrences of given characters from a string.
