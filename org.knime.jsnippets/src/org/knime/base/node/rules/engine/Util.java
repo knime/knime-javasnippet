@@ -128,6 +128,8 @@ public final class Util {
                     break;
                 case CREDENTIALS:
                     continue;
+                case FS_CONNECTION:
+                    continue;
                 default:
                     throw new IllegalStateException("Unhandled workflow variable type: " + type);
             }
