@@ -290,8 +290,9 @@ public class RuleEngineVariableNodeModel extends NodeModel implements FlowVariab
      */
     @Override
     protected PortObject[] execute(final PortObject[] inData, final ExecutionContext exec) throws Exception {
-        List<Rule> rules = parseRules();
-        performExecute(rules);
+        // must not call performExecute() as it has been done in configure()
+        // (and there would otherwise be the chance that we do a calculation
+        // on the already updated values!)
         return new PortObject[]{FlowVariablePortObject.INSTANCE};
     }
 
