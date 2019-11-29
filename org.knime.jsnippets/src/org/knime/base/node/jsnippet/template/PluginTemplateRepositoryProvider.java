@@ -73,7 +73,7 @@ import org.osgi.framework.Bundle;
 public class PluginTemplateRepositoryProvider<T extends JSnippetTemplate>
 implements TemplateRepositoryProvider<T> {
 
-    private static NodeLogger logger = NodeLogger.getLogger(JavaSnippetPluginTemplateRepositoryProvider.class);
+    private static NodeLogger logger = NodeLogger.getLogger(PluginTemplateRepositoryProvider.class);
     private FileTemplateRepository<T> m_repo;
     private final Object m_lock = new Object[0];
     private File m_file;
@@ -82,7 +82,7 @@ implements TemplateRepositoryProvider<T> {
     /**
      * @param symbolicName the name of the bundle like "org.nime.jsnipptes"
      * @param relativePath the path to the repositories base folder,
-     *  i.e. "/jsnippes"
+     *  i.e. "/jsnippets"
      * @param factory {@link SnippetTemplateFactory}
      */
     public PluginTemplateRepositoryProvider(final String symbolicName,

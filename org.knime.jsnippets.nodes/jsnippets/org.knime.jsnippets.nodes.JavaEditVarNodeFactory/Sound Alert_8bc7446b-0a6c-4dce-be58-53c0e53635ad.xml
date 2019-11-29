@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <config xmlns="http://www.knime.org/2008/09/XMLConfig" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.knime.org/2008/09/XMLConfig http://www.knime.org/XMLConfig_2008_09.xsd" key="Sound Alert_8bc7446b-0a6c-4dce-be58-53c0e53635ad.xml">
-<entry key="Meta category" type="xstring" value="org.knime.base.node.jsnippet.JavaEditVarNodeFactory"/>
+<entry key="Meta category" type="xstring" value="org.knime.jsnippets.nodes.JavaEditVarNodeFactory"/>
 <entry key="Category" type="xstring" value="System"/>
 <entry key="Name" type="xstring" value="Sound Alert"/>
 <entry key="Description" type="xstring" value="Plays a simple system sound. Useful when a long-running%%00010(part of a) workflow finishes execution and the user wants%%00010to be notified to take further actions, e.g. inspect results.%%00010No input is needed/modified and no output is generated."/>

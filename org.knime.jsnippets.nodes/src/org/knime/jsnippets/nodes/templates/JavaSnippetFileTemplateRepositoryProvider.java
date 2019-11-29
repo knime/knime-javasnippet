@@ -43,81 +43,55 @@
  * ------------------------------------------------------------------------
  *
  * History
- *   02.04.2012 (hofer): created
+ *   05.06.2012 (hofer): created
  */
-package org.knime.base.node.jsnippet.template;
+package org.knime.jsnippets.nodes.templates;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IConfigurationElement;
-import org.eclipse.core.runtime.Platform;
-import org.knime.core.node.NodeLogger;
+import org.knime.base.node.jsnippet.template.FileTemplateRepository;
+import org.knime.base.node.jsnippet.template.FileTemplateRepositoryProvider;
+import org.knime.base.node.jsnippet.template.JavaSnippetTemplate;
+import org.knime.base.node.jsnippet.template.SnippetTemplateFactory;
+import org.knime.base.node.jsnippet.template.TemplateRepositoryProvider;
+import org.knime.core.node.NodeSettingsRO;
 
 
 /**
- * A central provider for Java Snippet templates.
+ * A provider to the default template repository.
  * <p>This class might change and is not meant as public API.
- *
  * @author Heiko Hofer
  * @since 2.12
  * @noextend This class is not intended to be subclassed by clients.
  * @noinstantiate This class is not intended to be instantiated by clients.
  * @noreference This class is not intended to be referenced by clients.
  */
-public final class JavaSnippetTemplateProvider extends AbstractJSnippetTemplateProvider<JavaSnippetTemplate> {
+public class JavaSnippetFileTemplateRepositoryProvider implements TemplateRepositoryProvider<JavaSnippetTemplate> {
 
-    private static final NodeLogger LOGGER = NodeLogger.getLogger(JavaSnippetTemplateProvider.class);
-
-    private static final Object LOCK = new Object[0];
-    private static final String EXTENSION_POINT_ID =
-        "org.knime.jsnippets.templaterepository";
-    private static TemplateProvider<JavaSnippetTemplate> provider;
-    /**
-     * prevent instantiation from outside.
-     */
-    private JavaSnippetTemplateProvider() {
-        super(new JavaSnippetFileTemplateRepositoryProvider().getRepository());
-        setRepositories(loadExtension());
-    }
-
-    private List<TemplateRepository<JavaSnippetTemplate>> loadExtension() {
-        final List<TemplateRepository<JavaSnippetTemplate>> m_repos = new ArrayList<>();
-        IConfigurationElement[] config = Platform.getExtensionRegistry()
-            .getConfigurationElementsFor(EXTENSION_POINT_ID);
-
-        for (IConfigurationElement e : config) {
-            try {
-                final Object o = e.createExecutableExtension("provider-class");
-                if (o instanceof TemplateRepositoryProvider) {
-                    @SuppressWarnings("unchecked")
-                    TemplateRepository<JavaSnippetTemplate> repo =
-                        ((TemplateRepositoryProvider<JavaSnippetTemplate>)o).getRepository();
-                    if (null != repo) {
-                        repo.addChangeListener(this);
-                        m_repos.add(repo);
+    private static final FileTemplateRepositoryProvider<JavaSnippetTemplate> PROVIDER =
+            new FileTemplateRepositoryProvider<>("jsnippets", new SnippetTemplateFactory<JavaSnippetTemplate>() {
+                @Override
+                public JavaSnippetTemplate create(final NodeSettingsRO settings) {
+                    // class loader used to derive resources in current bundle
+                    ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+                    try {
+                         Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
+                         return JavaSnippetTemplate.create(settings);
+                    } finally {
+                        Thread.currentThread().setContextClassLoader(contextClassLoader);
                     }
                 }
-            } catch (CoreException ex) {
-                LOGGER.error("Error while reading jsnippet template "
-                        + "repositories.", ex);
-            }
-        }
-        return m_repos;
+            });
+    /**
+     * Constructor
+     */
+    public JavaSnippetFileTemplateRepositoryProvider() {
+
     }
 
     /**
-     * Get default shared instance.
-     * @return default TemplateProvider
+     * @see org.knime.base.node.jsnippet.template.FileTemplateRepositoryProvider#getRepository()
      */
-    public static TemplateProvider<JavaSnippetTemplate> getDefault() {
-        synchronized (LOCK) {
-            if (null == provider) {
-                provider = new JavaSnippetTemplateProvider();
-            }
-        }
-        return provider;
+    @Override
+    public FileTemplateRepository<JavaSnippetTemplate> getRepository() {
+        return PROVIDER.getRepository();
     }
-
 }

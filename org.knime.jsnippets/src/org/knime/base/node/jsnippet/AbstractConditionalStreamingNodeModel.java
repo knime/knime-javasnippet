@@ -72,6 +72,7 @@ import org.knime.core.node.util.CheckUtils;
  * conditions, like whether the row count is required (an additional iteration of the data table is necessary) or the
  * row index is used (i.e. only streaming possible but no distribution).
  *
+ * @noreference This class is not intended to be referenced by clients.
  * @author Martin Horn
  */
 public abstract class AbstractConditionalStreamingNodeModel extends NodeModel {

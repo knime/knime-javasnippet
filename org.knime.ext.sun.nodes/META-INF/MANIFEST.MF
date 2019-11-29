@@ -1,0 +1,16 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: KNIME Java Snippet (Simple) -- Nodes
+Bundle-SymbolicName: org.knime.ext.sun.nodes;singleton:=true
+Bundle-Version: 4.1.0.qualifier
+Bundle-ClassPath: knime-jsnippets-nodes-simple.jar
+Bundle-Vendor: KNIME AG, Zurich, Switzerland
+Require-Bundle: org.knime.core;bundle-version="[4.1.0,5.0.0)",
+ org.knime.ext.sun;bundle-version="[4.1.0,5.0.0)";visibility:=reexport
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-ActivationPolicy: lazy
+Eclipse-BundleShape: dir
+Export-Package: org.knime.ext.sun.nodes.script.node.editvar,
+ org.knime.ext.sun.nodes.script.node.ifswitch,
+ org.knime.ext.sun.nodes.script.node.rowfilter,
+ org.knime.ext.sun.nodes.script.node.rowsplitter

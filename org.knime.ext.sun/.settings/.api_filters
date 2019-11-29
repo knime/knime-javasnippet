@@ -1,50 +1,66 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <component id="org.knime.ext.sun" version="2">
-    <resource path="META-INF/MANIFEST.MF" type="org.knime.ext.sun.nodes.script.compile.InMemorySourceJavaFileObject">
+    <resource path="META-INF/MANIFEST.MF" type="org.knime.ext.sun.nodes.script.JavaScriptingNodeDialog">
         <filter id="305324134">
             <message_arguments>
-                <message_argument value="org.knime.ext.sun.nodes.script.compile.InMemorySourceJavaFileObject"/>
-                <message_argument value="org.knime.ext.sun_3.6.0"/>
+                <message_argument value="org.knime.ext.sun.nodes.script.JavaScriptingNodeDialog"/>
+                <message_argument value="org.knime.ext.sun_4.1.0"/>
             </message_arguments>
         </filter>
     </resource>
-    <resource path="src/org/knime/ext/sun/nodes/script/calculator/FlowVariableProvider.java" type="org.knime.ext.sun.nodes.script.calculator.FlowVariableProvider">
-        <filter id="403804204">
+    <resource path="META-INF/MANIFEST.MF" type="org.knime.ext.sun.nodes.script.JavaScriptingNodeFactory">
+        <filter id="305324134">
             <message_arguments>
-                <message_argument value="org.knime.ext.sun.nodes.script.calculator.FlowVariableProvider"/>
-                <message_argument value="getRowCountLong()"/>
+                <message_argument value="org.knime.ext.sun.nodes.script.JavaScriptingNodeFactory"/>
+                <message_argument value="org.knime.ext.sun_4.1.0"/>
             </message_arguments>
         </filter>
     </resource>
-    <resource path="src/org/knime/ext/sun/nodes/script/compile/JavaCodeCompiler.java" type="org.knime.ext.sun.nodes.script.compile.JavaCodeCompiler">
-        <filter id="338792546">
+    <resource path="META-INF/MANIFEST.MF" type="org.knime.ext.sun.nodes.script.JavaScriptingNodeModel">
+        <filter id="305324134">
             <message_arguments>
-                <message_argument value="org.knime.ext.sun.nodes.script.compile.JavaCodeCompiler"/>
-                <message_argument value="createClassLoader(ClassLoader)"/>
-            </message_arguments>
-        </filter>
-        <filter id="338792546">
-            <message_arguments>
-                <message_argument value="org.knime.ext.sun.nodes.script.compile.JavaCodeCompiler"/>
-                <message_argument value="getClassByteCode()"/>
-            </message_arguments>
-        </filter>
-        <filter id="1143996420">
-            <message_arguments>
-                <message_argument value="createClassLoader(ClassLoader)"/>
+                <message_argument value="org.knime.ext.sun.nodes.script.JavaScriptingNodeModel"/>
+                <message_argument value="org.knime.ext.sun_4.1.0"/>
             </message_arguments>
         </filter>
     </resource>
-    <resource path="src/org/knime/ext/sun/nodes/script/expression/ExpressionInstance.java" type="org.knime.ext.sun.nodes.script.expression.ExpressionInstance">
-        <filter id="337768515">
+    <resource path="META-INF/MANIFEST.MF" type="org.knime.ext.sun.nodes.script.node.editvar.JavaEditVariableNodeFactory">
+        <filter id="305324134">
             <message_arguments>
-                <message_argument value="org.knime.ext.sun.nodes.script.expression.ExpressionInstance"/>
+                <message_argument value="org.knime.ext.sun.nodes.script.node.editvar.JavaEditVariableNodeFactory"/>
+                <message_argument value="org.knime.ext.sun_4.1.0"/>
             </message_arguments>
         </filter>
-        <filter id="354463860">
+    </resource>
+    <resource path="META-INF/MANIFEST.MF" type="org.knime.ext.sun.nodes.script.node.ifswitch.JavaIfSwitchNodeFactory">
+        <filter id="305324134">
             <message_arguments>
-                <message_argument value="org.knime.ext.sun.nodes.script.expression.ExpressionInstance"/>
-                <message_argument value="ExpressionInstance(AbstractSnippetExpression, Map&lt;Expression.InputField,Expression.ExpressionField&gt;)"/>
+                <message_argument value="org.knime.ext.sun.nodes.script.node.ifswitch.JavaIfSwitchNodeFactory"/>
+                <message_argument value="org.knime.ext.sun_4.1.0"/>
+            </message_arguments>
+        </filter>
+    </resource>
+    <resource path="META-INF/MANIFEST.MF" type="org.knime.ext.sun.nodes.script.node.rowfilter.JavaRowFilterNodeFactory">
+        <filter id="305324134">
+            <message_arguments>
+                <message_argument value="org.knime.ext.sun.nodes.script.node.rowfilter.JavaRowFilterNodeFactory"/>
+                <message_argument value="org.knime.ext.sun_4.1.0"/>
+            </message_arguments>
+        </filter>
+    </resource>
+    <resource path="META-INF/MANIFEST.MF" type="org.knime.ext.sun.nodes.script.node.rowsplitter.JavaRowSplitterNodeFactory">
+        <filter id="305324134">
+            <message_arguments>
+                <message_argument value="org.knime.ext.sun.nodes.script.node.rowsplitter.JavaRowSplitterNodeFactory"/>
+                <message_argument value="org.knime.ext.sun_4.1.0"/>
+            </message_arguments>
+        </filter>
+    </resource>
+    <resource path="META-INF/MANIFEST.MF" type="org.knime.ext.sun.nodes.script.node.rowsplitter.JavaRowSplitterNodeModel">
+        <filter id="305324134">
+            <message_arguments>
+                <message_argument value="org.knime.ext.sun.nodes.script.node.rowsplitter.JavaRowSplitterNodeModel"/>
+                <message_argument value="org.knime.ext.sun_4.1.0"/>
             </message_arguments>
         </filter>
     </resource>

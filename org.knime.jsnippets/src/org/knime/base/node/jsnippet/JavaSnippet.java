@@ -163,6 +163,7 @@ import org.osgi.framework.wiring.BundleWiring;
  * The java snippet which can be controlled by changing the settings, fields and jar-files to be included or by changing
  * the contents of the snippets document. The document is a java class which is compiled for execution.
  *
+ * @noreference This class is not intended to be referenced by clients.
  * @author Heiko Hofer
  */
 @SuppressWarnings("restriction")
@@ -1042,7 +1043,7 @@ public final class JavaSnippet implements JSnippet<JavaSnippetTemplate> {
     }
 
     /** The rearranger is the working horse for creating the output table. */
-    ColumnRearranger createRearranger(final DataTableSpec spec, final FlowVariableRepository flowVariableRepository,
+    public ColumnRearranger createRearranger(final DataTableSpec spec, final FlowVariableRepository flowVariableRepository,
         final int rowCount, final ExecutionContext context) throws InvalidSettingsException {
         int offset = spec.getNumColumns();
         CellFactory factory = new JavaSnippetCellFactory(this, spec, flowVariableRepository, rowCount, context);

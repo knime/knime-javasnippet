@@ -45,7 +45,7 @@
  * History
  *   24.11.2011 (hofer): created
  */
-package org.knime.base.node.jsnippet;
+package org.knime.jsnippets.nodes;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
@@ -90,11 +90,11 @@ import org.fife.ui.rsyntaxtextarea.folding.Fold;
 import org.fife.ui.rsyntaxtextarea.folding.FoldManager;
 import org.fife.ui.rsyntaxtextarea.parser.ParserNotice.Level;
 import org.fife.ui.rtextarea.RTextScrollPane;
+import org.knime.base.node.jsnippet.JavaSnippet;
 import org.knime.base.node.jsnippet.guarded.JavaSnippetDocument;
 import org.knime.base.node.jsnippet.template.AddTemplateDialog;
 import org.knime.base.node.jsnippet.template.DefaultTemplateController;
 import org.knime.base.node.jsnippet.template.JavaSnippetTemplate;
-import org.knime.base.node.jsnippet.template.JavaSnippetTemplateProvider;
 import org.knime.base.node.jsnippet.template.TemplateNodeDialog;
 import org.knime.base.node.jsnippet.template.TemplateProvider;
 import org.knime.base.node.jsnippet.template.TemplatesPanel;
@@ -121,6 +121,7 @@ import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.util.ViewUtils;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.jsnippets.nodes.templates.JavaSnippetTemplateProvider;
 import org.knime.rsyntaxtextarea.guarded.GuardedDocument;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Version;

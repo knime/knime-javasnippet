@@ -256,8 +256,15 @@ public class JavaSnippetTemplate implements JSnippetTemplate {
      * @throws ClassNotFoundException if the class cannot be found
      */
     protected Class<? extends Object> getMetaCategoryClass(final String metaCategory) throws ClassNotFoundException {
-        return metaCategory != null
-            ? Class.forName(metaCategory) : JavaSnippetTemplate.class;
+        if (metaCategory == null) {
+            return JavaSnippetTemplate.class;
+        }
+        try {
+            return Thread.currentThread().getContextClassLoader().loadClass(metaCategory);
+        } catch (ClassNotFoundException cnfe) {
+            return Class.forName(metaCategory);
+        }
+
     }
 
     /**

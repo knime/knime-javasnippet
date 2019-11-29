@@ -90,6 +90,7 @@ import org.knime.core.node.workflow.FlowVariable.Type;
 /**
  * Cell factory for the java snippet node.
  *
+ * @noreference This class is not intended to be referenced by clients.
  * @author Heiko Hofer
  */
 public class JavaSnippetCellFactory extends AbstractCellFactory {

@@ -1,50 +1,90 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <component id="org.knime.jsnippets" version="2">
-    <resource path="META-INF/MANIFEST.MF" type="org.knime.base.node.jsnippet.guarded.GuardedDocument">
-        <filter comment="rsyntaxtextarea moved to separate plugin, see AP-11155" id="305324134">
+    <resource path="META-INF/MANIFEST.MF" type="org.knime.base.node.jsnippet.template.JavaSnippetFileTemplateRepositoryProvider">
+        <filter id="305324134">
             <message_arguments>
-                <message_argument value="org.knime.base.node.jsnippet.guarded.GuardedDocument"/>
-                <message_argument value="org.knime.jsnippets_3.8.0"/>
+                <message_argument value="org.knime.base.node.jsnippet.template.JavaSnippetFileTemplateRepositoryProvider"/>
+                <message_argument value="org.knime.jsnippets_4.1.0"/>
             </message_arguments>
         </filter>
     </resource>
-    <resource path="META-INF/MANIFEST.MF" type="org.knime.base.node.jsnippet.guarded.GuardedSection">
-        <filter comment="rsyntaxtextarea moved to separate plugin, see AP-11155" id="305324134">
+    <resource path="META-INF/MANIFEST.MF" type="org.knime.base.node.jsnippet.template.JavaSnippetPluginTemplateRepositoryProvider">
+        <filter id="305324134">
             <message_arguments>
-                <message_argument value="org.knime.base.node.jsnippet.guarded.GuardedSection"/>
-                <message_argument value="org.knime.jsnippets_3.8.0"/>
+                <message_argument value="org.knime.base.node.jsnippet.template.JavaSnippetPluginTemplateRepositoryProvider"/>
+                <message_argument value="org.knime.jsnippets_4.1.0"/>
             </message_arguments>
         </filter>
     </resource>
-    <resource path="META-INF/MANIFEST.MF" type="org.knime.base.node.jsnippet.guarded.GuardedSectionsFoldParser">
-        <filter comment="rsyntaxtextarea moved to separate plugin, see AP-11155" id="305324134">
+    <resource path="META-INF/MANIFEST.MF" type="org.knime.base.node.jsnippet.template.JavaSnippetTemplateProvider">
+        <filter id="305324134">
             <message_arguments>
-                <message_argument value="org.knime.base.node.jsnippet.guarded.GuardedSectionsFoldParser"/>
-                <message_argument value="org.knime.jsnippets_3.8.0"/>
+                <message_argument value="org.knime.base.node.jsnippet.template.JavaSnippetTemplateProvider"/>
+                <message_argument value="org.knime.jsnippets_4.1.0"/>
             </message_arguments>
         </filter>
     </resource>
-    <resource path="META-INF/MANIFEST.MF" type="org.knime.base.node.util.KnimeCompletionProvider">
-        <filter comment="rsyntaxtextarea moved to separate plugin, see AP-11155" id="305324134">
-            <message_arguments>
-                <message_argument value="org.knime.base.node.util.KnimeCompletionProvider"/>
-                <message_argument value="org.knime.jsnippets_3.8.0"/>
-            </message_arguments>
-        </filter>
-    </resource>
-    <resource path="META-INF/MANIFEST.MF" type="org.knime.base.node.util.KnimeSyntaxTextArea">
-        <filter comment="rsyntaxtextarea moved to separate plugin, see AP-11155" id="305324134">
-            <message_arguments>
-                <message_argument value="org.knime.base.node.util.KnimeSyntaxTextArea"/>
-                <message_argument value="org.knime.jsnippets_3.8.0"/>
-            </message_arguments>
-        </filter>
-    </resource>
-    <resource path="META-INF/MANIFEST.MF" type="org.knime.ext.sun.nodes.script.compile.InMemorySourceJavaFileObject">
+    <resource path="META-INF/MANIFEST.MF" type="org.knime.ext.sun.nodes.script.JavaScriptingNodeDialog">
         <filter id="305422471">
             <message_arguments>
-                <message_argument value="org.knime.ext.sun.nodes.script.compile.InMemorySourceJavaFileObject"/>
-                <message_argument value="org.knime.jsnippets_3.5.0"/>
+                <message_argument value="org.knime.ext.sun.nodes.script.JavaScriptingNodeDialog"/>
+                <message_argument value="org.knime.jsnippets_4.0.0"/>
+            </message_arguments>
+        </filter>
+    </resource>
+    <resource path="META-INF/MANIFEST.MF" type="org.knime.ext.sun.nodes.script.JavaScriptingNodeFactory">
+        <filter id="305422471">
+            <message_arguments>
+                <message_argument value="org.knime.ext.sun.nodes.script.JavaScriptingNodeFactory"/>
+                <message_argument value="org.knime.jsnippets_4.0.0"/>
+            </message_arguments>
+        </filter>
+    </resource>
+    <resource path="META-INF/MANIFEST.MF" type="org.knime.ext.sun.nodes.script.JavaScriptingNodeModel">
+        <filter id="305422471">
+            <message_arguments>
+                <message_argument value="org.knime.ext.sun.nodes.script.JavaScriptingNodeModel"/>
+                <message_argument value="org.knime.jsnippets_4.0.0"/>
+            </message_arguments>
+        </filter>
+    </resource>
+    <resource path="META-INF/MANIFEST.MF" type="org.knime.ext.sun.nodes.script.node.editvar.JavaEditVariableNodeFactory">
+        <filter id="305422471">
+            <message_arguments>
+                <message_argument value="org.knime.ext.sun.nodes.script.node.editvar.JavaEditVariableNodeFactory"/>
+                <message_argument value="org.knime.jsnippets_4.0.0"/>
+            </message_arguments>
+        </filter>
+    </resource>
+    <resource path="META-INF/MANIFEST.MF" type="org.knime.ext.sun.nodes.script.node.ifswitch.JavaIfSwitchNodeFactory">
+        <filter id="305422471">
+            <message_arguments>
+                <message_argument value="org.knime.ext.sun.nodes.script.node.ifswitch.JavaIfSwitchNodeFactory"/>
+                <message_argument value="org.knime.jsnippets_4.0.0"/>
+            </message_arguments>
+        </filter>
+    </resource>
+    <resource path="META-INF/MANIFEST.MF" type="org.knime.ext.sun.nodes.script.node.rowfilter.JavaRowFilterNodeFactory">
+        <filter id="305422471">
+            <message_arguments>
+                <message_argument value="org.knime.ext.sun.nodes.script.node.rowfilter.JavaRowFilterNodeFactory"/>
+                <message_argument value="org.knime.jsnippets_4.0.0"/>
+            </message_arguments>
+        </filter>
+    </resource>
+    <resource path="META-INF/MANIFEST.MF" type="org.knime.ext.sun.nodes.script.node.rowsplitter.JavaRowSplitterNodeFactory">
+        <filter id="305422471">
+            <message_arguments>
+                <message_argument value="org.knime.ext.sun.nodes.script.node.rowsplitter.JavaRowSplitterNodeFactory"/>
+                <message_argument value="org.knime.jsnippets_4.0.0"/>
+            </message_arguments>
+        </filter>
+    </resource>
+    <resource path="META-INF/MANIFEST.MF" type="org.knime.ext.sun.nodes.script.node.rowsplitter.JavaRowSplitterNodeModel">
+        <filter id="305422471">
+            <message_arguments>
+                <message_argument value="org.knime.ext.sun.nodes.script.node.rowsplitter.JavaRowSplitterNodeModel"/>
+                <message_argument value="org.knime.jsnippets_4.0.0"/>
             </message_arguments>
         </filter>
     </resource>
@@ -53,119 +93,6 @@
             <message_arguments>
                 <message_argument value="GuardedDocument"/>
                 <message_argument value="JavaSnippetDocument"/>
-            </message_arguments>
-        </filter>
-    </resource>
-    <resource path="src/org/knime/base/node/jsnippet/ui/FlowVariableList.java" type="org.knime.base.node.jsnippet.ui.FlowVariableList">
-        <filter id="338792546">
-            <message_arguments>
-                <message_argument value="org.knime.base.node.jsnippet.ui.FlowVariableList"/>
-                <message_argument value="install(KnimeSyntaxTextArea)"/>
-            </message_arguments>
-        </filter>
-    </resource>
-    <resource path="src/org/knime/base/node/jsnippet/util/JavaSnippetCompiler.java" type="org.knime.base.node.jsnippet.util.JavaSnippetCompiler">
-        <filter id="338792546">
-            <message_arguments>
-                <message_argument value="org.knime.base.node.jsnippet.util.JavaSnippetCompiler"/>
-                <message_argument value="createClassLoader(ClassLoader)"/>
-            </message_arguments>
-        </filter>
-    </resource>
-    <resource path="src/org/knime/base/node/jsnippet/util/field/InCol.java" type="org.knime.base.node.jsnippet.util.field.InCol">
-        <filter id="338792546">
-            <message_arguments>
-                <message_argument value="org.knime.base.node.jsnippet.util.field.InCol"/>
-                <message_argument value="loadSettingsForDialog(Config)"/>
-            </message_arguments>
-        </filter>
-    </resource>
-    <resource path="src/org/knime/base/node/jsnippet/util/field/JavaColumnField.java" type="org.knime.base.node.jsnippet.util.field.JavaColumnField">
-        <filter id="338792546">
-            <message_arguments>
-                <message_argument value="org.knime.base.node.jsnippet.util.field.JavaColumnField"/>
-                <message_argument value="loadSettingsForDialog(Config)"/>
-            </message_arguments>
-        </filter>
-    </resource>
-    <resource path="src/org/knime/base/node/jsnippet/util/field/JavaField.java" type="org.knime.base.node.jsnippet.util.field.JavaField">
-        <filter id="338792546">
-            <message_arguments>
-                <message_argument value="org.knime.base.node.jsnippet.util.field.JavaField"/>
-                <message_argument value="loadSettingsForDialog(Config)"/>
-            </message_arguments>
-        </filter>
-    </resource>
-    <resource path="src/org/knime/base/node/jsnippet/util/field/JavaFlowVarField.java" type="org.knime.base.node.jsnippet.util.field.JavaFlowVarField">
-        <filter id="338792546">
-            <message_arguments>
-                <message_argument value="org.knime.base.node.jsnippet.util.field.JavaFlowVarField"/>
-                <message_argument value="loadSettingsForDialog(Config)"/>
-            </message_arguments>
-        </filter>
-    </resource>
-    <resource path="src/org/knime/base/node/jsnippet/util/field/OutCol.java" type="org.knime.base.node.jsnippet.util.field.OutCol">
-        <filter id="338792546">
-            <message_arguments>
-                <message_argument value="org.knime.base.node.jsnippet.util.field.OutCol"/>
-                <message_argument value="loadSettingsForDialog(Config)"/>
-            </message_arguments>
-        </filter>
-    </resource>
-    <resource path="src/org/knime/base/node/jsnippet/util/field/OutVar.java" type="org.knime.base.node.jsnippet.util.field.OutVar">
-        <filter id="338792546">
-            <message_arguments>
-                <message_argument value="org.knime.base.node.jsnippet.util.field.OutVar"/>
-                <message_argument value="loadSettingsForDialog(Config)"/>
-            </message_arguments>
-        </filter>
-    </resource>
-    <resource path="src/org/knime/base/node/preproc/stringmanipulation/StringManipulationNodeDialog.java" type="org.knime.base.node.preproc.stringmanipulation.StringManipulationNodeDialog">
-        <filter id="338792546">
-            <message_arguments>
-                <message_argument value="org.knime.base.node.preproc.stringmanipulation.StringManipulationNodeDialog"/>
-                <message_argument value="createCompletionProvider()"/>
-            </message_arguments>
-        </filter>
-    </resource>
-    <resource path="src/org/knime/base/node/preproc/stringmanipulation/StringManipulationSettings.java" type="org.knime.base.node.preproc.stringmanipulation.StringManipulationSettings">
-        <filter id="338792546">
-            <message_arguments>
-                <message_argument value="org.knime.base.node.preproc.stringmanipulation.StringManipulationSettings"/>
-                <message_argument value="createJavaScriptingSettings()"/>
-            </message_arguments>
-        </filter>
-        <filter id="1141899266">
-            <message_arguments>
-                <message_argument value="3.3"/>
-                <message_argument value="3.6"/>
-                <message_argument value="getJavaScriptingSettings()"/>
-            </message_arguments>
-        </filter>
-    </resource>
-    <resource path="src/org/knime/base/node/util/JSnippetPanel.java" type="org.knime.base.node.util.JSnippetPanel">
-        <filter id="338722907">
-            <message_arguments>
-                <message_argument value="org.knime.base.node.util.JSnippetPanel"/>
-                <message_argument value="JSnippetPanel(ManipulatorProvider, KnimeCompletionProvider)"/>
-            </message_arguments>
-        </filter>
-        <filter id="338722907">
-            <message_arguments>
-                <message_argument value="org.knime.base.node.util.JSnippetPanel"/>
-                <message_argument value="JSnippetPanel(ManipulatorProvider, KnimeCompletionProvider, boolean)"/>
-            </message_arguments>
-        </filter>
-        <filter id="338722907">
-            <message_arguments>
-                <message_argument value="org.knime.base.node.util.JSnippetPanel"/>
-                <message_argument value="JSnippetPanel(ManipulatorProvider, KnimeCompletionProvider, boolean, boolean)"/>
-            </message_arguments>
-        </filter>
-        <filter id="338792546">
-            <message_arguments>
-                <message_argument value="org.knime.base.node.util.JSnippetPanel"/>
-                <message_argument value="getCompletionProvider()"/>
             </message_arguments>
         </filter>
     </resource>

@@ -67,7 +67,7 @@ import org.knime.core.node.NodeLogger;
  */
 public class FileTemplateRepositoryProvider<T extends JSnippetTemplate> implements TemplateRepositoryProvider<T> {
 
-    private static NodeLogger logger = NodeLogger.getLogger(JavaSnippetFileTemplateRepositoryProvider.class);
+    private static NodeLogger logger = NodeLogger.getLogger(FileTemplateRepositoryProvider.class);
     private FileTemplateRepository<T> defaultRepo;
     private final Object m_lock = new Object[0];
     private SnippetTemplateFactory<T> m_factory;

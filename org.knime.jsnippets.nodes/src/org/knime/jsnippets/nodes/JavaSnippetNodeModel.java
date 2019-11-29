@@ -45,7 +45,7 @@
  * History
  *   24.11.2011 (hofer): created
  */
-package org.knime.base.node.jsnippet;
+package org.knime.jsnippets.nodes;
 
 import java.io.File;
 import java.io.IOException;
@@ -53,6 +53,8 @@ import java.io.IOException;
 import javax.swing.text.BadLocationException;
 
 import org.apache.commons.lang3.StringUtils;
+import org.knime.base.node.jsnippet.AbstractConditionalStreamingNodeModel;
+import org.knime.base.node.jsnippet.JavaSnippet;
 import org.knime.base.node.jsnippet.guarded.JavaSnippetDocument;
 import org.knime.base.node.jsnippet.util.FlowVariableRepository;
 import org.knime.base.node.jsnippet.util.JavaSnippetSettings;

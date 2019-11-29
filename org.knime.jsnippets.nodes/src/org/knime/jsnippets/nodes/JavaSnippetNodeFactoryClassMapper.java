@@ -44,35 +44,36 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Nov 8, 2016 (squareys): created
+ *   Nov 28, 2019 (wiswedel): created
  */
-package org.knime.base.node.jsnippet;
+package org.knime.jsnippets.nodes;
 
-import org.knime.core.node.NodeLogger;
-import org.osgi.framework.BundleActivator;
-import org.osgi.framework.BundleContext;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import org.knime.core.node.MapNodeFactoryClassMapper;
+import org.knime.core.node.NodeFactory;
+import org.knime.core.node.NodeModel;
 
 /**
- * Activator for org.knime.jsnippets.
  *
- * Caches all the classpaths required for every type converter.
- * @noreference This class is not intended to be referenced by clients.
- * @author Jonathan Hale, KNIME, Konstanz, Germany
+ * @author wiswedel
  */
-public class JavaSnippetActivator implements BundleActivator {
-    private static final NodeLogger LOGGER = NodeLogger.getLogger(JavaSnippetActivator.class);
+public class JavaSnippetNodeFactoryClassMapper extends MapNodeFactoryClassMapper {
 
-    @Override
-    public void start(final BundleContext context) throws Exception {
-        final long startTime = System.currentTimeMillis();
-        JavaSnippet.cacheCustomTypeClasspaths();
-        final long duration = System.currentTimeMillis() - startTime;
+    private static final Map<String, Class<? extends NodeFactory<? extends NodeModel>>> MAP;
 
-        LOGGER.debug("Cached custom type classpaths [" + duration + " ms]");
+    static {
+        Map<String, Class<? extends NodeFactory<? extends NodeModel>>> map = new LinkedHashMap<>();
+        map.put("org.knime.base.node.jsnippet.JavaEditVarNodeFactory", JavaEditVarNodeFactory.class);
+        map.put("org.knime.base.node.jsnippet.JavaSnippetNodeFactory", JavaSnippetNodeFactory.class);
+        MAP = Collections.unmodifiableMap(map);
     }
 
     @Override
-    public void stop(final BundleContext context) throws Exception {
+    protected Map<String, Class<? extends NodeFactory<? extends NodeModel>>> getMapInternal() {
+        return MAP;
     }
 
 }

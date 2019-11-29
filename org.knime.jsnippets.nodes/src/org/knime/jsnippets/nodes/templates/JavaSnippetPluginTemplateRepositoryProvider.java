@@ -1,6 +1,5 @@
 /*
  * ------------------------------------------------------------------------
- *
  *  Copyright by KNIME AG, Zurich, Switzerland
  *  Website: http://www.knime.com; Email: contact@knime.com
  *
@@ -41,38 +40,62 @@
  *  propagated with or for interoperation with KNIME.  The owner of a Node
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
- * ---------------------------------------------------------------------
+ * ------------------------------------------------------------------------
  *
  * History
- *   Nov 8, 2016 (squareys): created
+ *   07.06.2012 (hofer): created
  */
-package org.knime.base.node.jsnippet;
+package org.knime.jsnippets.nodes.templates;
 
-import org.knime.core.node.NodeLogger;
-import org.osgi.framework.BundleActivator;
-import org.osgi.framework.BundleContext;
+import org.knime.base.node.jsnippet.template.JavaSnippetTemplate;
+import org.knime.base.node.jsnippet.template.PluginTemplateRepositoryProvider;
+import org.knime.base.node.jsnippet.template.SnippetTemplateFactory;
+import org.knime.base.node.jsnippet.template.TemplateRepository;
+import org.knime.base.node.jsnippet.template.TemplateRepositoryProvider;
+import org.knime.core.node.NodeSettingsRO;
+
 
 /**
- * Activator for org.knime.jsnippets.
+ * A m_file template provider for templates relative to a plugin. Since the
+ * templates are shipped out by a plugin, they cannot be removed or replaced.
+ * <p>This class might change and is not meant as public API.
  *
- * Caches all the classpaths required for every type converter.
+ * @author Heiko Hofer
+ * @since 2.12
+ * @noextend This class is not intended to be subclassed by clients.
+ * @noinstantiate This class is not intended to be instantiated by clients.
  * @noreference This class is not intended to be referenced by clients.
- * @author Jonathan Hale, KNIME, Konstanz, Germany
  */
-public class JavaSnippetActivator implements BundleActivator {
-    private static final NodeLogger LOGGER = NodeLogger.getLogger(JavaSnippetActivator.class);
+ public class JavaSnippetPluginTemplateRepositoryProvider implements TemplateRepositoryProvider<JavaSnippetTemplate> {
 
-    @Override
-    public void start(final BundleContext context) throws Exception {
-        final long startTime = System.currentTimeMillis();
-        JavaSnippet.cacheCustomTypeClasspaths();
-        final long duration = System.currentTimeMillis() - startTime;
+     private static final PluginTemplateRepositoryProvider<JavaSnippetTemplate> PROVIDER =
+             new PluginTemplateRepositoryProvider<>("org.knime.jsnippets.nodes", "jsnippets",
+                     new SnippetTemplateFactory<JavaSnippetTemplate>() {
+         @Override
+         public JavaSnippetTemplate create(final NodeSettingsRO settings) {
+             // class loader used to derive resources in current bundle
+             ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+             try {
+                  Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
+                  return JavaSnippetTemplate.create(settings);
+             } finally {
+                 Thread.currentThread().setContextClassLoader(contextClassLoader);
+             }
+         }
+     });
 
-        LOGGER.debug("Cached custom type classpaths [" + duration + " ms]");
+    /**
+     * Create a instance for the bundle "org.knime.jnippets" and the relative
+     * path "/jsnippets".
+     */
+    public JavaSnippetPluginTemplateRepositoryProvider() {
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public void stop(final BundleContext context) throws Exception {
+    public TemplateRepository<JavaSnippetTemplate> getRepository() {
+        return PROVIDER.getRepository();
     }
-
 }

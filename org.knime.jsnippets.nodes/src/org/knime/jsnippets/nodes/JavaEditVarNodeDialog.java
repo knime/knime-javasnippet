@@ -45,7 +45,7 @@
  * History
  *   24.11.2011 (hofer): created
  */
-package org.knime.base.node.jsnippet;
+package org.knime.jsnippets.nodes;
 
 import java.awt.FlowLayout;
 import java.util.Map;

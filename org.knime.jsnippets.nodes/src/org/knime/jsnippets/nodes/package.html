@@ -1,5 +1,5 @@
-/*
- * ------------------------------------------------------------------------
+<!--
+========================================================================
  *  Copyright by KNIME AG, Zurich, Switzerland
  *  Website: http://www.knime.com; Email: contact@knime.com
  *
@@ -40,62 +40,11 @@
  *  propagated with or for interoperation with KNIME.  The owner of a Node
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
- * ------------------------------------------------------------------------
- *
- * History
- *   24.11.2011 (hofer): created
- */
-package org.knime.base.node.jsnippet;
-
-import org.knime.core.node.NodeDialogPane;
-import org.knime.core.node.NodeFactory;
-import org.knime.core.node.NodeView;
-
-/**
- * The node factory of the java snippet node.
- *
- * @author Heiko Hofer
- */
-public class JavaSnippetNodeFactory extends NodeFactory<JavaSnippetNodeModel> {
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public JavaSnippetNodeModel createNodeModel() {
-        return new JavaSnippetNodeModel();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getNrNodeViews() {
-        return 0;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public NodeView<JavaSnippetNodeModel> createNodeView(final int viewIndex,
-            final JavaSnippetNodeModel nodeModel) {
-        throw new IndexOutOfBoundsException();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean hasDialog() {
-        return true;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public NodeDialogPane createNodeDialogPane() {
-        return new JavaSnippetNodeDialog(this.getClass());
-    }
-}
+====================================================================
+-->
+<body>
+	<p>
+	  The java snippet node. Java code can be defined to process input rows.
+	  The node can alter columns or create new ones.
+	</p>
+</body>

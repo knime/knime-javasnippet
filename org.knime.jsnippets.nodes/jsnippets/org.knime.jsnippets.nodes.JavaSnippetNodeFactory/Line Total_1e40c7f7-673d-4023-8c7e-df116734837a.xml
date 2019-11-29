@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <config xmlns="http://www.knime.org/2008/09/XMLConfig" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.knime.org/2008/09/XMLConfig http://www.knime.org/XMLConfig_2008_09.xsd" key="Line Total_1e40c7f7-673d-4023-8c7e-df116734837a.xml">
-<entry key="Meta category" type="xstring" value="org.knime.base.node.jsnippet.JavaSnippetNodeFactory"/>
+<entry key="Meta category" type="xstring" value="org.knime.jsnippets.nodes.JavaSnippetNodeFactory"/>
 <entry key="Category" type="xstring" value="KNIME"/>
 <entry key="Name" type="xstring" value="Line Total"/>
 <entry key="Description" type="xstring" value="Computes the sum over all numeric input columns."/>

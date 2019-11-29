@@ -43,43 +43,59 @@
  * ------------------------------------------------------------------------
  *
  * History
- *   05.06.2012 (hofer): created
+ *   24.11.2011 (hofer): created
  */
-package org.knime.base.node.jsnippet.template;
+package org.knime.jsnippets.nodes;
 
-import org.knime.core.node.NodeSettingsRO;
-
+import org.knime.core.node.NodeDialogPane;
+import org.knime.core.node.NodeFactory;
+import org.knime.core.node.NodeView;
 
 /**
- * A provider to the default template repository.
- * <p>This class might change and is not meant as public API.
+ * The node factory of the java snippet node.
+ *
  * @author Heiko Hofer
- * @since 2.12
- * @noextend This class is not intended to be subclassed by clients.
- * @noinstantiate This class is not intended to be instantiated by clients.
- * @noreference This class is not intended to be referenced by clients.
  */
-public class JavaSnippetFileTemplateRepositoryProvider implements TemplateRepositoryProvider<JavaSnippetTemplate> {
+public class JavaSnippetNodeFactory extends NodeFactory<JavaSnippetNodeModel> {
 
-    private static final FileTemplateRepositoryProvider<JavaSnippetTemplate> PROVIDER =
-            new FileTemplateRepositoryProvider<>("jsnippets", new SnippetTemplateFactory<JavaSnippetTemplate>() {
-                @Override
-                public JavaSnippetTemplate create(final NodeSettingsRO settings) {
-                    return JavaSnippetTemplate.create(settings);
-                }
-            });
     /**
-     * Constructor
+     * {@inheritDoc}
      */
-    public JavaSnippetFileTemplateRepositoryProvider() {
-
+    @Override
+    public JavaSnippetNodeModel createNodeModel() {
+        return new JavaSnippetNodeModel();
     }
 
     /**
-     * @see org.knime.base.node.jsnippet.template.FileTemplateRepositoryProvider#getRepository()
+     * {@inheritDoc}
      */
     @Override
-    public FileTemplateRepository<JavaSnippetTemplate> getRepository() {
-        return PROVIDER.getRepository();
+    public int getNrNodeViews() {
+        return 0;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public NodeView<JavaSnippetNodeModel> createNodeView(final int viewIndex,
+            final JavaSnippetNodeModel nodeModel) {
+        throw new IndexOutOfBoundsException();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean hasDialog() {
+        return true;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public NodeDialogPane createNodeDialogPane() {
+        return new JavaSnippetNodeDialog(this.getClass());
     }
 }
