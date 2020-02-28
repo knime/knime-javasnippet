@@ -13,16 +13,19 @@ properties([
 try {
 	knimetools.defaultTychoBuild('org.knime.update.javasnippet')
 
-    /* workflowTests.runTests( */
-    /*        "org.knime.features.core.testing.feature.group", */
-    /*        false, */
-    /*        ["knime-core", "knime-shared", "knime-tp"], */
-    /* ) */
+    workflowTests.runTests(
+    	dependencies: [
+    	   repositories: [
+    	       'knime-javasnippet', 'knime-virtual', 'knime-datageneration', 'knime-timeseries',
+    	       'knime-jep', 'knime-filehandling', 'knime-xml'
+    	   ]
+    	]
+    )
 
-    /* stage('Sonarqube analysis') { */
-    /*        env.lastStage = env.STAGE_NAME */
-    /*        workflowTests.runSonar() */
-    /* } */
+    stage('Sonarqube analysis') {
+           env.lastStage = env.STAGE_NAME
+           workflowTests.runSonar()
+    }
 
  } catch (ex) {
 	 currentBuild.result = 'FAILED'
