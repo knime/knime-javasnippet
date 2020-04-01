@@ -8,6 +8,7 @@
       <node category-path="/flowcontrol/variables" factory-class="org.knime.base.node.rules.engine.RuleEngineVariableNodeFactory"  />
       <node category-path="/flowcontrol/variables" factory-class="org.knime.base.node.rules.engine.twoports.RuleEngineVariable2PortsNodeFactory"  />
       <node category-path="/manipulation/column/column-convert+replace" factory-class="org.knime.base.node.preproc.stringmanipulation.StringManipulationNodeFactory"  />
+      <node category-path="/manipulation/column/column-convert+replace" factory-class="org.knime.base.node.preproc.stringmanipulation.multicolumn.MultiColumnStringManipulationNodeFactory" id="org.knime.base.node.preproc.stringmanipulation.multicolumn.MultiColumnStringManipulationNodeFactory"/>
       <node category-path="/manipulation/row/row-other" factory-class="org.knime.base.node.rules.engine.RuleEngineNodeFactory"  />
       <node category-path="/manipulation/row/row-filter" factory-class="org.knime.base.node.rules.engine.RuleEngineFilterNodeFactory"  />
       <node category-path="/manipulation/row/row-filter" factory-class="org.knime.base.node.rules.engine.RuleEngineSplitterNodeFactory"  />

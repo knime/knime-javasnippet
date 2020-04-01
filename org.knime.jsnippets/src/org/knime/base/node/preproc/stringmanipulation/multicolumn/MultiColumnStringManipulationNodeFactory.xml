@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE knimeNode PUBLIC "-//UNIKN//DTD KNIME Node 2.0//EN" "http://www.knime.org/Node.dtd">
+<knimeNode icon="string_manipulation_multi_column.png" type="Manipulator">
+	<name>String Manipulation (Multi Column)</name>
+	
+	<shortDescription>
+        Apply string transformations to several columns at once. The results can either replace the values in the respective source columns or be appended into a new columns.	
+	</shortDescription>
+	
+	<fullDescription>
+		<intro>
+			<p>
+				The String Manipulation (Multi Column) node is an extension of the String Manipulation node, applying the provided expression to every selected column in turn. 
+				Like the String Manipulation node, a new value is computed based on an expression involving string functions and column references. 
+				To cover cases where the same rule has to be applied to multiple columns, this node evaluates the provided expression for each column in a selection of columns in turn. 
+				The computed results can be either appended as new columns or be used to replace the selected input columns. 
+				The dialog shows available functions and provides them via autocomplete. <br/><br/>
+				
+				In each iteration, one column name from the selection will be used as replacement for the '$${Scurrent.column}$$' placeholder in the expression.
+			For instance, when selecting columns first_name and last_name, the expression <tt>capitalize($${Scurrent.column}$$)</tt> would first
+			evaluate <tt>capitalize($first_name$)</tt> and then <tt>capitalize($last_name$)</tt>. <br/><br/>
+                
+                Examples:
+                <ul>
+                	<li>toNull(replace($${Scurrent.column}$$, "N.A.", "")) searches for "N.A." in all selected columns, replaces them with "" and return a missing value, if the resulting string is empty. 
+                	For multiple strings to replace, a regular expression separating the target strings with | can be used: toNull(regexReplace($${Scurrent.column}$$, "N.A.|-", "")).
+                	This replaces both occurrences of "N.A." and "-" with missing values. 
+                	</li>
+                	<li>toInt(replace(replace($${Scurrent.column}$$, "No", "0"), "Yes", "1")) transform all instances of "Yes" to 1 and all instances of "No" to 0</li>
+                </ul>
+                
+			</p>
+			<p>
+			Reference the currently iterated column with <tt>$${Scurrent.column}}$$</tt>.
+			The name of the current column can be inserted with <tt>$${Scurrent.column.name}$$</tt>.
+			Reference fixed columns with the form <tt>$colName$</tt>.
+			</p>
+		</intro>
+		<tab name="Selected Columns">
+			<option name="Column Filter">
+			The columns that the node should loop over.  
+			It is allowed to include non-string columns in the selection, but their values will be converted to string before passing them to the expression. 
+			</option>
+		</tab>
+		<tab name="Expression">
+			<option name="Column List">Available columns, which can be used as variables in the expression.</option>
+			<option name="Flow Variable List">Available flow variables, which can be used as variables in the expression. Please enclose with <tt>string()</tt>.</option>
+			<option name="Category">The string function categories.</option>
+			<option name="Function">List of string functions in the selected category.</option>
+			<option name="Description">Description and example for the selected function.</option>
+			<option name="Expression">The expression editor.</option>
+			<option name="Append Selected Columns with Suffix">If selected new columns will be appended using the original column name with the 
+			specified suffix.</option>
+			<option name="Replace Selected Columns">Whether the selected columns should be replaced.</option>
+			<option name="Fail if expression can not be evaluated">Whether to stop node execution when an expression can not be evaluated. 
+			This could be the case if an input column contains a missing value that the expression can not handle or if a type conversion error occurs, e.g., <tt>toInt("Yes")</tt>.
+			The default behavior is to stop execution, but disabling this option will output missing values instead. </option>
+		</tab>
+	</fullDescription>
+	
+	<ports>
+		<inPort index="0" name="Input data">Input data with multiple columns to proces.</inPort>
+		<outPort index="0" name="Output data">Input data with replaced or appended columns.</outPort>
+	</ports>	
+</knimeNode>
