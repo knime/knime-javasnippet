@@ -4,62 +4,124 @@
 	<name>String Manipulation (Multi Column)</name>
 	
 	<shortDescription>
-        Apply string transformations to several columns at once. The results can either replace the values in the respective source columns or be appended into a new columns.	
+		Apply string transformations to several columns at once. The results can either replace the values in the respective source columns or be appended into a new columns.	
 	</shortDescription>
 	
 	<fullDescription>
 		<intro>
 			<p>
-				The String Manipulation (Multi Column) node is an extension of the String Manipulation node, applying the provided expression to every selected column in turn. 
-				Like the String Manipulation node, a new value is computed based on an expression involving string functions and column references. 
-				To cover cases where the same rule has to be applied to multiple columns, this node evaluates the provided expression for each column in a selection of columns in turn. 
-				The computed results can be either appended as new columns or be used to replace the selected input columns. 
-				The dialog shows available functions and provides them via autocomplete. <br/><br/>
+				The String Manipulation (Multi Column) node is an extension of the String Manipulation node, applying the provided
+				expression to every selected column in turn.  Like the String Manipulation node, a new value is computed based on an
+				expression involving string functions and column references.  To cover cases where the same rule has to be applied
+				to multiple columns, this node evaluates the provided expression for each column in a selection of columns in turn. 
+				The computed results can be either appended as new columns or be used to replace the selected input columns.  The
+				dialog shows available functions and provides them via autocomplete. <br/><br/>
 				
-				In each iteration, one column name from the selection will be used as replacement for the '$${Scurrent.column}$$' placeholder in the expression.
-			For instance, when selecting columns first_name and last_name, the expression <tt>capitalize($${Scurrent.column}$$)</tt> would first
-			evaluate <tt>capitalize($first_name$)</tt> and then <tt>capitalize($last_name$)</tt>. <br/><br/>
-                
-                Examples:
-                <ul>
-                	<li>toNull(replace($${Scurrent.column}$$, "N.A.", "")) searches for "N.A." in all selected columns, replaces them with "" and return a missing value, if the resulting string is empty. 
-                	For multiple strings to replace, a regular expression separating the target strings with | can be used: toNull(regexReplace($${Scurrent.column}$$, "N.A.|-", "")).
-                	This replaces both occurrences of "N.A." and "-" with missing values. 
-                	</li>
-                	<li>toInt(replace(replace($${Scurrent.column}$$, "No", "0"), "Yes", "1")) transform all instances of "Yes" to 1 and all instances of "No" to 0</li>
-                </ul>
-                
-			</p>
-			<p>
-			Reference the currently iterated column with <tt>$${Scurrent.column}}$$</tt>.
-			The name of the current column can be inserted with <tt>$${Scurrent.column.name}$$</tt>.
-			Reference fixed columns with the form <tt>$colName$</tt>.
-			</p>
-		</intro>
-		<tab name="Selected Columns">
-			<option name="Column Filter">
-			The columns that the node should loop over.  
-			It is allowed to include non-string columns in the selection, but their values will be converted to string before passing them to the expression. 
-			</option>
-		</tab>
-		<tab name="Expression">
-			<option name="Column List">Available columns, which can be used as variables in the expression.</option>
-			<option name="Flow Variable List">Available flow variables, which can be used as variables in the expression. Please enclose with <tt>string()</tt>.</option>
-			<option name="Category">The string function categories.</option>
-			<option name="Function">List of string functions in the selected category.</option>
-			<option name="Description">Description and example for the selected function.</option>
-			<option name="Expression">The expression editor.</option>
-			<option name="Append Selected Columns with Suffix">If selected new columns will be appended using the original column name with the 
-			specified suffix.</option>
-			<option name="Replace Selected Columns">Whether the selected columns should be replaced.</option>
-			<option name="Fail if expression can not be evaluated">Whether to stop node execution when an expression can not be evaluated. 
-			This could be the case if an input column contains a missing value that the expression can not handle or if a type conversion error occurs, e.g., <tt>toInt("Yes")</tt>.
-			The default behavior is to stop execution, but disabling this option will output missing values instead. </option>
-		</tab>
-	</fullDescription>
-	
-	<ports>
-		<inPort index="0" name="Input data">Input data with multiple columns to proces.</inPort>
-		<outPort index="0" name="Output data">Input data with replaced or appended columns.</outPort>
-	</ports>	
-</knimeNode>
+				In each iteration, one column name from the selection will be used as replacement for the
+				<code>$$CURRENTCOLUMN$$</code> placeholder in the expression. For instance, when selecting columns
+				<code>first_name</code> and <code>last_name</code>, the expression <tt>capitalize($$CURRENTCOLUMN$$)</tt> would
+				first evaluate <tt>capitalize($first_name$)</tt> and then <tt>capitalize($last_name$)</tt>. Depending on the node
+				configuration, the results are appended as new columns or used to replace the input values. <br/><br/>
+
+				Examples: <ul> <li><code>toNull(replace($$CURRENTCOLUMN$$, "N.A.", ""))</code> searches for "N.A." in all selected
+				columns, replaces them with "" and returns a missing value, if the resulting string is empty  (<code>toNull</code>
+				converts empty strings to a missing value).  For multiple strings to replace, a regular expression separating the
+				target strings with <code>|</code> can be used: <code>regexReplace($$CURRENTCOLUMN$$, "N.A.|-", "")</code>. This
+				replaces both occurrences of "N.A." and "-" with empty strings.  </li>
+
+				<li><code>toInt(replace(replace($$CURRENTCOLUMN$$, "No", "0"), "Yes", "1"))</code> first transforms all instances of
+				"No" to "0" and all instances of "Yes" to "1". <code>toInt</code> then transforms the string "0" to the number 0 and
+				the string "1" to the number 1. For instance, when selecting the first three columns to loop over and appending the
+				results with the suffix " Binary", we could create the following output table. </li> <table>
+				<tr>
+					<th>Responsible</th>
+					<th>Successful</th>
+					<th>Fast</th>
+					<th>Responsible Binary</th>
+					<th>Successful Binary</th>
+					<th>Fast Binary</th>
+				</tr>
+				<tr>
+					<td>Yes</td>
+					<td>No</td>
+					<td>Yes</td>
+					<td>1</td>
+					<td>0</td>
+					<td>1</td>
+				</tr>
+				<tr>
+					<td>No</td>
+					<td>Yes</td>
+					<td>No</td>
+					<td>0</td>
+					<td>1</td>
+					<td>0</td>
+				</tr>
+			</table>
+			<li>You can use the value of an integer column to control integer parameters of a string manipulator:
+				<code>substr($$CURRENTCOLUMN$$, $Start Position$)</code> extracts the substring of <code>$$CURRENTCOLUMN$$</code>
+				that starts at offset <i>k</i>, where <i>k</i> is the integer value in the column <code>Start Position</code> in the
+				current row. For example, when the selected column is <code>Customer</code> and the results are appended as
+				<code>Customer Name Only</code>, the expression <code>substr($$CURRENTCOLUMN$$, $Start Position$)</code> could be
+				used to generate the following ouput:</li>
+				<table>
+					<tr>
+						<th>Customer</th>
+						<th>Start Position</th>
+						<th>Customer Name Only</th>
+					</tr>
+					<tr>
+						<td>Mr. Jones</td>
+						<td>3</td>
+						<td>Jones</td>
+					</tr>
+					<tr>
+						<td>Prof. Desmond</td>
+						<td>5</td>
+						<td>Desmond</td>
+					</tr>
+				</table>
+				Flow variables can also be used to control the parameter of a string manipulation function. For instance, if there
+				is an integer flow variable <code>start-position</code> available, the above example could be rewritten as 
+				<code>substr($$CURRENTCOLUMN$$, $${Istart-position}$$). </code>
+			</ul>
+		</p>
+	</intro>
+	<tab name="String Manipulation">
+		<option name="Column Filter">
+			The columns that the node should loop over. These columns can be <i>dynamically</i> referenced in the expression
+			using <code>$$CURRENTCOLUMN$$</code>. Dynamically referenced means that <code>$$CURRENTCOLUMN$$</code> refers to
+			different columns, depending on the columns that are selected in the column filter. It is allowed to include
+			non-string columns from the column filter, but their values will be converted to string before substituting them for
+			<code>$$CURRENTCOLUMN$$</code>. 
+		</option>
+		<option name="Column List">Available columns in the input data table. They can be <i>statically</i> referenced in an
+		expression, meaning that they always refer to the same column in the input table, no matter which columns are selected
+		to loop over. For instance, the column <code>age</code> can be referenced as <code>$age$</code>. Values will
+		<b>not</b> automatically be converted to string. If necessary, convert to string, e.g., <code>string($age$)</code>. 
+	</option>
+	<option name="Flow Variable List">Available flow variables, which can be used as variables in the expression. 
+		Like statically referenced columns, their values are <b>not</b> automatically converted to string. This makes it
+		easier to use them to control non-string parameters of string manipulation functions, like in the substring example
+		above. </option>
+		<option name="Category">The string function categories.</option>
+		<option name="Function">List of string functions in the selected category.</option>
+		<option name="Description">Description and example for the selected function.</option>
+		<option name="Expression">The expression editor.</option>
+		<option name="Append Selected Columns with Suffix">If selected, the computed values columns will be appended as new columns, 
+			using the original column name with the specified suffix.</option>
+			<option name="Replace Selected Columns">
+				If selected, the computed values will replace the values in the columns that were selected to loop over.</option>
+			<option name="Fail if expression can not be evaluated">
+				Whether to stop node execution when an expression can not be evaluated.  This could be the case if an input column
+				contains a missing value that the expression can not handle or if a type conversion error occurs, e.g.,
+				<tt>toInt("Yes")</tt>. The default behavior is to stop execution, but disabling this option will output missing
+				values instead. </option>
+			</tab>
+		</fullDescription>
+
+		<ports>
+			<inPort index="0" name="Input data">Input data with multiple columns to proces.</inPort>
+			<outPort index="0" name="Output data">Input data with replaced or appended columns.</outPort>
+		</ports>	
+	</knimeNode>
