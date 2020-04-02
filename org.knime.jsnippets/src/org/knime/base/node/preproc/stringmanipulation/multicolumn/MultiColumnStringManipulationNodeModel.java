@@ -175,7 +175,7 @@ class MultiColumnStringManipulationNodeModel extends AbstractConditionalStreamin
         m_configurator = new MultiColumnStringManipulationConfigurator(m_settings, m_inputSpecification);
 
         if (m_configurator.isPassThrough()) {
-            setWarningMessage("No columns are selected. Will have no effect.");
+            warnPassThrough();
             return inSpecs;
         }
 
@@ -200,6 +200,7 @@ class MultiColumnStringManipulationNodeModel extends AbstractConditionalStreamin
         }
 
         if (m_configurator.isPassThrough()) {
+            warnPassThrough();
             return inData;
         }
 
@@ -294,6 +295,7 @@ class MultiColumnStringManipulationNodeModel extends AbstractConditionalStreamin
 
         // if no columns are selected, don't do anything
         if (m_configurator.isPassThrough()) {
+            warnPassThrough();
             return new ColumnRearranger(spec);
         }
 
@@ -382,6 +384,14 @@ class MultiColumnStringManipulationNodeModel extends AbstractConditionalStreamin
     private void warnIOException(final IOException e) {
         getLogger().warn(MessageFormat.format(
             "Could not release the resources held by the compiled java snippet expression:\n{0}", e.getMessage()));
+    }
+
+    /**
+     * Display a visual warning indicator on the node that no columns are selected.
+     * Trumps the warning that an empty output table has been created.
+     */
+    private void warnPassThrough() {
+        setWarningMessage("No columns are selected. Will have no effect.");
     }
 
 }
