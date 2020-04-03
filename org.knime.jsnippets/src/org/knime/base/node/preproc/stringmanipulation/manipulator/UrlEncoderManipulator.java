@@ -66,7 +66,6 @@ public class UrlEncoderManipulator extends AbstractDefaultToStringManipulator {
 
      * @param str the string
      * @return the escaped string
-     * @throws UnsupportedEncodingException
      */
     public static String urlEncode(final String str) {
         try {
@@ -115,7 +114,10 @@ public class UrlEncoderManipulator extends AbstractDefaultToStringManipulator {
      */
     @Override
     public String getDescription() {
-        return "Replaces characters that are not allowed in an URL. The resulting string is in <code>application/x-www-form-urlencoded</code> format.\n" +
+        return "Replaces characters that are not allowed in an URL. The resulting string is percent encoded, i.e., " +
+                "non-alphanumeric values are replaced as shown below. The resulting string is safe to use in a HTTP " +
+                "POST request, as it would be for instance when sending data via an HTML form "
+                + "(application/x-www-form-urlencoded format). " +
                 "The method uses the UTF-8 encoding scheme to obtain the bytes for unsafe characters.\n" +
                 "<br/><br/>\n" +
                 "<strong>\n" +

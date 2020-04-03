@@ -53,32 +53,51 @@ import static org.junit.Assert.assertEquals;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 /**
  *
- * @author carlwitt
+ * @author Carl Witt, KNIME AG, Zurich, Switzerland
  */
-public class UrlEncoderManipulatorTest {
+
+@RunWith(Parameterized.class)
+public final class UrlEncoderManipulatorTest {
 
     /**
-     * Compare to expected url encodings.
+     * @return input / expected output pairs for test methods
+     */
+    @Parameters(name="{index}: input= {0}; expected={1}")
+    public static Iterable<String[]> getParameters() {
+        return Arrays.asList(new String[][]{
+            {"the space between", "the+space+between"},
+            {"1 + 1 = 2", "1+%2B+1+%3D+2"},
+            {"What's the time?", "What%27s+the+time%3F"}});
+    }
+
+    private final String m_input;
+    private final String m_expected;
+
+    /**
+     * @param input the string to url encode
+     * @param expected the expected output of the string manipulator
+     *
+     */
+    public UrlEncoderManipulatorTest(final String input, final String expected) {
+        m_input = input;
+        m_expected = expected;
+    }
+
+    /**
+     * Compare computed to expected URL encodings.
      */
     @Test
     public void testUrlEncoderExamples() {
-
-        String input1 = "the space between";
-        Object output1 = "the+space+between";
-        assertEquals(output1, UrlEncoderManipulator.urlEncode(input1));
-
-        String input2 = "1 + 1 = 2";
-        String output2 = "1+%2B+1+%3D+2";
-        assertEquals(output2, UrlEncoderManipulator.urlEncode(input2));
-
-        String input3 = "What's the time?";
-        String output3 = "What%27s+the+time%3F";
-        assertEquals(output3, UrlEncoderManipulator.urlEncode(input3));
+        assertEquals(m_expected, UrlEncoderManipulator.urlEncode(m_input));
     }
 
     /**
@@ -87,11 +106,9 @@ public class UrlEncoderManipulatorTest {
      */
     @Test
     public void testUTF8EqualsDefault() throws UnsupportedEncodingException {
-        String input = "unsafe characters + coding = interesting?";
-
         assertEquals(
-            UrlEncoderManipulator.urlEncode(input),
-            URLEncoder.encode(input, StandardCharsets.UTF_8.name())
+            UrlEncoderManipulator.urlEncode(m_input),
+            URLEncoder.encode(m_input, StandardCharsets.UTF_8.name())
         );
 
     }

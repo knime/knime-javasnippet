@@ -50,7 +50,12 @@ package org.knime.base.node.preproc.stringmanipulation.manipulator;
 
 import static org.junit.Assert.assertNotNull;
 
+import java.util.Arrays;
+
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 /**
  *
@@ -79,7 +84,27 @@ import org.junit.Test;
  *
  * @author Carl Witt, KNIME AG, Zurich, Switzerland
  */
-public class UrlEncoderWithCharsetManipulatorTest {
+
+@RunWith(Parameterized.class)
+public final class UrlEncoderWithCharsetManipulatorTest {
+
+    /**
+     * @return the standard char set names to test for availability (their availability is promised in the string
+     *         manipulator's documentation).
+     */
+    @Parameters
+    public static Iterable<String> getParameters(){
+        return Arrays.asList("US-ASCII", "ISO-8859-1", "UTF-8", "UTF-16BE", "UTF-16LE", "UTF-16");
+    }
+
+    private final String m_charset;
+
+    /**
+     * @param charset
+     */
+    public UrlEncoderWithCharsetManipulatorTest(final String charset) {
+        m_charset = charset;
+    }
 
     /**
      * Test that the standard encodings are available (otherwise the result would be null).
@@ -87,13 +112,8 @@ public class UrlEncoderWithCharsetManipulatorTest {
     @Test
     public void testEncodingsAreAvailable() {
 
-        String[] charsetNames = new String[]{"US-ASCII", "ISO-8859-1", "UTF-8", "UTF-16BE", "UTF-16LE", "UTF-16"};
-
         String input = "some input + some other = another";
-
-        for (String charsetName : charsetNames) {
-            assertNotNull(UrlEncoderWithCharsetManipulator.urlEncodeCharset(input, charsetName));
-        }
+        assertNotNull(UrlEncoderWithCharsetManipulator.urlEncodeCharset(input, m_charset));
 
     }
 

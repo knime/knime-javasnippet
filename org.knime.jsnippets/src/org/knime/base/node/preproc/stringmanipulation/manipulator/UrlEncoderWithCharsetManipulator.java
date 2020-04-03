@@ -63,8 +63,8 @@ public class UrlEncoderWithCharsetManipulator extends AbstractDefaultToStringMan
      * Replaces characters not allowed in an URL by ASCII characters.
 
      * @param str the string
+     * @param encoding the name of the encoding to use, e.g., "UTF-8"
      * @return the escaped string
-     * @throws UnsupportedEncodingException
      */
     public static String urlEncodeCharset(final String str, final String encoding) {
         try {
@@ -113,9 +113,13 @@ public class UrlEncoderWithCharsetManipulator extends AbstractDefaultToStringMan
      */
     @Override
     public String getDescription() {
-        return "Replaces characters that are not allowed in an URL. The resulting string is in <code>application/x-www-form-urlencoded</code> format.\n" +
-                "The method uses the charset of the provided name to obtain the bytes for unsafe characters, e.g., \"ISO-8859-1\" for the ISO Latin Alphabet. \n" +
-                "If there is no charset for the provided name, a missing value is returned. Supported charsets are: \n" +
+        return "Replaces characters that are not allowed in an URL. The resulting string is percent encoded, i.e., " +
+                "non-alphanumeric values are replaced as shown below. The resulting string is safe to use in a HTTP " +
+                "POST request, as it would be for instance when sending data via an HTML form " +
+                "(application/x-www-form-urlencoded format). <br/>" +
+                "The method uses the charset of the provided name to obtain the bytes for unsafe characters, e.g., " +
+                "\"ISO-8859-1\" for the ISO Latin Alphabet. \n" +
+                "If there is no charset for the provided name, a missing value is returned. Supported charsets are:\n" +
                 "<table>\n" +
                 "  <tr>\n" +
                 "    <th>\"US-ASCII\"</th>\n" +
