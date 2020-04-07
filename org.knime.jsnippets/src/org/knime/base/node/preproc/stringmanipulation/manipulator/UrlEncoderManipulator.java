@@ -114,34 +114,35 @@ public class UrlEncoderManipulator extends AbstractDefaultToStringManipulator {
      */
     @Override
     public String getDescription() {
-        return "Replaces characters that are not allowed in an URL. The resulting string is percent encoded, i.e., " +
+        return "Replaces characters that are not allowed in an URL. <br/><br/>" +
+                "The resulting string is percent encoded, i.e., " +
                 "non-alphanumeric values are replaced as shown below. The resulting string is safe to use in a HTTP " +
                 "POST request, as it would be for instance when sending data via an HTML form "
                 + "(application/x-www-form-urlencoded format). " +
-                "The method uses the UTF-8 encoding scheme to obtain the bytes for unsafe characters.\n" +
-                "<br/><br/>\n" +
-                "<strong>\n" +
-                "Examples:</strong>\n" +
-                "<br/>\n" +
-                "<table>\n" +
-                "    <tr>\n" +
-                "        <td>\n" +
-                "        urlEncode(\"the space between\")</td>\n" +
-                "        <td>\n" +
-                "        =&nbsp;\"the+space+between\"</td>\n" +
-                "    </tr>\n" +
-                "    <tr>\n" +
-                "        <td>\n" +
-                "        urlEncode(\"1 + 1 = 2\")</td>\n" +
-                "        <td>\n" +
-                "        =&nbsp;\"1+%2B+1+%3D+2\"</td>\n" +
-                "    </tr>\n" +
-                "    <tr>\n" +
-                "        <td>\n" +
-                "        urlEncode(\"What's the time?\")</td>\n" +
-                "        <td>\n" +
-                "        =&nbsp;\"What%27s+the+time%3F\"</td>\n" +
-                "    </tr>\n" +
+                "The method uses the UTF-8 encoding scheme to obtain the bytes for unsafe characters." +
+                "<br/><br/>" +
+                "<strong>" +
+                "Examples:</strong>" +
+                "<br/>" +
+                "<table>" +
+                "    <tr>" +
+                "        <td>" +
+                "        urlEncode(\"the space between\")</td>" +
+                "        <td>" +
+                "        =&nbsp;\"the+space+between\"</td>" +
+                "    </tr>" +
+                "    <tr>" +
+                "        <td>" +
+                "        urlEncode(\"1 + 1 = 2\")</td>" +
+                "        <td>" +
+                "        =&nbsp;\"1+%2B+1+%3D+2\"</td>" +
+                "    </tr>" +
+                "    <tr>" +
+                "        <td>" +
+                "        urlEncode(\"What's the time?\")</td>" +
+                "        <td>" +
+                "        =&nbsp;\"What%27s+the+time%3F\"</td>" +
+                "    </tr>" +
                 "</table>";
     }
 

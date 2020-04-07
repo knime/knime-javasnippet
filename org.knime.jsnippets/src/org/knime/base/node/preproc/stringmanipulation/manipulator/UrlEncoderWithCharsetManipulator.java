@@ -87,7 +87,7 @@ public class UrlEncoderWithCharsetManipulator extends AbstractDefaultToStringMan
      */
     @Override
     public String getName() {
-        return "urlEncodeCharset";
+        return "urlEncode";
     }
 
 
@@ -113,32 +113,33 @@ public class UrlEncoderWithCharsetManipulator extends AbstractDefaultToStringMan
      */
     @Override
     public String getDescription() {
-        return "Replaces characters that are not allowed in an URL. The resulting string is percent encoded, i.e., " +
+        return "Replaces characters that are not allowed in an URL using the provided character set name.<br/><br/>" +
+                "The resulting string is percent encoded, i.e., " +
                 "non-alphanumeric values are replaced as shown below. The resulting string is safe to use in a HTTP " +
                 "POST request, as it would be for instance when sending data via an HTML form " +
                 "(application/x-www-form-urlencoded format). <br/>" +
                 "The method uses the charset of the provided name to obtain the bytes for unsafe characters, e.g., " +
-                "\"ISO-8859-1\" for the ISO Latin Alphabet. \n" +
-                "If there is no charset for the provided name, a missing value is returned. Supported charsets are:\n" +
-                "<table>\n" +
-                "  <tr>\n" +
-                "    <th>\"US-ASCII\"</th>\n" +
-                "  </tr>\n" +
-                "  <tr>\n" +
-                "    <td>\"ISO-8859-1\"</td>\n" +
-                "  </tr>\n" +
-                "  <tr>\n" +
-                "    <td>\"UTF-8\" (default, equivalent to calling urlEncode() directly) </td>\n" +
-                "  </tr>\n" +
-                "  <tr>\n" +
-                "    <td>\"UTF-16BE\"</td>\n" +
-                "  </tr>\n" +
-                "  <tr>\n" +
-                "    <td>\"UTF-16LE\"</td>\n" +
-                "  </tr>\n" +
-                "  <tr>\n" +
-                "    <td>\"UTF-16\"</td>\n" +
-                "  </tr>\n" +
+                "\"ISO-8859-1\" for the ISO Latin Alphabet. " +
+                "If there is no charset for the provided name, a missing value is returned. Supported charsets are:" +
+                "<table>" +
+                "  <tr>" +
+                "    <th>\"US-ASCII\"</th>" +
+                "  </tr>" +
+                "  <tr>" +
+                "    <td>\"ISO-8859-1\"</td>" +
+                "  </tr>" +
+                "  <tr>" +
+                "    <td>\"UTF-8\" (default, equivalent to calling urlEncode() without additional parameter) </td>" +
+                "  </tr>" +
+                "  <tr>" +
+                "    <td>\"UTF-16BE\"</td>" +
+                "  </tr>" +
+                "  <tr>" +
+                "    <td>\"UTF-16LE\"</td>" +
+                "  </tr>" +
+                "  <tr>" +
+                "    <td>\"UTF-16\"</td>" +
+                "  </tr>" +
                 "</table>";
     }
 
