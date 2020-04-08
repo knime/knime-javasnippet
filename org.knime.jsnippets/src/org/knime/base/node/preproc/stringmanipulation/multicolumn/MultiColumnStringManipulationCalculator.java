@@ -278,11 +278,9 @@ public class MultiColumnStringManipulationCalculator extends AbstractCellFactory
 
         // row count of input table is constant, add only once to expression context
         // but it might not be set, e.g., when compiling for validating the expression
-        assert rowCount <= Integer.MAX_VALUE : "The number of rows to process is too large "
-            + "to be stored in the $$ROWCOUNT$$ variable.";
-        // TODO: [row count long] the expression API allows row count to be int only, update.
-        int rowCountInt = (int)rowCount;
-        expressionContext.put(new InputField(Expression.ROWCOUNT, FieldType.TableConstant), rowCountInt);
+        expressionContext.put(
+            new InputField(Expression.ROWCOUNT, FieldType.TableConstant),
+            castRowCountToInt(rowCount));
 
         // Find statically referenced columns in the expression. The values of these columns are accessed via
         // the created ColumnAccessor and passed to the expression context of the expression for every row.
@@ -308,6 +306,27 @@ public class MultiColumnStringManipulationCalculator extends AbstractCellFactory
         return new MultiColumnStringManipulationCalculator(expression, expressionInstance, expressionContext,
             usedInputFields, cellConstructor, failOnEvaluationProblems, evaluateWithMissingValues, transformer);
 
+    }
+
+    /**
+     * Maybe used to consistently change how row counts larger than the maximum int value are handled. Called in
+     * {@link #create(MultiColumnStringManipulationConfigurator, long, Function, boolean)} when putting the row count to
+     * the expression context map and in {@link #getCells(DataRow)} when putting the current row index in the expression
+     * context map. Since row index < row count, an overflow can usually already be detected in
+     * {@link #create(MultiColumnStringManipulationConfigurator, long, Function, boolean)}, however in streaming this
+     * might not be the case.
+     *
+     * TODO: [row count long] the expression API allows row count to be int only, update.
+     *
+     * @return the row count cast to an int.
+     * @throws AssertionError when the row count is larger than the maximum integer value.
+     */
+    private static int castRowCountToInt(final long rowCount) {
+        if (rowCount > Integer.MAX_VALUE) {
+            throw new ArithmeticException(
+                "The number of rows to process is too large to be stored in the $$ROWCOUNT$$ variable.");
+        }
+        return (int)rowCount;
     }
 
     private MultiColumnStringManipulationCalculator(final Expression expression,
@@ -420,7 +439,8 @@ public class MultiColumnStringManipulationCalculator extends AbstractCellFactory
         }
 
         // update the input fields of the compiled expression
-        m_expressionContext.put(ROW_INDEX_INPUT_FIELD, m_lastProcessedRow++);
+
+        m_expressionContext.put(ROW_INDEX_INPUT_FIELD, castRowCountToInt(m_lastProcessedRow));
         m_expressionContext.put(ROW_ID_INPUT_FIELD, row.getKey().getString());
 
         final DataCell[] result = new DataCell[m_transformer.getEvaluatedColumnSpecs().length];
@@ -502,6 +522,8 @@ public class MultiColumnStringManipulationCalculator extends AbstractCellFactory
             result[i] = m_cellConstructor.apply(o);
         }
 
+        // update the row index of the last processed row
+        m_lastProcessedRow += 1;
         return result;
     }
 
