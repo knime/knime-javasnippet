@@ -207,7 +207,11 @@ class MultiColumnStringManipulationNodeModel extends AbstractConditionalStreamin
         final long rowCount = inData[IN_PORT].size();
 
         try (final MultiColumnStringManipulationCalculator cellFactory = MultiColumnStringManipulationCalculator
-            .create(m_configurator, rowCount, m_flowVariableProvider, m_settings.isFailOnEvaluationException())) {
+            .create(m_configurator,
+                rowCount,
+                m_flowVariableProvider,
+                m_settings.isFailOnEvaluationException(),
+                m_settings.isEvaluateWithMissingValues())) {
 
             final ColumnRearranger rearranger = m_configurator.createColumnRearranger(dataTableSpec, cellFactory);
             final BufferedDataTable o = exec.createColumnRearrangeTable(inData[0], rearranger, exec);
@@ -242,8 +246,11 @@ class MultiColumnStringManipulationNodeModel extends AbstractConditionalStreamin
             if (!validationConfigurator.isPassThrough()) {
 
                 try (final MultiColumnStringManipulationCalculator validationCellFactory =
-                    MultiColumnStringManipulationCalculator.create(validationConfigurator, -1, m_flowVariableProvider,
-                        validationSettings.isFailOnEvaluationException())) {
+                    MultiColumnStringManipulationCalculator.create(validationConfigurator,
+                        -1,
+                        m_flowVariableProvider,
+                        validationSettings.isFailOnEvaluationException(),
+                        m_settings.isEvaluateWithMissingValues())) {
                 } catch (IOException e) {
                     warnIOException(e);
                 } catch (CompilationFailedException | InstantiationException e1) {
@@ -300,8 +307,12 @@ class MultiColumnStringManipulationNodeModel extends AbstractConditionalStreamin
         }
 
         try {
-            m_multiCalculatorCompiled = MultiColumnStringManipulationCalculator.create(m_configurator, rowCount,
-                m_flowVariableProvider, m_settings.isFailOnEvaluationException());
+            m_multiCalculatorCompiled = MultiColumnStringManipulationCalculator.create(
+                m_configurator,
+                rowCount,
+                m_flowVariableProvider,
+                m_settings.isFailOnEvaluationException(),
+                m_settings.isEvaluateWithMissingValues());
         } catch (InstantiationException | CompilationFailedException e) {
             throw new InvalidSettingsException(e);
         }

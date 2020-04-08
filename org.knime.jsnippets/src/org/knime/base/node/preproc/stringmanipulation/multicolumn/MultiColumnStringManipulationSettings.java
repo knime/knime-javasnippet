@@ -102,6 +102,9 @@ class MultiColumnStringManipulationSettings {
     private final SettingsModelBoolean m_failOnEvaluationException =
         new SettingsModelBoolean("Abort execution on evaluation errors", true);
 
+    private final SettingsModelBoolean m_evaluateWithMissingValues =
+            new SettingsModelBoolean("Insert missing values as null", true);
+
     /**
      * @return Never change this. This would break all nodes in previous workflows that use $$CURRENTCOLUMN$$ in their
      *         expressions. the name of the special identifier that signifies the currently iterated column in an
@@ -129,6 +132,7 @@ class MultiColumnStringManipulationSettings {
         getAppendOrReplaceSettingsModel().validateSettings(settings);
         getAppendedColumnsSuffixSettingsModel().validateSettings(settings);
         getFailOnEvaluationExceptionSettingsModel().validateSettings(settings);
+        getEvaluateWithMissingValuesSettingsModel().validateSettings(settings);
 
     }
 
@@ -145,6 +149,7 @@ class MultiColumnStringManipulationSettings {
         getAppendedColumnsSuffixSettingsModel().loadSettingsFrom(settings);
 
         getFailOnEvaluationExceptionSettingsModel().loadSettingsFrom(settings);
+        getEvaluateWithMissingValuesSettingsModel().loadSettingsFrom(settings);
     }
 
     void loadSettingsInDialog(final NodeSettingsRO settings, final DataTableSpec spec) throws InvalidSettingsException {
@@ -171,6 +176,7 @@ class MultiColumnStringManipulationSettings {
         getAppendedColumnsSuffixSettingsModel().saveSettingsTo(settings);
 
         getFailOnEvaluationExceptionSettingsModel().saveSettingsTo(settings);
+        getEvaluateWithMissingValuesSettingsModel().saveSettingsTo(settings);
 
     }
 
@@ -212,6 +218,18 @@ class MultiColumnStringManipulationSettings {
 
     SettingsModelBoolean getFailOnEvaluationExceptionSettingsModel() {
         return m_failOnEvaluationException;
+    }
+
+    SettingsModelBoolean getEvaluateWithMissingValuesSettingsModel() {
+        return m_evaluateWithMissingValues;
+    }
+
+    boolean isEvaluateWithMissingValues() {
+        return getEvaluateWithMissingValuesSettingsModel().getBooleanValue();
+    }
+
+    void setEvaluateWithMissingValues(final boolean evaluateWithMissingValues) {
+        getEvaluateWithMissingValuesSettingsModel().setBooleanValue(evaluateWithMissingValues);
     }
 
     SettingsModelString getAppendOrReplaceSettingsModel() {

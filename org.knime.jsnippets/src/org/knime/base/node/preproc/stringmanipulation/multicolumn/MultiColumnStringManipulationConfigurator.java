@@ -121,15 +121,18 @@ class MultiColumnStringManipulationConfigurator {
             javaSnippetType = JavaSnippetType.findType(spec.getColumnSpec(indexInSourceTable).getType());
         }
 
-        /** @return contents of the cell in the row that corresponds to this column. */
+        /**
+         * @param r the data row from which to retrieve the cell with the accessor's source table column index
+         * @return contents of the cell in the row that corresponds to this column or null if it is missing.
+         */
         public Object getCellContents(final DataRow r) {
             final DataCell cell = r.getCell(indexInSourceTable);
             return cell.isMissing() ? null : javaSnippetType.asJavaObject(cell);
         }
 
         /**
-         * @return the value of the cell in the row that corresponds to this column. Uses {@link DataCell#toString()} to
-         *         allow for
+         * @return the value of the cell in the row that corresponds to this column. Uses {@link DataCell#toString()}.
+         *         Returns null if the cell has a missing value.
          */
         public String getCellContentsString(final DataRow r) {
             final DataCell cell = r.getCell(indexInSourceTable);

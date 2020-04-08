@@ -199,6 +199,13 @@ public class MultiColumnStringManipulationCalculator extends AbstractCellFactory
     private final boolean m_failOnEvaluationProblems;
 
     /**
+     * Whether to evaluate an expression if one of the columns has a missing value.
+     * If true, the missing values will be set to null.
+     * If false, evaluation is skipped and a missing value is returned for the corresponding cell.
+     */
+    private final boolean m_evaluateWithMissingValues;
+
+    /**
      * The index/offset of the currently processed row.
      */
     private long m_lastProcessedRow = 0;
@@ -216,10 +223,20 @@ public class MultiColumnStringManipulationCalculator extends AbstractCellFactory
      * {@link MultiColumnStringManipulationConfigurator} in this case with updated settings and recompile. Attempting to
      * use a {@link MultiColumnStringManipulationConfigurator} that threw errors during compile for calculation will
      * likely result in null pointer exceptions.
+     *
+     * @param transformer which columns to iterate over and whether computed columns should replace or be appended
+     * @param rowCount number of rows in the table to process
+     * @param flowVarProvider provides access to the values of flow variables appearing in the expression
+     * @param failOnEvaluationProblems whether to stop evaluation on exceptions or carry on
+     * @param evaluateWithMissingValues whether to evaluate with null for missing values or skip and return null
+     * @return a cell factory that can be provided to a {@link ColumnRearranger}
+     * @throws InstantiationException if the expression can not be instantiated
+     * @throws CompilationFailedException if the expression can not be compiled
+     * @throws InvalidSettingsException if the expression can not be created or uses non-existent flow variables
      */
     static MultiColumnStringManipulationCalculator create(final MultiColumnStringManipulationConfigurator transformer,
         final long rowCount, final Function<String, Optional<Object>> flowVarProvider,
-        final boolean failOnEvaluationProblems)
+        final boolean failOnEvaluationProblems, final boolean evaluateWithMissingValues)
         throws InstantiationException, CompilationFailedException, InvalidSettingsException {
 
         // create settings (handles framework bundle, string manipulator code imports)
@@ -289,20 +306,22 @@ public class MultiColumnStringManipulationCalculator extends AbstractCellFactory
             : transformer.getReturnJavaSnippetType().asKNIMECell(o);
 
         return new MultiColumnStringManipulationCalculator(expression, expressionInstance, expressionContext,
-            usedInputFields, cellConstructor, failOnEvaluationProblems, transformer);
+            usedInputFields, cellConstructor, failOnEvaluationProblems, evaluateWithMissingValues, transformer);
 
     }
 
     private MultiColumnStringManipulationCalculator(final Expression expression,
         final ExpressionInstance expressionInstance, final Map<InputField, Object> expressionContext,
         final Map<InputField, ColumnAccessor> usedInputFields, final Function<Object, DataCell> cellConstructor,
-        final boolean failOnEvaluationProblems, final MultiColumnStringManipulationConfigurator transformer) {
+        final boolean failOnEvaluationProblems, final boolean evaluateWithMissingValues,
+        final MultiColumnStringManipulationConfigurator transformer) {
         super(transformer.getEvaluatedColumnSpecs());
         m_expression = expression;
         m_expressionInstance = expressionInstance;
         m_expressionContext = expressionContext;
         m_usedInputFields = usedInputFields;
         m_cellConstructor = cellConstructor;
+        m_evaluateWithMissingValues = evaluateWithMissingValues;
         m_failOnEvaluationProblems = failOnEvaluationProblems;
         m_transformer = transformer;
     }
@@ -413,6 +432,15 @@ public class MultiColumnStringManipulationCalculator extends AbstractCellFactory
             // put the row's cell value into the expression context
             // statically referenced column values are unboxed back to java types
             Object cellContentsObject = inputFieldToColumnIdx.getValue().getCellContents(row);
+
+            // if any of the statically referenced columns has a missing value, the expression has a missing value for
+            // every iterated column. If evaluation with missing values is off, return missing values for
+            // every iterated column.
+            if (! m_evaluateWithMissingValues && cellContentsObject == null) {
+                Arrays.fill(result, DataType.getMissingCell());
+                return result;
+            }
+
             m_expressionContext.put(inputFieldToColumnIdx.getKey(), cellContentsObject);
 
             // TODO [array output cell support] would require something like
@@ -435,6 +463,13 @@ public class MultiColumnStringManipulationCalculator extends AbstractCellFactory
             // convert the content of a dynamically referenced column to string (since this a string manipulation node)
             // also better than allowing only string columns as input columns to iterate over
             final String cellContentsString = m_transformer.getIteratedInputColumns()[i].getCellContentsString(row);
+
+            // if the currently iterated column's value is missing and evaluation with missing values if off,
+            // output a missing cell
+            if( ! m_evaluateWithMissingValues && cellContentsString == null) {
+                result[i] = DataType.getMissingCell();
+                continue;
+            }
 
             m_expressionContext.put(CURRENT_COLUMN_INPUT_FIELD, cellContentsString);
 

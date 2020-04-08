@@ -105,6 +105,11 @@ final class MultiColumnStringManipulationNodeDialog extends NodeDialogPane {
     /** Check box to abort execution on evaluation errors. */
     private final DialogComponentBoolean m_failOnEvaluationException;
 
+    /** Check box to select whether to evaluate expressions when input values are missing (insert them as null) or not
+     * (return missing value without evaluation).
+     */
+    private final DialogComponentBoolean m_evaluateWithMissingValues;
+
     /**
      * Create the dialog components. Build the user interface and add to the dialog.
      *
@@ -148,6 +153,12 @@ final class MultiColumnStringManipulationNodeDialog extends NodeDialogPane {
             "Stop the execution on problems. If unselected, errors during calculation (e.g., due to missing input"
                 + " values or impossible type conversions) will simply produce missing values.");
 
+        m_evaluateWithMissingValues = new DialogComponentBoolean(m_settings.getEvaluateWithMissingValuesSettingsModel(),
+                "Insert missing values as null");
+        m_evaluateWithMissingValues.setToolTipText(
+                "If checked, missing values will be inserted as null into the expression. If unchecked, the expression "
+                + "is not evaluated if any of its inputs is missing. Instead, a missing value is returned.");
+
         addTab("String Manipulation", getDialogComponents());
 
     }
@@ -161,13 +172,18 @@ final class MultiColumnStringManipulationNodeDialog extends NodeDialogPane {
      */
     private JPanel getDialogComponents() {
 
+        // panel for checkboxes for missing value and error handling
+        final JPanel errorHandling = new JPanel(new GridLayout(2, 0));
+        errorHandling.add(m_evaluateWithMissingValues.getComponentPanel());
+        errorHandling.add(m_failOnEvaluationException.getComponentPanel());
+
         // bottom for configuring result and error handling
         // three column layout:
         // radio button group, text field for suffix, missing value check box
         final JPanel replaceOrAppend = new JPanel(new GridLayout(0, 3));
         replaceOrAppend.add(m_appendOrReplace.getComponentPanel());
         replaceOrAppend.add(m_newColSuffixField.getComponentPanel());
-        replaceOrAppend.add(m_failOnEvaluationException.getComponentPanel());
+        replaceOrAppend.add(errorHandling);
 
         // three row layout:
         // column selection, expression editor, configuration

@@ -109,8 +109,8 @@
         expression, meaning that they always refer to the same column in the input table, no matter which columns are selected
         to loop over. For instance, the column <tt>age</tt> can be referenced as <tt>$age$</tt>. Values will
         <b>not</b> automatically be converted to string. If necessary, convert to string, e.g., <tt>string($age$)</tt>. 
-      </option>
-      <option name="Flow Variable List">Available flow variables, which can be used as variables in the expression. 
+        </option>
+        <option name="Flow Variable List">Available flow variables, which can be used as variables in the expression. 
         Like statically referenced columns, their values are <b>not</b> automatically converted to string. This makes it
         easier to use them to control non-string parameters of string manipulation functions, like in the substring example
         above. </option>
@@ -120,18 +120,22 @@
         <option name="Expression">The expression editor.</option>
         <option name="Append Selected Columns with Suffix">If selected, the computed values columns will be appended as new columns, 
           using the original column name with the specified suffix.</option>
-          <option name="Replace Selected Columns">
-            If selected, the computed values will replace the values in the columns that were selected to loop over.</option>
-            <option name="Fail if expression can not be evaluated">
-              Whether to stop node execution when an expression can not be evaluated.  This could be the case if an input column
-              contains a missing value that the expression can not handle or if a type conversion error occurs, e.g.,
-              <tt>toInt("Yes")</tt>. The default behavior is to stop execution, but disabling this option will output missing
-              values instead. </option>
-            </tab>
-          </fullDescription>
+        <option name="Replace Selected Columns">
+          If selected, the computed values will replace the values in the columns that were selected to loop over.</option>
+        <option name="Insert missing values as null">
+          When any of the referenced columns (statically or dynamically, see above) contain missing values, the expression
+          can either be evaluated with the missing values set to <tt>null</tt> or be skipped entirely, simply returning
+          a missing value for the output.</option>
+        <option name="Fail if expression can not be evaluated">
+            Whether to stop node execution when an expression can not be evaluated.  This could be the case if an input column
+            contains values that the expression can not handle (e.g., <tt>toInt()</tt> on a column that contains "1", "2", "zebra",
+            "4", "5" would fail on the third row). The default behavior is to stop execution, but disabling this option will output missing
+            values instead. </option>
+      </tab>
+    </fullDescription>
 
-          <ports>
-            <inPort index="0" name="Input data">Input data with multiple columns to proces.</inPort>
-            <outPort index="0" name="Output data">Input data with replaced or appended columns.</outPort>
-          </ports>  
-        </knimeNode>
+    <ports>
+      <inPort index="0" name="Input data">Input data with multiple columns to proces.</inPort>
+      <outPort index="0" name="Output data">Input data with replaced or appended columns.</outPort>
+    </ports>  
+</knimeNode>
