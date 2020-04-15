@@ -226,10 +226,9 @@ public abstract class AbstractConditionalStreamingNodeModel extends NodeModel {
             //rowindex field is used, cannot be distributed
             inputPortRole = InputPortRole.NONDISTRIBUTED_STREAMABLE;
         }
-        if (usesRowCount()) {
-            //rowcount field is used -> streaming actually not possible (because iteration required) but distributed execution
-            inputPortRole = InputPortRole.DISTRIBUTED_STREAMABLE;
-        }
+        // note if rowcount field is used (i.e. #usesRowCount() returns true):
+        // streaming is somewhat possible (it's a table after all) but(!) one entire iteration over all
+        // rows is required before the actual processing takes place (see #iterate(...))
         return new InputPortRole[]{inputPortRole};
     }
 
