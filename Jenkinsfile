@@ -17,7 +17,8 @@ try {
         dependencies: [
             repositories: [
                 'knime-javasnippet', 'knime-virtual', 'knime-datageneration', 'knime-timeseries',
-                'knime-jep', 'knime-filehandling', 'knime-xml', 'knime-streaming', 'knime-jfreechart'
+                'knime-jep', 'knime-filehandling', 'knime-xml', 'knime-streaming', 'knime-jfreechart',
+                'knime-distance'
             ]
         ]
     )
