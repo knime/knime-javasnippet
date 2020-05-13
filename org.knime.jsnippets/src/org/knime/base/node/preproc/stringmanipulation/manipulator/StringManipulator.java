@@ -192,10 +192,6 @@ public class StringManipulator extends AbstractDefaultToStringManipulator {
 
             + "<tr><td>string(\"KNIME\")</td>"
             + "<td>=&nbsp;\"KNIME\"</td></tr>"
-
-            + "<tr><td>string(1, 2.1, null, \"3\")</td>"
-            + "<td>=&nbsp;[\"1\", \"2.1\", null, \"3\"]</td></tr>"
-
             + "</table>";
     }
 
