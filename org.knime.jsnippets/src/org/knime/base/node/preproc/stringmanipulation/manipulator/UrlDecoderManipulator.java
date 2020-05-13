@@ -47,29 +47,23 @@
  */
 package org.knime.base.node.preproc.stringmanipulation.manipulator;
 
-import java.net.URLEncoder;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 
 import org.knime.core.util.string.KnimeStringUtils;
 
 /**
- * Replaces characters that are not allowed or reserved in an URL by applying percent encoding.
- * This replaces the octet (8 bits) by a character triplet starting with a percent sign, e.g.,
- * " " -> "%20"
- * "/" -> "%2F"
- * "?" -> "%3F"
+ * Replaces percent encoded character triplets back to their referenced characters.
+ * For instance
+ * "%20" -> " "
+ * "%2F" -> "/"
  *
- * Uses the java standard library implementation: {@link URLEncoder#encode(String, String)} with UTF-8 character set.
- *
- * See
- * https://en.wikipedia.org/wiki/Percent-encoding
- * and the RFC for URIs on details when to apply percent encoding.
- * https://tools.ietf.org/html/rfc3986#section-2.1
+ * Uses the java standard library implementation {@link URLDecoder#decode(String, String)} with UTF-8 character set.
  *
  * @author Carl Witt, KNIME AG, Zurich, Switzerland
  * @since 4.2
  */
-public class UrlEncoderManipulator extends AbstractDefaultToStringManipulator {
+public class UrlDecoderManipulator extends AbstractDefaultToStringManipulator {
 
     /** The name of the character set that by default used to encode strings. */
     protected final static String DEFAULT_CHARSET_NAME = StandardCharsets.UTF_8.name();
@@ -79,8 +73,8 @@ public class UrlEncoderManipulator extends AbstractDefaultToStringManipulator {
      * @param str the string
      * @return the escaped string
      */
-    public static String urlEncode(final String str) {
-        return KnimeStringUtils.urlEncode(str, DEFAULT_CHARSET_NAME);
+    public static String urlDecode(final String str) {
+        return KnimeStringUtils.urlDecode(str, DEFAULT_CHARSET_NAME);
     }
 
     /**
@@ -96,7 +90,7 @@ public class UrlEncoderManipulator extends AbstractDefaultToStringManipulator {
      */
     @Override
     public String getName() {
-        return "urlEncode";
+        return "urlDecode";
     }
 
 
@@ -122,37 +116,7 @@ public class UrlEncoderManipulator extends AbstractDefaultToStringManipulator {
      */
     @Override
     public String getDescription() {
-        return "Replaces forbidden characters in a URL. This includes non-ascii characters (e.g., umlaut) and "
-                + "reserved characters (e.g., ? is reserved to denote the query part of a URL). <br/><br/>" +
-                "The resulting string is percent encoded, i.e., " +
-                "non-alphanumeric values are replaced as shown below. The resulting string is safe to use in a HTTP " +
-                "POST request, as it would be for instance when sending data via an HTML form "
-                + "(application/x-www-form-urlencoded format). " +
-                "The method uses the UTF-8 encoding scheme to obtain the bytes for unsafe characters." +
-                "<br/><br/>" +
-                "<strong>" +
-                "Examples:</strong>" +
-                "<br/>" +
-                "<table>" +
-                "    <tr>" +
-                "        <td>" +
-                "        urlEncode(\"the space between\")</td>" +
-                "        <td>" +
-                "        =&nbsp;\"the+space+between\"</td>" +
-                "    </tr>" +
-                "    <tr>" +
-                "        <td>" +
-                "        urlEncode(\"1 + 1 = 2\")</td>" +
-                "        <td>" +
-                "        =&nbsp;\"1+%2B+1+%3D+2\"</td>" +
-                "    </tr>" +
-                "    <tr>" +
-                "        <td>" +
-                "        join(\"https://hub.knime.com/search?\", urlEncode(\"q=what's new?\"))</td>" +
-                "        <td>" +
-                "        =&nbsp;\"https://hub.knime.com/search?q%3Dwhat%27s%20new%3F</td>" +
-                "    </tr>" +
-                "</table>";
+        return "Reverts the effect of the urlEncode string manipulator.";
     }
 
     /**

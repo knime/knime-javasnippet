@@ -50,9 +50,7 @@ package org.knime.base.node.preproc.stringmanipulation.manipulator;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 
 import org.junit.Test;
@@ -66,38 +64,76 @@ import org.junit.runners.Parameterized.Parameters;
  */
 
 @RunWith(Parameterized.class)
-public final class UrlEncoderManipulatorTest {
+public final class UrlEncoderScopeManipulatorTest {
 
     /**
      * @return input / expected output pairs for test methods
      */
-    @Parameters(name="{index}: input= {0}; expected={1}")
+    @Parameters(name="{index}: scope={0}; input={1}; expected={2}")
     public static Iterable<String[]> getParameters() {
         return Arrays.asList(new String[][]{
-            {"the space between", "the+space+between"},
-            {"1 + 1 = 2", "1+%2B+1+%3D+2"},
-            {"What's the time?", "What%27s+the+time%3F"}});
+        {
+            "query",
+            "testReport/api/json?tree=duration,suites[name]",
+            "testReport/api/json?tree%3Dduration%2Csuites%5Bname%5D"},
+        {
+            "query",
+            "https://example.com/illegal path with space/to/page?colors=[green, blue]",
+            "https://example.com/illegal path with space/to/page?colors%3D%5Bgreen%2C+blue%5D"},
+        {
+            "query",
+            "https://hub.knime.com/search?type=Node&q=what's new?",
+            "https://hub.knime.com/search?type%3DNode%26q%3Dwhat%27s+new%3F"},
+        {
+            // doesn't have a query part, leave unchanged
+            "query",
+            "https://hub.knime.com/s e a r c h",
+            "https://hub.knime.com/s e a r c h"},
+        {
+            // leave query part unchanged, e.g., " "
+            "path",
+            "https://ab.com/path % to funny/?c=[grn, blu]",
+            "https://ab.com/path%20%25%20to%20funny/?c=[grn, blu]"},
+        {
+            // doesn't have a path part, leave unchanged
+            "path",
+            "https://ab.com?c=[grn, blu]",
+            "https://ab.com?c=[grn, blu]"},
+        {
+            // ignore scope capitalization and trailing white spaces
+            "  pAtH   ",
+            "https://ab.com?c=[grn, blu]",
+            "https://ab.com?c=[grn, blu]"},
+        {
+            // illegal scope, fail (return input unchanged)
+            "zebra scope",
+            "https://ab.com?c=[grn, blu]",
+            "https://ab.com?c=[grn, blu]"}
+       });
     }
 
+    private final String m_scope;
     private final String m_input;
     private final String m_expected;
 
     /**
-     * @param input the string to url encode
+     * @param scope the scope for encoding
+     * @param input the string to encode
      * @param expected the expected output of the string manipulator
-     *
      */
-    public UrlEncoderManipulatorTest(final String input, final String expected) {
+    public UrlEncoderScopeManipulatorTest(final String scope, final String input, final String expected) {
+        m_scope = scope;
         m_input = input;
         m_expected = expected;
     }
 
     /**
      * Compare computed to expected URL encodings.
+     * @throws URISyntaxException
      */
     @Test
-    public void testUrlEncoderExamples() {
-        assertEquals(m_expected, UrlEncoderManipulator.urlEncode(m_input));
+    public void testUrlEncoderExamples() throws URISyntaxException {
+        assertEquals(m_expected, UrlEncoderScopeManipulator.urlEncode(m_scope, m_input));
     }
 
     /**
@@ -105,21 +141,9 @@ public final class UrlEncoderManipulatorTest {
      */
     @Test
     public void testEncodeDecode() {
-        String encoded = UrlEncoderManipulator.urlEncode(m_input);
+        String encoded = UrlEncoderScopeManipulator.urlEncode(m_scope, m_input);
         String decoded = UrlDecoderManipulator.urlDecode(encoded);
         assertEquals(m_input, decoded);
     }
 
-    /**
-     * Make sure the result equals java standard library output with UTF8 encoding.
-     * @throws UnsupportedEncodingException
-     */
-    @Test
-    public void testUTF8EqualsDefault() throws UnsupportedEncodingException {
-        assertEquals(
-            UrlEncoderManipulator.urlEncode(m_input),
-            URLEncoder.encode(m_input, StandardCharsets.UTF_8.name())
-        );
-
-    }
 }
