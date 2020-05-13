@@ -48,7 +48,10 @@ package org.knime.base.node.preproc.stringmanipulation.multicolumn;
 import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.knime.base.node.preproc.stringmanipulation.StringManipulatorProvider;
@@ -87,6 +90,7 @@ import org.knime.ext.sun.nodes.script.settings.JavaSnippetType;
  *
  * @author Carl Witt, KNIME AG, Zurich, Switzerland
  */
+@SuppressWarnings("javadoc")
 class MultiColumnStringManipulationConfigurator {
 
     /**
@@ -99,10 +103,13 @@ class MultiColumnStringManipulationConfigurator {
     static class ColumnAccessor {
 
         /** The offset of the column in the input data table. */
-        final int indexInSourceTable;
+        final int m_indexInSourceTable;
 
         /** The name of the column in the input data table. */
-        final String nameInSourceTable;
+        final String m_nameInSourceTable;
+
+        /** The column specification in the source table. */
+        final DataColumnSpec m_columnSpec;
 
         /**
          * The type that is needed to convert from {@link DataCell} contents to plain java types -- to pass the value to
@@ -112,13 +119,14 @@ class MultiColumnStringManipulationConfigurator {
 
         public ColumnAccessor(final DataTableSpec spec, final String nameInSourceTable)
             throws InvalidSettingsException {
-            this.indexInSourceTable = spec.findColumnIndex(nameInSourceTable);
-            if (this.indexInSourceTable < 0) {
+            m_indexInSourceTable = spec.findColumnIndex(nameInSourceTable);
+            if (m_indexInSourceTable < 0) {
                 throw new InvalidSettingsException(MessageFormat.format(
                     "Cannot iterate over column {0}. It does not exist in the input table.", nameInSourceTable));
             }
-            this.nameInSourceTable = nameInSourceTable;
-            javaSnippetType = JavaSnippetType.findType(spec.getColumnSpec(indexInSourceTable).getType());
+            m_nameInSourceTable = nameInSourceTable;
+            m_columnSpec = spec.getColumnSpec(m_indexInSourceTable);
+            javaSnippetType = JavaSnippetType.findType(m_columnSpec.getType());
         }
 
         /**
@@ -126,7 +134,7 @@ class MultiColumnStringManipulationConfigurator {
          * @return contents of the cell in the row that corresponds to this column or null if it is missing.
          */
         public Object getCellContents(final DataRow r) {
-            final DataCell cell = r.getCell(indexInSourceTable);
+            final DataCell cell = r.getCell(m_indexInSourceTable);
             return cell.isMissing() ? null : javaSnippetType.asJavaObject(cell);
         }
 
@@ -135,9 +143,14 @@ class MultiColumnStringManipulationConfigurator {
          *         Returns null if the cell has a missing value.
          */
         public String getCellContentsString(final DataRow r) {
-            final DataCell cell = r.getCell(indexInSourceTable);
+            final DataCell cell = r.getCell(m_indexInSourceTable);
             return cell.isMissing() ? null : cell.toString();
         }
+
+        public DataType getColumnType() {
+            return m_columnSpec.getType();
+        }
+
     }
 
     static final NodeLogger LOGGER = NodeLogger.getLogger(MultiColumnStringManipulationConfigurator.class);
@@ -180,6 +193,11 @@ class MultiColumnStringManipulationConfigurator {
     private final ColumnAccessor[] m_iteratedInputColumns;
 
     /**
+     * Column accessors for the columns of the given type, e.g., String, Integer, or Double.
+     */
+    private Map<DataType, List<ColumnAccessor>> m_iteratedInputColumnsByType;
+
+    /**
      * The column specifications for the columns that result from evaluating the given {@link #m_expressionString} on
      * the {@link #m_iteratedInputColumns}. The order of the elements corresponds to the order of the
      * {@link #m_iteratedInputColumns}. Each {@link DataColumnSpec} is unique, because it holds a column name (either
@@ -208,6 +226,8 @@ class MultiColumnStringManipulationConfigurator {
     private final boolean m_replace;
 
     private final boolean m_isPassThrough;
+
+
 
     /**
      * Creates an instance of the temporary java code, sets the fields dynamically and evaluates the expression.
@@ -252,6 +272,8 @@ class MultiColumnStringManipulationConfigurator {
         for (int i = 0; i < sourceColumnNames.length; i++) {
             m_iteratedInputColumns[i] = new ColumnAccessor(inputSpecification, sourceColumnNames[i]);
         }
+        m_iteratedInputColumnsByType =
+            Arrays.stream(m_iteratedInputColumns).collect(Collectors.groupingBy(ColumnAccessor::getColumnType));
 
         m_spec = inputSpecification;
 
@@ -296,16 +318,18 @@ class MultiColumnStringManipulationConfigurator {
      */
     protected static Class<?> determineReturnType(final String expression) {
 
+        final String expressionTrimmed = expression.trim();
+
         // use string when in doubt
         final Class<?> fallback = String.class;
 
-        final int endIndex = StringUtils.indexOf(expression, '(');
+        final int endIndex = StringUtils.indexOf(expressionTrimmed, '(');
         if (endIndex < 0) {
             return fallback;
         }
 
         // assume the java snippet consists of nested manipulators only (which it doesn't have to)
-        final String manipulatorName = expression.substring(0, endIndex);
+        final String manipulatorName = expressionTrimmed.substring(0, endIndex);
 
         // look up the manipulator that matches the name
         final Collection<Manipulator> manipulators =
@@ -319,7 +343,7 @@ class MultiColumnStringManipulationConfigurator {
 
     /**
      * @return the specifications of the columns that result from evaluating the expression on the columns selected for
-     *         iteration ({@link #m_iteratedInputColumns}). The order of corresponds to {@link #m_iteratedInputColumns}.
+     *         iteration ({@link #m_iteratedInputColumns}). The order corresponds to {@link #m_iteratedInputColumns}.
      */
     private DataColumnSpec[] determineEvaluatedColumnSpecs(final DataType returnTypeKnime)
         throws InvalidSettingsException {
@@ -330,7 +354,7 @@ class MultiColumnStringManipulationConfigurator {
         for (int i = 0; i < getIteratedInputColumns().length; i++) {
             // use the source column specification as starting point
             final DataColumnSpecCreator cloner =
-                new DataColumnSpecCreator(getSpec().getColumnSpec(m_iteratedInputColumns[i].indexInSourceTable));
+                new DataColumnSpecCreator(getSpec().getColumnSpec(m_iteratedInputColumns[i].m_indexInSourceTable));
             cloner.setType(returnTypeKnime);
             cloner.removeAllHandlers();
             cloner.setDomain(null);
@@ -361,7 +385,7 @@ class MultiColumnStringManipulationConfigurator {
             // use the source column specification as starting point
             DataColumnSpec columnSpecInOutput = m_evaluatedColumnSpecs[i];
             if (isReplace()) {
-                result[m_iteratedInputColumns[i].indexInSourceTable] = columnSpecInOutput;
+                result[m_iteratedInputColumns[i].m_indexInSourceTable] = columnSpecInOutput;
             } else {
                 result[m_spec.getNumColumns() + i] = columnSpecInOutput;
             }
@@ -381,7 +405,8 @@ class MultiColumnStringManipulationConfigurator {
         throws InvalidSettingsException {
         final ColumnRearranger rearranger = new ColumnRearranger(dataTableSpec);
         if (isReplace()) {
-            rearranger.replace(cellFactory, getIteratedColumnIndices());
+            int[] iteratedColumnIndices = getIteratedColumnIndices();
+            rearranger.replace(cellFactory, iteratedColumnIndices);
         } else {
             rearranger.append(cellFactory);
         }
@@ -394,7 +419,7 @@ class MultiColumnStringManipulationConfigurator {
      * @return the indices of the source columns.
      */
     int[] getIteratedColumnIndices() {
-        return Arrays.stream(m_iteratedInputColumns).mapToInt(ca -> ca.indexInSourceTable).toArray();
+        return Arrays.stream(m_iteratedInputColumns).mapToInt(ca -> ca.m_indexInSourceTable).toArray();
     }
 
     /**
@@ -446,6 +471,21 @@ class MultiColumnStringManipulationConfigurator {
      */
     boolean isPassThrough() {
         return m_isPassThrough;
+    }
+
+    /**
+     * @return the distinct types of the iterated column, e.g.
+     */
+    public Collection<DataType> getDistinctIteratedColumnTypes() {
+        return Arrays.stream(m_iteratedInputColumns).map(ca -> ca.m_columnSpec.getType()).collect(Collectors.toSet());
+    }
+
+    /**
+     * @param columnType e.g., string column, integer column, or double column
+     * @return object that help retrieving the data from iterated rows with the specified column type.
+     */
+    public List<ColumnAccessor> getAccessors(final DataType columnType) {
+        return m_iteratedInputColumnsByType.get(columnType);
     }
 
 }

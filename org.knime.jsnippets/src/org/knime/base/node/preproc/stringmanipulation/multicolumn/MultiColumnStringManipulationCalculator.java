@@ -70,11 +70,14 @@ import org.knime.base.node.util.ManipulatorProvider;
 import org.knime.core.data.DataCell;
 import org.knime.core.data.DataRow;
 import org.knime.core.data.DataType;
-import org.knime.core.data.collection.ListCell;
 import org.knime.core.data.container.AbstractCellFactory;
 import org.knime.core.data.container.CellFactory;
 import org.knime.core.data.container.ColumnRearranger;
+import org.knime.core.data.def.DoubleCell;
+import org.knime.core.data.def.IntCell;
+import org.knime.core.data.def.StringCell;
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeLogger;
 import org.knime.ext.sun.nodes.script.calculator.ColumnCalculator;
 import org.knime.ext.sun.nodes.script.compile.CompilationFailedException;
 import org.knime.ext.sun.nodes.script.expression.Abort;
@@ -140,7 +143,48 @@ import org.osgi.framework.FrameworkUtil;
  *
  * @author Carl Witt, KNIME AG, Zurich, Switzerland
  */
+@SuppressWarnings("javadoc")
 public class MultiColumnStringManipulationCalculator extends AbstractCellFactory implements AutoCloseable {
+
+    /**
+     * A wrapper for all auxiliary objects around an instantiated expression.
+     *
+     * @author Carl Witt, KNIME AG, Zurich, Switzerland
+     */
+    static class ManagedExpression {
+
+        private final Expression m_expression;
+        private final ExpressionInstance m_expressionInstance;
+        private final Map<InputField, Object> m_expressionContext;
+        private final Map<InputField, ColumnAccessor> m_usedInputFields;
+        private final Function<Object, DataCell> m_cellConstructor;
+
+        /**
+         * @param expression This reference is used to close the expression's open resources, see
+         *            {@link MultiColumnStringManipulationCalculator#close()}.
+         * @param expressionInstance The instance is created from
+         *            {@link MultiColumnStringManipulationCalculator#m_expression} and used to evaluate the expression
+         *            and compute cell values.
+         * @param expressionContext Used to pass data to the expression, specifically the currently iterated column's
+         *            value and flow variable values.
+         * @param usedInputFields Maps the expressions input fields (as used in {@link #m_expressionContext}) that refer
+         *            to columns, e.g., $column1$ to column accessors for retrieving their values.
+         * @param cellConstructor Used to convert the object produced by the evaluation of the java expression to a data
+         *            cell.
+         */
+        private ManagedExpression(final Expression expression, final ExpressionInstance expressionInstance,
+            final Map<InputField, Object> expressionContext, final Map<InputField, ColumnAccessor> usedInputFields,
+            final Function<Object, DataCell> cellConstructor) {
+            super();
+            m_expression = expression;
+            m_expressionInstance = expressionInstance;
+            m_expressionContext = expressionContext;
+            m_usedInputFields = usedInputFields;
+            m_cellConstructor = cellConstructor;
+        }
+
+
+    }
 
     /**
      * Reusable key for the expression context map {@link #m_expressionContext}. Used to pass the currently iterated
@@ -165,33 +209,11 @@ public class MultiColumnStringManipulationCalculator extends AbstractCellFactory
     private final MultiColumnStringManipulationConfigurator m_transformer;
 
     /**
-     * This reference is used to close the expression's open resources, see {@link #close()}.
+     * Instantiated expressions for different column types, e.g., String, Integer, or Double.
+     * Compiling an expression for each distinct column type across the iterated columns allows us to avoid casting
+     * everything to string.
      */
-    private final Expression m_expression;
-
-    /**
-     * The instance is created from {@link #m_expression} and used to evaluate the expression and compute cell values.
-     */
-    private final ExpressionInstance m_expressionInstance;
-
-    /**
-     * Used to pass data to the expression, specifically the currently iterated column's value and flow variable values.
-     */
-    private final Map<InputField, Object> m_expressionContext;
-
-    /**
-     * Maps the expressions input fields (as used in {@link #m_expressionContext}) that refer to columns, e.g.,
-     * $column1$ to column accessors for retrieving their values.
-     */
-    private final Map<InputField, ColumnAccessor> m_usedInputFields;
-
-    /**
-     * Used to convert the object produced by the evaluation of the java expression to a data cell.
-     *
-     * TODO [array cell types] returns are to be supported, this function would have possibly to return a
-     * {@link ListCell}.
-     */
-    private final Function<Object, DataCell> m_cellConstructor;
+    private final Map<DataType, ManagedExpression> m_expressionsByType;
 
     /**
      * Whether to stop evaluation on expression evaluation errors.
@@ -240,71 +262,83 @@ public class MultiColumnStringManipulationCalculator extends AbstractCellFactory
         throws InstantiationException, CompilationFailedException, InvalidSettingsException {
 
         // create settings (handles framework bundle, string manipulator code imports)
-        final JavaScriptingSettings javaScriptingSettings = getJavaScriptingSettings(transformer);
+        // one per iterated column type: one for String columns, one for Integer columns, etc.
+        final Map<DataType, JavaScriptingSettings> javaScriptingSettingsByType = getJavaScriptingSettings(transformer);
+        final Map<DataType, ManagedExpression> managedExpressions = new HashMap<>();
 
-        // compile only for execution
-        javaScriptingSettings.setInputAndCompile(transformer.getSpec());
+        for (DataType columnType : javaScriptingSettingsByType.keySet()) {
 
-        if (javaScriptingSettings.getCompiledExpression() == null) {
-            throw new InstantiationException("Cannot compile expression.");
-        }
+            JavaScriptingSettings javaScriptingSettings = javaScriptingSettingsByType.get(columnType);
 
-        // instantiate a wrapper object for the compiled expression
-        final Expression expression = javaScriptingSettings.getCompiledExpression();
-        final ExpressionInstance expressionInstance = expression.getInstance();
+            // compile only for execution
+            javaScriptingSettings.setInputAndCompile(transformer.getSpec());
 
-        // prepare basic expression context to add variables and constants to
-        // (variable: currently iterated column's value, constants: current row index, etc.)
-        final HashMap<InputField, Object> expressionContext = new HashMap<InputField, Object>();
-        for (Map.Entry<InputField, ExpressionField> e : expression.getFieldMap().entrySet()) {
-            final InputField flowVarInputField = e.getKey();
-            if (flowVarInputField.getFieldType().equals(FieldType.Variable)) {
-
-                // of all used variables, don't try to look up the value of $${SCURRENTCOLUMN} because
-                // that's bound dynamically in getCell
-                if (MultiColumnStringManipulationSettings.getCurrentColumnReferenceName()
-                    .equals(flowVarInputField.getColOrVarName())) {
-                    continue;
-                }
-
-                // look up value of flow variable and store in expression context
-                final Object flowVariableValue = flowVarProvider.apply(flowVarInputField.getColOrVarName())
-                    .orElseThrow(() -> new InvalidSettingsException(
-                        String.format("The expression uses the flow variable %s, which does not exist.",
-                            flowVarInputField.getColOrVarName())));
-                expressionContext.put(flowVarInputField, flowVariableValue);
+            // this is closed in MultiColumnCalculator#close()
+            Expression compiledExpression = javaScriptingSettings.getCompiledExpression();
+            if (compiledExpression == null) {
+                throw new InstantiationException("Cannot compile expression.");
             }
+
+            // instantiate a wrapper object for the compiled expression
+            final Expression expression = compiledExpression;
+            final ExpressionInstance expressionInstance = expression.getInstance();
+
+            // prepare basic expression context to add variables and constants to
+            // (variable: currently iterated column's value, constants: current row index, etc.)
+            final HashMap<InputField, Object> expressionContext = new HashMap<InputField, Object>();
+            for (Map.Entry<InputField, ExpressionField> e : expression.getFieldMap().entrySet()) {
+                final InputField flowVarInputField = e.getKey();
+                if (flowVarInputField.getFieldType().equals(FieldType.Variable)) {
+
+                    // of all used variables, don't try to look up the value of $${SCURRENTCOLUMN} because
+                    // that's bound dynamically in getCell
+                    if (MultiColumnStringManipulationSettings.getCurrentColumnReferenceName()
+                        .equals(flowVarInputField.getColOrVarName())) {
+                        continue;
+                    }
+
+                    // look up value of flow variable and store in expression context
+                    final Object flowVariableValue = flowVarProvider.apply(flowVarInputField.getColOrVarName())
+                        .orElseThrow(() -> new InvalidSettingsException(
+                            String.format("The expression uses the flow variable %s, which does not exist.",
+                                flowVarInputField.getColOrVarName())));
+                    expressionContext.put(flowVarInputField, flowVariableValue);
+                }
+            }
+
+            // row count of input table is constant, add only once to expression context
+            // but it might not be set, e.g., when compiling for validating the expression
+            expressionContext.put(new InputField(Expression.ROWCOUNT, FieldType.TableConstant),
+                castRowCountToInt(rowCount));
+
+            // Find statically referenced columns in the expression. The values of these columns are accessed via
+            // the created ColumnAccessor and passed to the expression context of the expression for every row.
+            final Map<InputField, ColumnAccessor> usedInputFields =
+                transformer.getSpec().stream().map(columnSpec -> new InputField(columnSpec.getName(), FieldType.Column))
+                    .filter(expressionInstance::needsInputField)
+                    .collect(Collectors.toMap(Function.identity(), inputField -> {
+                        final String columnName = inputField.getColOrVarName();
+                        try {
+                            return new ColumnAccessor(transformer.getSpec(), columnName);
+                        } catch (InvalidSettingsException e1) {
+                            throw new RuntimeException(MessageFormat.format(
+                                "Can not iterate over column {0}, it is not present in the input data table.",
+                                columnName));
+                        }
+                    }));
+
+            // create a function that converts the objects returned by expression evaluation to DataCells for use in
+            // the cell factory's compute method (getCells)
+            final Function<Object, DataCell> cellConstructor = (final Object o) -> o == null ? DataType.getMissingCell()
+                : transformer.getReturnJavaSnippetType().asKNIMECell(o);
+
+            managedExpressions.put(columnType, new ManagedExpression(expression, expressionInstance, expressionContext,
+                usedInputFields, cellConstructor));
+
         }
 
-        // row count of input table is constant, add only once to expression context
-        // but it might not be set, e.g., when compiling for validating the expression
-        expressionContext.put(
-            new InputField(Expression.ROWCOUNT, FieldType.TableConstant),
-            castRowCountToInt(rowCount));
-
-        // Find statically referenced columns in the expression. The values of these columns are accessed via
-        // the created ColumnAccessor and passed to the expression context of the expression for every row.
-        final Map<InputField, ColumnAccessor> usedInputFields = transformer.getSpec().stream()
-            .map(columnSpec -> new InputField(columnSpec.getName(), FieldType.Column))
-            .filter(expressionInstance::needsInputField).collect(Collectors.toMap(Function.identity(), inputField -> {
-                final String columnName = inputField.getColOrVarName();
-                try {
-                    return new ColumnAccessor(transformer.getSpec(), columnName);
-                } catch (InvalidSettingsException e1) {
-                    throw new RuntimeException(MessageFormat.format(
-                        "Can not iterate over column {0}, it is not present in the input data table.", columnName));
-                }
-            }));
-
-        // create a function that converts the objects returned by expression evaluation to DataCells for use in
-        // the cell factory's compute method (getCells)
-        // TODO [array cell support] if array return type would be supported, something like this was necessary:
-        // t.asKNIMEListCell((Object[])o);
-        final Function<Object, DataCell> cellConstructor = (final Object o) -> o == null ? DataType.getMissingCell()
-            : transformer.getReturnJavaSnippetType().asKNIMECell(o);
-
-        return new MultiColumnStringManipulationCalculator(expression, expressionInstance, expressionContext,
-            usedInputFields, cellConstructor, failOnEvaluationProblems, evaluateWithMissingValues, transformer);
+        return new MultiColumnStringManipulationCalculator(managedExpressions, failOnEvaluationProblems, evaluateWithMissingValues,
+            transformer);
 
     }
 
@@ -329,101 +363,113 @@ public class MultiColumnStringManipulationCalculator extends AbstractCellFactory
         return (int)rowCount;
     }
 
-    private MultiColumnStringManipulationCalculator(final Expression expression,
-        final ExpressionInstance expressionInstance, final Map<InputField, Object> expressionContext,
-        final Map<InputField, ColumnAccessor> usedInputFields, final Function<Object, DataCell> cellConstructor,
+    /**
+     * @param managedExpressions
+     * @param failOnEvaluationProblems
+     * @param evaluateWithMissingValues
+     * @param transformer
+     */
+    public MultiColumnStringManipulationCalculator(final Map<DataType, ManagedExpression> managedExpressions,
         final boolean failOnEvaluationProblems, final boolean evaluateWithMissingValues,
         final MultiColumnStringManipulationConfigurator transformer) {
         super(transformer.getEvaluatedColumnSpecs());
-        m_expression = expression;
-        m_expressionInstance = expressionInstance;
-        m_expressionContext = expressionContext;
-        m_usedInputFields = usedInputFields;
-        m_cellConstructor = cellConstructor;
+        m_expressionsByType = managedExpressions;
         m_evaluateWithMissingValues = evaluateWithMissingValues;
         m_failOnEvaluationProblems = failOnEvaluationProblems;
-        m_transformer = transformer;
-    }
+        m_transformer = transformer;    }
 
     /**
      * Prepare the compilation of the expression by configuring a JavaScriptingSettings objects.
      *
-     * @return
+     * @return the settings required to compile the expression for each distinct column type
      * @throws InvalidSettingsException the return type determined in {@link #determineOutputColumnSpecs()} can not be
      *             used to set the return type of JavaScriptingSettings object.
      */
-    private static JavaScriptingSettings getJavaScriptingSettings(
+    private static Map<DataType, JavaScriptingSettings> getJavaScriptingSettings(
         final MultiColumnStringManipulationConfigurator transformer) throws InvalidSettingsException {
 
-        final JavaScriptingSettings s = new JavaScriptingSettings(null);
+        // TODO this would be nicer to have in one place
+        Map<DataType, String> typeStrings = new HashMap<>();
+        typeStrings.put(DataType.getType(StringCell.class), "S");
+        typeStrings.put(DataType.getType(IntCell.class), "I");
+        typeStrings.put(DataType.getType(DoubleCell.class), "D");
 
-        // inform about deduced return type of the expression
-        s.setReturnType(transformer.getReturnTypeClass().getName());
+        Map<DataType, JavaScriptingSettings> result = new HashMap<>();
 
-        // TODO [array output cell support] this should be determined in
-        // determineOutputColumnSpecs and passed to this line of code
-        s.setArrayReturn(false);
+        for(DataType columnType : transformer.getDistinctIteratedColumnTypes()) {
 
-        //
-        // replace occurrences of the current column reference with a virtual flow variable
-        //
+            final JavaScriptingSettings s = new JavaScriptingSettings(null);
 
-        final String searchFor = MultiColumnStringManipulationSettings.getCurrentColumnReference();
-        final String currentColumnReferenceName = MultiColumnStringManipulationSettings.getCurrentColumnReferenceName();
+            // inform about deduced return type of the expression
+            s.setReturnType(transformer.getReturnTypeClass().getName());
 
-        // replace $$CURRENTCOLUMN$$ with a virtual flow variable $${SCURRENTCOLUMN}$$ (see class documentation)
-        final String expressionWithVariable = transformer.getExpressionString().replaceAll(
-            // e.g., search for $$CURRENTCOLUMN$$
-            java.util.regex.Pattern.quote(searchFor),
-            // ...and replace with $${SCURRENTCOLUMN}$$
-            // escape $ since it is not a regex group reference
-            "\\$\\${S" + currentColumnReferenceName + "}\\$\\$");
+            s.setArrayReturn(false);
 
-        s.setExpression("return " + expressionWithVariable + ";");
+            //
+            // replace occurrences of the current column reference with a virtual flow variable
+            //
 
-        //
-        // reused code from ColumnCalculator
-        //
+            final String searchFor = MultiColumnStringManipulationSettings.getCurrentColumnReference();
+            final String currentColumnReferenceName =
+                MultiColumnStringManipulationSettings.getCurrentColumnReferenceName();
 
-        s.setExpressionVersion(Expression.VERSION_2X);
-        s.setHeader("");
+            final String typeString = typeStrings.get(columnType);
 
-        final Bundle bundle = FrameworkUtil.getBundle(MultiColumnStringManipulationCalculator.class);
-        try {
-            final List<String> includes = new ArrayList<>();
-            final URL snippetIncURL = FileLocator.find(bundle, new Path("/lib/snippet_inc"), null);
-            final File includeDir = new File(FileLocator.toFileURL(snippetIncURL).getPath());
-            for (File includeJar : includeDir.listFiles()) {
-                if (includeJar.isFile() && includeJar.getName().endsWith(".jar")) {
-                    includes.add(includeJar.getPath());
-                    MultiColumnStringManipulationConfigurator.LOGGER.debugWithFormat("Include jar file: %s",
-                        includeJar.getPath());
+            // replace $$CURRENTCOLUMN$$ with a virtual flow variable $${SCURRENTCOLUMN}$$ (see class documentation)
+            final String expressionWithVariable = transformer.getExpressionString().replaceAll(
+                // e.g., search for $$CURRENTCOLUMN$$
+                java.util.regex.Pattern.quote(searchFor),
+                // ...and replace with $${SCURRENTCOLUMN}$$
+                // escape $ since it is not a regex group reference
+                "\\$\\${" + typeString + currentColumnReferenceName + "}\\$\\$");
+
+            s.setExpression("return " + expressionWithVariable + ";");
+
+            //
+            // reused code from ColumnCalculator
+            //
+
+            s.setExpressionVersion(Expression.VERSION_2X);
+            s.setHeader("");
+
+            final Bundle bundle = FrameworkUtil.getBundle(MultiColumnStringManipulationCalculator.class);
+            try {
+                final List<String> includes = new ArrayList<>();
+                final URL snippetIncURL = FileLocator.find(bundle, new Path("/lib/snippet_inc"), null);
+                final File includeDir = new File(FileLocator.toFileURL(snippetIncURL).getPath());
+                for (File includeJar : includeDir.listFiles()) {
+                    if (includeJar.isFile() && includeJar.getName().endsWith(".jar")) {
+                        includes.add(includeJar.getPath());
+                        MultiColumnStringManipulationConfigurator.LOGGER.debugWithFormat("Include jar file: %s",
+                            includeJar.getPath());
+                    }
                 }
+                final StringManipulatorProvider provider = StringManipulatorProvider.getDefault();
+                includes.add(provider.getJarFile().getAbsolutePath());
+                includes.add(FileLocator.getBundleFile(FrameworkUtil.getBundle(StringUtils.class)).getAbsolutePath());
+                s.setJarFiles(includes.toArray(new String[includes.size()]));
+            } catch (IOException e) {
+                throw new IllegalStateException(
+                    "Cannot locate necessary libraries due to I/O problem: " + e.getMessage(), e);
             }
+            s.setReplace(transformer.isReplace());
+
+            // imports
+            final List<String> imports = new ArrayList<>();
+            // Use defaults imports
+            imports.addAll(Arrays.asList(Expression.getDefaultImports()));
             final StringManipulatorProvider provider = StringManipulatorProvider.getDefault();
-            includes.add(provider.getJarFile().getAbsolutePath());
-            includes.add(FileLocator.getBundleFile(FrameworkUtil.getBundle(StringUtils.class)).getAbsolutePath());
-            s.setJarFiles(includes.toArray(new String[includes.size()]));
-        } catch (IOException e) {
-            throw new IllegalStateException("Cannot locate necessary libraries due to I/O problem: " + e.getMessage(),
-                e);
-        }
-        s.setReplace(transformer.isReplace());
+            // Add StringManipulators to the imports
+            Collection<Manipulator> manipulators = provider.getManipulators(ManipulatorProvider.ALL_CATEGORY);
+            for (Manipulator manipulator : manipulators) {
+                String toImport = manipulator.getClass().getName();
+                imports.add("static " + toImport + ".*");
+            }
+            s.setImports(imports.toArray(new String[imports.size()]));
 
-        // imports
-        final List<String> imports = new ArrayList<>();
-        // Use defaults imports
-        imports.addAll(Arrays.asList(Expression.getDefaultImports()));
-        final StringManipulatorProvider provider = StringManipulatorProvider.getDefault();
-        // Add StringManipulators to the imports
-        Collection<Manipulator> manipulators = provider.getManipulators(ManipulatorProvider.ALL_CATEGORY);
-        for (Manipulator manipulator : manipulators) {
-            String toImport = manipulator.getClass().getName();
-            imports.add("static " + toImport + ".*");
+            result.put(columnType, s);
         }
-        s.setImports(imports.toArray(new String[imports.size()]));
-
-        return s;
+        return result;
     }
 
     /**
@@ -438,93 +484,94 @@ public class MultiColumnStringManipulationCalculator extends AbstractCellFactory
             return new DataCell[0];
         }
 
-        // update the input fields of the compiled expression
-
-        m_expressionContext.put(ROW_INDEX_INPUT_FIELD, castRowCountToInt(m_lastProcessedRow));
-        m_expressionContext.put(ROW_ID_INPUT_FIELD, row.getKey().getString());
-
         final DataCell[] result = new DataCell[m_transformer.getEvaluatedColumnSpecs().length];
 
-        // pass current row's cell values to expression context
-        // each input field represents a column and is mapped to its column index in the input table
-        for (Map.Entry<InputField, ColumnAccessor> inputFieldToColumnIdx : m_usedInputFields.entrySet()) {
+        // update static columns & constants for the compiled expression for each type
+        for (Map.Entry<DataType, ManagedExpression> e : m_expressionsByType.entrySet()) {
 
-            // put the row's cell value into the expression context
-            // statically referenced column values are unboxed back to java types
-            Object cellContentsObject = inputFieldToColumnIdx.getValue().getCellContents(row);
+            ManagedExpression me = e.getValue();
 
-            // if any of the statically referenced columns has a missing value, the expression has a missing value for
-            // every iterated column. If evaluation with missing values is off, return missing values for
-            // every iterated column.
-            if (! m_evaluateWithMissingValues && cellContentsObject == null) {
-                Arrays.fill(result, DataType.getMissingCell());
-                return result;
+            // update the input fields of the compiled expression
+            me.m_expressionContext.put(ROW_INDEX_INPUT_FIELD, castRowCountToInt(m_lastProcessedRow));
+            me.m_expressionContext.put(ROW_ID_INPUT_FIELD, row.getKey().getString());
+
+            // static column references
+            // pass current row's cell values from statically referenced columns to expression context
+            // each input field represents a column and is mapped to its column index in the input table
+            for (Map.Entry<InputField, ColumnAccessor> inputFieldToColumnIdx : me.m_usedInputFields.entrySet()) {
+
+                // put the row's cell value into the expression context
+                // statically referenced column values are unboxed back to java types
+                Object cellContentsObject = inputFieldToColumnIdx.getValue().getCellContents(row);
+
+                // if any of the statically referenced columns has a missing value, the expression has a missing value
+                // for every iterated column. If evaluation with missing values is off, return missing values for
+                // every iterated column.
+                if (!m_evaluateWithMissingValues && cellContentsObject == null) {
+                    Arrays.fill(result, DataType.getMissingCell());
+                    return result;
+                }
+
+                me.m_expressionContext.put(inputFieldToColumnIdx.getKey(), cellContentsObject);
             }
-
-            m_expressionContext.put(inputFieldToColumnIdx.getKey(), cellContentsObject);
-
-            // TODO [array output cell support] would require something like
-            // boolean isArray = cellType.isCollectionType();
-            // if (isArray) {
-            //     cellType = cellType.getCollectionElementType();
-            // }
-            // if (isArray) {
-            //     cellVal = t.asJavaArray((CollectionDataValue)cell);
-            // }
         }
 
-        // iterate over selected columns, binding their values to $$CURRENTCOLUMN$$ variable,
-        // each iteration generates one result DataCell
-        // if a problem occurs, the failOrContinue either swallows exceptions or escalates them as an
-        // IllegalArgumentException (since the interface doesn't allow us to throw a checked exception here).
-        for (int i = 0; i < m_transformer.getIteratedInputColumns().length; i++) {
-
-            // bind the current column's value into the expression context
-            // convert the content of a dynamically referenced column to string (since this a string manipulation node)
-            // also better than allowing only string columns as input columns to iterate over
-            final String cellContentsString = m_transformer.getIteratedInputColumns()[i].getCellContentsString(row);
-
-            // if the currently iterated column's value is missing and evaluation with missing values if off,
-            // output a missing cell
-            if( ! m_evaluateWithMissingValues && cellContentsString == null) {
-                result[i] = DataType.getMissingCell();
-                continue;
-            }
-
-            m_expressionContext.put(CURRENT_COLUMN_INPUT_FIELD, cellContentsString);
-
-            // compute cell content
-            // code adopted from ColumnCalculator
-            Object o = null;
-            try {
-                // bind variables in expression through context mapping
-                m_expressionInstance.set(m_expressionContext);
-                // run
-                o = m_expressionInstance.evaluate();
-
-            } catch (Abort ee) {
-                final String message =
-                    "Calculation aborted: " + (ee.getMessage() == null ? "<no details>" : ee.getMessage());
-                failOrContinue(row, message, ee);
-            } catch (EvaluationFailedException ee) {
-                String message;
-                try {
-                    message = ((InvocationTargetException)ee.getCause()).getCause().getMessage();
-                } catch (ClassCastException e) {
-                    message = ee.getMessage();
-                }
-                failOrContinue(row, message, ee);
-            } catch (IllegalPropertyException ipe) {
-                failOrContinue(row, ipe.getMessage(), ipe);
-            }
-
-            // construct the data cell using the generated function for the expressions return type
-            result[i] = m_cellConstructor.apply(o);
+        // evaluate the expression for all dynamically referenced columns
+        ColumnAccessor[] iteratedInputColumns = m_transformer.getIteratedInputColumns();
+        for (int i = 0; i < iteratedInputColumns.length; i++) {
+            ColumnAccessor accessor = iteratedInputColumns[i];
+            result[i] = evaluate(row, m_expressionsByType.get(accessor.getColumnType()), accessor);
         }
 
         // update the row index of the last processed row
         m_lastProcessedRow += 1;
         return result;
+    }
+
+    /**
+     * Compute the result of applying the expression to a single cell of a given row.
+     * @param row the row containing the cell
+     * @param me the compiled expression to evaluate
+     * @param accessor used to get the cell contents of the desired column
+     * @return the data cell that goes into the output table
+     */
+    private DataCell evaluate(final DataRow row, final ManagedExpression me, final ColumnAccessor accessor) {
+
+        // bind the current column's value into the expression context
+        final Object cellContents = accessor.getCellContents(row);
+
+        // if the currently iterated column's value is missing and evaluation with missing values if off,
+        // output a missing cell
+        if( ! m_evaluateWithMissingValues && cellContents == null) {
+            return DataType.getMissingCell();
+        }
+
+        me.m_expressionContext.put(CURRENT_COLUMN_INPUT_FIELD, cellContents);
+
+        // compute cell content
+        // code adapted from ColumnCalculator
+        Object evaluationResult = null;
+        try {
+            // bind variables in expression through context mapping
+            me.m_expressionInstance.set(me.m_expressionContext);
+            // run
+            evaluationResult = me.m_expressionInstance.evaluate();
+
+        } catch (Abort ee) {
+            final String message =
+                "Calculation aborted: " + (ee.getMessage() == null ? "<no details>" : ee.getMessage());
+            failOrContinue(row, message, ee);
+        } catch (EvaluationFailedException ee) {
+            String message;
+            try { message = ((InvocationTargetException)ee.getCause()).getCause().getMessage(); }
+            catch (ClassCastException e) { message = ee.getMessage(); }
+            failOrContinue(row, message, ee);
+        } catch (IllegalPropertyException ipe) {
+            failOrContinue(row, ipe.getMessage(), ipe);
+        }
+
+        // construct the data cell using the generated function for the expressions return type
+        return me.m_cellConstructor.apply(evaluationResult);
     }
 
     /**
@@ -551,7 +598,14 @@ public class MultiColumnStringManipulationCalculator extends AbstractCellFactory
 
     @Override
     public void close() throws IOException {
-        m_expression.close();
+        m_expressionsByType.forEach((type, me)->{
+            try {
+                me.m_expression.close();
+            } catch (IOException e) {
+                NodeLogger.getLogger(MultiColumnStringManipulationCalculator.class)
+                    .debug("Can't clean up compiled expression for type " + type + "\n" + e.getMessage());
+            }
+        });
     }
 
 }

@@ -90,6 +90,7 @@ import org.knime.ext.sun.nodes.script.expression.Expression;
  *
  * @author Carl Witt, KNIME AG, Zurich, Switzerland
  */
+@SuppressWarnings("javadoc")
 class MultiColumnStringManipulationNodeModel extends AbstractConditionalStreamingNodeModel {
 
     /**

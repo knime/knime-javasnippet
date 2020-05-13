@@ -49,13 +49,18 @@
 package org.knime.base.node.preproc.stringmanipulation.multicolumn;
 
 import org.knime.base.node.util.JSnippetPanel;
+import org.knime.core.data.DataColumnSpec;
 import org.knime.core.data.DataTableSpec;
+import org.knime.core.data.DoubleValue;
+import org.knime.core.data.IntValue;
+import org.knime.core.data.StringValue;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.defaultnodesettings.DialogComponentString;
 import org.knime.core.node.defaultnodesettings.SettingsModelBoolean;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
+import org.knime.core.node.util.filter.InputFilter;
 import org.knime.core.node.util.filter.column.DataColumnSpecFilterConfiguration;
 import org.knime.ext.sun.nodes.script.expression.Expression;
 
@@ -77,10 +82,18 @@ class MultiColumnStringManipulationSettings {
 
     /**
      * The column selection configuration (not the selected columns; obtain these by applying the configuration to a
-     * data table specification).
+     * data table specification). Supports only integer, double, and string, because {@link Expression} only supports
+     * these flow variable types (and this is how data from an iterated column is passed into the expression).
      */
     private final DataColumnSpecFilterConfiguration m_columnFilterConfiguration =
-        new DataColumnSpecFilterConfiguration("column_selection");
+        new DataColumnSpecFilterConfiguration("column_selection", new InputFilter<DataColumnSpec>() {
+            @Override
+            public boolean include(final DataColumnSpec name) {
+                    return name.getType().isCompatible(StringValue.class)
+                        || name.getType().isCompatible(DoubleValue.class)
+                        || name.getType().isCompatible(IntValue.class);
+            }
+        });
 
     /**
      * The expression to be evaluated, e.g., "toInt($$CURRENTCOLUMN$$)" entered via {@link JSnippetPanel} and passed for
