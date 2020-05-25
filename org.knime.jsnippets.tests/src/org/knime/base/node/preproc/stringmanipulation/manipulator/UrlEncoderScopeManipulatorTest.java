@@ -90,20 +90,60 @@ public final class UrlEncoderScopeManipulatorTest {
             "https://hub.knime.com/s e a r c h",
             "https://hub.knime.com/s e a r c h"},
         {
+            // with fragment
+            "query",
+            "https://hub.knime.com/search?type=Node&q=what's new?#fragment",
+            "https://hub.knime.com/search?type%3DNode%26q%3Dwhat%27s+new%3F#fragment"},
+        {
+            // delimited key/value pairs
+            "query",
+            "https://hub.knime.com/search?type=Node&q=key1=value1&key2=value2?#fragment",
+            "https://hub.knime.com/search?type%3DNode%26q%3Dkey1%3Dvalue1%26key2%3Dvalue2%3F#fragment"},
+        {
+            // no authority
+            "query",
+            "https:/search?type=Node&q=key1=value1&key2=value2?#fragment",
+            "https:/search?type%3DNode%26q%3Dkey1%3Dvalue1%26key2%3Dvalue2%3F#fragment"},
+        {
+            // only port authority
+            "query",
+            "https://:8080/search?type=Node&q=key1=value1&key2=value2?#fragment",
+            "https://:8080/search?type%3DNode%26q%3Dkey1%3Dvalue1%26key2%3Dvalue2%3F#fragment"},
+        {
+            // no path
+            "path",
+            "https://ab.com",
+            "https://ab.com"},
+        {
+            // no path
+            "path",
+            "https://ab.com?q=ä#link",
+            "https://ab.com?q=ä#link"},
+        {
+            // input ends with path part
+            "path",
+            "https://ab.com/path % to funny",
+            "https://ab.com/path%20%25%20to%20funny"},
+        {
+            // input ends with path part
+            "path",
+            "https://ab.com/path % to funny#fragment",
+            "https://ab.com/path%20%25%20to%20funny#fragment"},
+        {
             // leave query part unchanged, e.g., " "
             "path",
             "https://ab.com/path % to funny/?c=[grn, blu]",
             "https://ab.com/path%20%25%20to%20funny/?c=[grn, blu]"},
         {
             // doesn't have a path part, leave unchanged
-            "path",
-            "https://ab.com?c=[grn, blu]",
-            "https://ab.com?c=[grn, blu]"},
+            " pAtH ",
+            "https://user@ab.com:8080?c=[grn, blu]",
+            "https://user@ab.com:8080?c=[grn, blu]"},
         {
-            // ignore scope capitalization and trailing white spaces
+            // ignore capitalization and trailing white spaces of scope parameter
             "  pAtH   ",
-            "https://ab.com?c=[grn, blu]",
-            "https://ab.com?c=[grn, blu]"},
+            "ab.com/a b/?c=[grn, blu]",
+            "ab.com/a%20b/?c=[grn, blu]"},
         {
             // illegal scope, fail (return input unchanged)
             "zebra scope",
