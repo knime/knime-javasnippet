@@ -243,7 +243,7 @@ public class JavaSnippetNodeModel extends AbstractConditionalStreamingNodeModel 
      */
     @Override
     protected void reset() {
-        // no internals, nothing to reset.
+        m_snippet.setWarningMessage(null);
     }
 
     @Override
