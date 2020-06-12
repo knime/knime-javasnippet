@@ -16,9 +16,19 @@ try {
     workflowTests.runTests(
         dependencies: [
             repositories: [
-                'knime-javasnippet', 'knime-virtual', 'knime-datageneration', 'knime-timeseries',
-                'knime-jep', 'knime-filehandling', 'knime-xml', 'knime-streaming', 'knime-jfreechart',
-                'knime-distance', 'knime-js-core', 'knime-js-base', 'knime-base'
+                'knime-base',
+                'knime-datageneration',
+                'knime-distance',
+                'knime-filehandling',
+                'knime-javasnippet',
+                'knime-jep',
+                'knime-jfreechart',
+                'knime-js-base',
+                'knime-js-core',
+                'knime-streaming',
+                'knime-timeseries',
+                'knime-virtual',
+                'knime-xml'
             ]
         ]
     )
