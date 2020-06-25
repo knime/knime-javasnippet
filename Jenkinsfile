@@ -16,6 +16,7 @@ try {
     workflowTests.runTests(
         dependencies: [
             repositories: [
+                'knime-core',
                 'knime-base',
                 'knime-datageneration',
                 'knime-distance',
