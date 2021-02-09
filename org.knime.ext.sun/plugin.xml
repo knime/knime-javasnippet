@@ -4,16 +4,13 @@
    <extension point="org.knime.workbench.repository.nodes">
       <node
             category-path="/scripting/java-snippet"
-            factory-class="org.knime.ext.sun.nodes.script.JavaScriptingNodeFactory"
-            id="org.knime.ext.sun.nodes.script.JavaScriptingNodeFactory"/>
+            factory-class="org.knime.ext.sun.nodes.script.JavaScriptingNodeFactory" />
       <node
             category-path="/scripting/java-snippet"
-            factory-class="org.knime.ext.sun.nodes.script.node.rowfilter.JavaRowFilterNodeFactory"
-            id="org.knime.ext.sun.nodes.script.node.rowfilter.JavaRowFilterNodeFactory"/>
+            factory-class="org.knime.ext.sun.nodes.script.node.rowfilter.JavaRowFilterNodeFactory" />
       <node
             category-path="/scripting/java-snippet"
-            factory-class="org.knime.ext.sun.nodes.script.node.rowsplitter.JavaRowSplitterNodeFactory"
-            id="org.knime.ext.sun.nodes.script.node.rowsplitter.JavaRowSplitterNodeFactory"/>
+            factory-class="org.knime.ext.sun.nodes.script.node.rowsplitter.JavaRowSplitterNodeFactory" />
       <node
             category-path="/flowcontrol/variables"
             factory-class="org.knime.ext.sun.nodes.script.node.editvar.JavaEditVariableNodeFactory"/>
