@@ -88,6 +88,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.ExpandVetoException;
+import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 
 import org.eclipse.core.runtime.Platform;
@@ -623,9 +624,9 @@ public class BundleListPanel extends JPanel implements TreeWillExpandListener {
          * appropriate icon, correctly indicating whether they have children.
          */
         final DefaultMutableTreeNode node = (DefaultMutableTreeNode)event.getPath().getLastPathComponent();
-        Enumeration<DefaultMutableTreeNode> children = node.children();
+        Enumeration<TreeNode> children = node.children();
         while (children.hasMoreElements()) {
-            DefaultMutableTreeNode child = children.nextElement();
+            DefaultMutableTreeNode child = (DefaultMutableTreeNode)children.nextElement();
             if (child != null && child.getUserObject() instanceof Bundle) {
                 addDependenciesForNode(child, (Bundle)child.getUserObject());
             }
@@ -658,11 +659,10 @@ public class BundleListPanel extends JPanel implements TreeWillExpandListener {
 
     /* Helper method that allows removing all children properly in a way that notifies a JTree and causes a redraw. */
     private static void removeAllChildren(final JTree tree, final DefaultMutableTreeNode node) {
-        @SuppressWarnings("unchecked")
-        Enumeration<DefaultMutableTreeNode> children = node.children();
+        Enumeration<TreeNode> children = node.children();
         final ArrayList<DefaultMutableTreeNode> toRemove = new ArrayList<>();
         while (children.hasMoreElements()) {
-            DefaultMutableTreeNode child = children.nextElement();
+            DefaultMutableTreeNode child = (DefaultMutableTreeNode)children.nextElement();
             toRemove.add(child);
         }
 
