@@ -109,6 +109,7 @@ import org.knime.base.node.jsnippet.ui.JSnippetTextArea;
 import org.knime.base.node.jsnippet.ui.JarListPanel;
 import org.knime.base.node.jsnippet.ui.OutFieldsTable;
 import org.knime.base.node.jsnippet.ui.OutFieldsTableModel;
+import org.knime.base.node.jsnippet.util.JDK11ClasspathLibraryInfo;
 import org.knime.base.node.jsnippet.util.JavaSnippetSettings;
 import org.knime.base.node.jsnippet.util.field.JavaColumnField;
 import org.knime.core.data.DataTableSpec;
@@ -136,6 +137,8 @@ public class JavaSnippetNodeDialog extends NodeDialogPane implements TemplateNod
     private static final String SNIPPET_TAB_NAME = "Java Snippet";
 
     private static final String ADDITIONAL_BUNDLES_TAB_NAME = "Additional Bundles";
+
+    private static final JDK11ClasspathLibraryInfo JDK_LIBRARY_INFO = new JDK11ClasspathLibraryInfo();
 
     private JSnippetTextArea m_snippetTextArea;
 
@@ -484,7 +487,7 @@ public class JavaSnippetNodeDialog extends NodeDialogPane implements TemplateNod
 
     private void updateAutocompletion() {
         try {
-            if (m_autoCompletionJars == null || !Arrays.stream(m_autoCompletionJars).allMatch(file -> file.exists())
+            if (m_autoCompletionJars == null || !Arrays.stream(m_autoCompletionJars).allMatch(File::exists)
                 || !Arrays.equals(m_autoCompletionJars, m_snippet.getCompiletimeClassPath())) {
 
                 final LanguageSupportFactory lsf = LanguageSupportFactory.get();
@@ -495,7 +498,7 @@ public class JavaSnippetNodeDialog extends NodeDialogPane implements TemplateNod
 
                 m_autoCompletionJars = m_snippet.getCompiletimeClassPath();
                 jarManager.clearClassFileSources();
-                jarManager.addCurrentJreClassFileSource();
+                jarManager.addClassFileSource(JDK_LIBRARY_INFO); // inject new library here
                 for (final File jarFile : m_autoCompletionJars) {
                     if (!jarFile.getName().endsWith(".jar")) {
                         continue;
