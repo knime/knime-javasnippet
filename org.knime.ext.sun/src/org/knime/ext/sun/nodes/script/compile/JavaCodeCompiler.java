@@ -93,6 +93,8 @@ public final class JavaCodeCompiler {
         JAVA_7,
         /**Java 8.*/
         JAVA_8,
+        /**Java 11.*/
+        JAVA_11,
         /**The default version to use.*/
         DEFAULT;
     }
@@ -107,7 +109,7 @@ public final class JavaCodeCompiler {
      *
      */
     public JavaCodeCompiler() {
-        this(JavaVersion.JAVA_8);
+        this(JavaVersion.JAVA_11);
     }
 
     /**
@@ -341,8 +343,11 @@ public final class JavaCodeCompiler {
                 javaVersion = "1.7";
                 break;
             case JAVA_8:
-            case DEFAULT:
                 javaVersion = "1.8";
+                break;
+            case JAVA_11:
+            case DEFAULT:
+                javaVersion = "11";
                 break;
             default:
                 throw new IllegalStateException("Incompatible java version selected");

@@ -209,7 +209,7 @@ public final class Expression implements AutoCloseable {
             throw new CompilationFailedException(
                 "Unable to write expression source to temp file \"" + instanceTempFile.getAbsolutePath() + "\"", e);
         }
-        JavaCodeCompiler compiler = new JavaCodeCompiler(JavaVersion.JAVA_8, m_instanceTempFolder);
+        JavaCodeCompiler compiler = new JavaCodeCompiler(JavaVersion.JAVA_11, m_instanceTempFolder);
         EclipseFileObject snippetFile =
             new EclipseFileObject(name, instanceTempFile.toURI(), Kind.SOURCE, StandardCharsets.UTF_8);
         compiler.setSources(snippetFile);

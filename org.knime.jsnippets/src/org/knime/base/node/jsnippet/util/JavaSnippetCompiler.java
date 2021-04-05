@@ -118,9 +118,9 @@ public class JavaSnippetCompiler {
                 .collect(Collectors.joining(File.pathSeparator)));
 
             m_compileArgs.add("-source");
-            m_compileArgs.add("1.8");
+            m_compileArgs.add("11");
             m_compileArgs.add("-target");
-            m_compileArgs.add("1.8");
+            m_compileArgs.add("11");
             m_compileArgs.add("-encoding");
             m_compileArgs.add("UTF-8");
 
