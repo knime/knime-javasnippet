@@ -13,7 +13,7 @@ properties([
 ])
 
 try {
-    knimetools.defaultTychoBuild('org.knime.update.javasnippet', 'maven && ui')
+    knimetools.defaultTychoBuild('org.knime.update.javasnippet', 'maven && ui && java11')
 
     workflowTests.runTests(
         dependencies: [
