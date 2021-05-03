@@ -93,7 +93,8 @@ public final class JavaCodeCompiler {
         JAVA_7,
         /**Java 8.*/
         JAVA_8,
-        /**Java 11.*/
+        /**Java 11.
+         * @since 4.4*/
         JAVA_11,
         /**The default version to use.*/
         DEFAULT;
