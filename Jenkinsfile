@@ -23,6 +23,7 @@ try {
                 'knime-datageneration',
                 'knime-distance',
                 'knime-filehandling',
+                'knime-kerberos',
                 'knime-javasnippet',
                 'knime-jep',
                 'knime-jfreechart',
