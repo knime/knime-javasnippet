@@ -66,6 +66,7 @@ import javax.swing.event.TableModelListener;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableColumnModel;
 
+import org.knime.base.node.jsnippet.JavaSnippet;
 import org.knime.base.node.jsnippet.type.ConverterUtil;
 import org.knime.base.node.jsnippet.type.TypeProvider;
 import org.knime.base.node.jsnippet.ui.FieldsTableModel.Column;
@@ -216,7 +217,8 @@ public class InFieldsTable extends ConfigTablePanel {
         String fieldName = FieldsTableUtil.createUniqueJavaIdentifier(colName, taken, "c_");
         m_model.setValueAt(fieldName, r, Column.JAVA_FIELD);
         final Optional<DataCellToJavaConverterFactory<?, ?>> first =
-            ConverterUtil.getFactoriesForSourceType(colSpec.getType()).stream().findFirst();
+            ConverterUtil.getFactoriesForSourceType(colSpec.getType()).stream()
+                .filter(factory -> JavaSnippet.getBuildPathFromCache(factory.getIdentifier()) != null).findFirst();
         if (first.isPresent()) {
             m_model.setValueAt(first.get(), r, Column.JAVA_TYPE);
         } else {

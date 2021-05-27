@@ -1382,7 +1382,8 @@ public final class JavaSnippet implements JSnippet<JavaSnippetTemplate> {
         try (final URLClassLoader classpathClassLoader = new URLClassLoader(urls.toArray(new URL[urls.size()]))) {
             classpathClassLoader.loadClass(javaType.getName());
         } catch (NoClassDefFoundError | ClassNotFoundException e) {
-            LOGGER.error("Classpath for \"" + javaType.getName() + "\" could not be assembled.", e);
+            LOGGER.debug("Classpath for \"" + javaType.getName() + "\" could not be assembled. "
+                + "Type will not be native supported in Java Snippet nodes.");
             return null; // indicate that this type should not be provided in java snippet
         } catch (IOException e) { // thrown by URLClassLoader.close()
             LOGGER.error("Unable to close classloader used for testing of custom type classpath.", e);

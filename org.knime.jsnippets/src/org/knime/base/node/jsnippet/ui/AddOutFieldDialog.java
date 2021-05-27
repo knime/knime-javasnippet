@@ -77,6 +77,7 @@ import javax.swing.JRadioButton;
 import javax.swing.JTextField;
 import javax.swing.WindowConstants;
 
+import org.knime.base.node.jsnippet.JavaSnippet;
 import org.knime.base.node.jsnippet.type.ConverterUtil;
 import org.knime.base.node.jsnippet.type.TypeProvider;
 import org.knime.base.node.jsnippet.ui.FieldsTableModel.Column;
@@ -358,7 +359,11 @@ public final class AddOutFieldDialog extends JDialog {
         m_knimeType.removeAllItems();
         if (m_fieldType.getSelectedItem().equals(FieldType.Column)) {
             for (final DataType type : ConverterUtil.getAllDestinationDataTypes()) {
-                m_knimeType.addItem(type);
+                if (ConverterUtil.getFactoriesForDestinationType(type).stream()
+                        .filter(factory -> JavaSnippet.getBuildPathFromCache(factory.getIdentifier()) != null).findAny()
+                        .isPresent()) {
+                    m_knimeType.addItem(type);
+                }
             }
             m_knimeType.setRenderer(new DataTypeListCellRenderer());
         } else {
