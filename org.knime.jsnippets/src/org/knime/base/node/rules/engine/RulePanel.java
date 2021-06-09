@@ -529,7 +529,11 @@ public class RulePanel extends JPanel {
         this.m_flowVariables = flowVariables;
         try {
             if (m_replaceColumn != null) {
-                m_replaceColumn.update(spec, m_replaceColumn.getSelectedColumn());
+                final boolean hasColumns = spec.getNumColumns() > 0;
+                m_replaceColRadio.setEnabled(hasColumns);
+                if (hasColumns) {
+                    m_replaceColumn.update(spec, m_replaceColumn.getSelectedColumn());
+                }
             }
         } catch (NotConfigurableException e) {
             throw new IllegalStateException(e.getMessage(), e);
