@@ -50,7 +50,6 @@ package org.knime.base.node.jsnippet;
 import java.awt.FlowLayout;
 import java.util.Map;
 
-import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -63,6 +62,7 @@ import org.knime.base.node.jsnippet.ui.FlowVariableList;
 import org.knime.base.node.jsnippet.ui.InFieldsTable;
 import org.knime.base.node.jsnippet.ui.OutFieldsTable;
 import org.knime.base.node.jsnippet.util.JavaSnippetSettings;
+import org.knime.base.node.util.BooleanRadioButtonGroup;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NotConfigurableException;
@@ -76,7 +76,7 @@ import org.knime.core.node.workflow.FlowVariable;
  */
 public class JavaEditVarNodeDialog extends JavaSnippetNodeDialog {
 
-    private JCheckBox m_runOnExecuteChecker;
+    private BooleanRadioButtonGroup m_runOnConfigOrExecute;
 
     /**
      * Create a new Dialog.
@@ -106,7 +106,7 @@ public class JavaEditVarNodeDialog extends JavaSnippetNodeDialog {
     @Override
     protected void setEnabled(final boolean enabled) {
         if (isEnabled() != enabled) {
-            m_runOnExecuteChecker.setEnabled(enabled);
+            m_runOnConfigOrExecute.setEnabled(enabled);
         }
         super.setEnabled(enabled);
     }
@@ -156,9 +156,8 @@ public class JavaEditVarNodeDialog extends JavaSnippetNodeDialog {
     @Override
     protected JPanel createOptionsPanel() {
         JPanel p = new JPanel(new FlowLayout(FlowLayout.LEADING));
-        m_runOnExecuteChecker = new JCheckBox("Run only on execution");
-        m_runOnExecuteChecker.setToolTipText("If selected, the snippet is run only when the node is executed.");
-        p.add(m_runOnExecuteChecker);
+        m_runOnConfigOrExecute = new BooleanRadioButtonGroup("Run script during node configuration", "Run script during node execution");
+        p.add(m_runOnConfigOrExecute);
         return p;
     }
 
@@ -175,7 +174,7 @@ public class JavaEditVarNodeDialog extends JavaSnippetNodeDialog {
     protected void loadSettingsFrom(final NodeSettingsRO settings,
             final PortObjectSpec[] specs) throws NotConfigurableException {
         loadSettingsFrom(settings, new DataTableSpec[]{new DataTableSpec()});
-        m_runOnExecuteChecker.setSelected(m_settings.isRunOnExecute());
+        m_runOnConfigOrExecute.setValue(!m_settings.isRunOnExecute());
     }
 
     /**
@@ -186,7 +185,7 @@ public class JavaEditVarNodeDialog extends JavaSnippetNodeDialog {
                               final DataTableSpec spec,
                               final Map<String, FlowVariable> flowVariables) {
         super.applyTemplate(template, spec, flowVariables);
-        m_runOnExecuteChecker.setSelected(m_settings.isRunOnExecute());
+        m_runOnConfigOrExecute.setValue(!m_settings.isRunOnExecute());
 
     }
 
@@ -195,6 +194,6 @@ public class JavaEditVarNodeDialog extends JavaSnippetNodeDialog {
      */
     @Override
     protected void preSaveSettings(final JavaSnippetSettings s) {
-        s.setRunOnExecute(m_runOnExecuteChecker.isSelected());
+        s.setRunOnExecute(!m_runOnConfigOrExecute.getValue());
     }
 }
