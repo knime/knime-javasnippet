@@ -5,8 +5,6 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map.Entry;
 
 import org.dmg.pmml.CompoundPredicateDocument.CompoundPredicate;
@@ -94,7 +92,7 @@ class FromDecisionTreeNodeModel extends NodeModel {
         newRuleSetModel.setAlgorithmName("RuleSet");
         RuleSet ruleSet = newRuleSetModel.addNewRuleSet();
         ruleSet.addNewRuleSelectionMethod().setCriterion(Criterion.FIRST_HIT);
-        addRules(ruleSet, new ArrayList<DecisionTreeNode>(), decisionTree.getRootNode());
+        addRules(ruleSet, decisionTree.getRootNode());
         // TODO: Return a BufferedDataTable for each output port
         PMMLPortObject pmmlPortObject = new PMMLPortObject(ruleSetModel.getSpec(), document);
         return new PortObject[]{pmmlPortObject, new RuleSetToTable(m_rulesToTable).execute(exec, pmmlPortObject)};
@@ -104,10 +102,9 @@ class FromDecisionTreeNodeModel extends NodeModel {
      * Adds the rules to {@code rs} (recursively on each leaf).
      *
      * @param rs The output {@link RuleSet}.
-     * @param parents The parent stack.
      * @param node The actual node.
      */
-    private void addRules(final RuleSet rs, final List<DecisionTreeNode> parents, final DecisionTreeNode node) {
+    private void addRules(final RuleSet rs, final DecisionTreeNode node) {
         if (node.isLeaf()) {
             SimpleRule rule = rs.addNewSimpleRule();
             if (m_rulesToTable.getScorePmmlRecordCount().getBooleanValue()) {
@@ -166,11 +163,9 @@ class FromDecisionTreeNodeModel extends NodeModel {
             }
             rule.setScore(node.getMajorityClass().toString());
         } else {
-            parents.add(node);
             for (int i = 0; i< node.getChildCount(); ++i) {
-                addRules(rs, parents, node.getChildAt(i));
+                addRules(rs, node.getChildAt(i));
             }
-            parents.remove(node);
         }
     }
 
