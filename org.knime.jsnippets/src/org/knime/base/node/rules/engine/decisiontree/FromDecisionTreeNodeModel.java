@@ -108,61 +108,14 @@ class FromDecisionTreeNodeModel extends NodeModel {
         if (node.isLeaf()) {
             SimpleRule rule = rs.addNewSimpleRule();
             if (m_rulesToTable.getScorePmmlRecordCount().getBooleanValue()) {
-                //This increases the PMML quite significantly
-                BigDecimal sum = BigDecimal.ZERO;
-                final MathContext mc = new MathContext(7, RoundingMode.HALF_EVEN);
-                final boolean computeProbability = m_rulesToTable.getScorePmmlProbability().getBooleanValue();
-                if (computeProbability) {
-                    sum = new BigDecimal(node.getClassCounts().entrySet().stream().mapToDouble(e -> e.getValue().doubleValue()).sum(), mc);
-                }
-                for (final Entry<DataCell, Double> entry: node.getClassCounts().entrySet()) {
-                    final ScoreDistribution scoreDistrib = rule.addNewScoreDistribution();
-                    scoreDistrib.setValue(entry.getKey().toString());
-                    scoreDistrib.setRecordCount(entry.getValue());
-                    if (computeProbability) {
-                        if (Double.compare(entry.getValue().doubleValue(), 0.0) == 0) {
-                            scoreDistrib.setProbability(new BigDecimal(0.0));
-                        } else {
-                            scoreDistrib.setProbability(new BigDecimal(entry.getValue().doubleValue(), mc).divide(sum, mc));
-                        }
-                    }
-                }
+                addScoreDistributionToRule(node, rule);
             }
             if (node.getParent() == null) {
                 // Fix for AP-17230
                 // If the leaf has no parent there are no conditions -> Always take this rule
                 rule.addNewTrue();
             } else {
-                CompoundPredicate and = rule.addNewCompoundPredicate();
-                and.setBooleanOperator(BooleanOperator.AND);
-                DecisionTreeNode n = node;
-                do {
-                    PMMLPredicate pmmlPredicate =
-                        ((DecisionTreeNodeSplitPMML)n.getParent()).getSplitPred()[n.getParent().getIndex(n)];
-                    if (pmmlPredicate instanceof PMMLSimplePredicate) {
-                        PMMLSimplePredicate simple = (PMMLSimplePredicate)pmmlPredicate;
-                        SimplePredicate predicate = and.addNewSimplePredicate();
-                        copy(predicate, simple);
-                    } else if (pmmlPredicate instanceof PMMLCompoundPredicate) {
-                        PMMLCompoundPredicate compound = (PMMLCompoundPredicate)pmmlPredicate;
-                        CompoundPredicate predicate = and.addNewCompoundPredicate();
-                        copy(predicate, compound);
-                    } else if (pmmlPredicate instanceof PMMLSimpleSetPredicate) {
-                        PMMLSimpleSetPredicate simpleSet = (PMMLSimpleSetPredicate)pmmlPredicate;
-                        copy(and.addNewSimpleSetPredicate(), simpleSet);
-                    } else if (pmmlPredicate instanceof PMMLTruePredicate) {
-                        and.addNewTrue();
-                    } else if (pmmlPredicate instanceof PMMLFalsePredicate) {
-                        and.addNewFalse();
-                    }
-                    n = n.getParent();
-                } while (n.getParent() != null);
-                //Simple fix for the case when a single condition was used.
-                while (and.getFalseList().size() + and.getCompoundPredicateList().size()
-                    + and.getSimplePredicateList().size() + and.getSimpleSetPredicateList().size()
-                    + and.getTrueList().size() < 2) {
-                    and.addNewTrue();
-                }
+                addPredicateToRule(node, rule);
             }
             if (m_rulesToTable.getProvideStatistics().getBooleanValue()) {
                 rule.setNbCorrect(node.getOwnClassCount());
@@ -172,6 +125,62 @@ class FromDecisionTreeNodeModel extends NodeModel {
         } else {
             for (int i = 0; i< node.getChildCount(); ++i) {
                 addRules(rs, node.getChildAt(i));
+            }
+        }
+    }
+
+    /** Add the predicate for the node to the rule. Assumes that the node has at least one parent. */
+    private void addPredicateToRule(final DecisionTreeNode node, final SimpleRule rule) {
+        CompoundPredicate and = rule.addNewCompoundPredicate();
+        and.setBooleanOperator(BooleanOperator.AND);
+        DecisionTreeNode n = node;
+        do {
+            PMMLPredicate pmmlPredicate =
+                ((DecisionTreeNodeSplitPMML)n.getParent()).getSplitPred()[n.getParent().getIndex(n)];
+            if (pmmlPredicate instanceof PMMLSimplePredicate) {
+                PMMLSimplePredicate simple = (PMMLSimplePredicate)pmmlPredicate;
+                SimplePredicate predicate = and.addNewSimplePredicate();
+                copy(predicate, simple);
+            } else if (pmmlPredicate instanceof PMMLCompoundPredicate) {
+                PMMLCompoundPredicate compound = (PMMLCompoundPredicate)pmmlPredicate;
+                CompoundPredicate predicate = and.addNewCompoundPredicate();
+                copy(predicate, compound);
+            } else if (pmmlPredicate instanceof PMMLSimpleSetPredicate) {
+                PMMLSimpleSetPredicate simpleSet = (PMMLSimpleSetPredicate)pmmlPredicate;
+                copy(and.addNewSimpleSetPredicate(), simpleSet);
+            } else if (pmmlPredicate instanceof PMMLTruePredicate) {
+                and.addNewTrue();
+            } else if (pmmlPredicate instanceof PMMLFalsePredicate) {
+                and.addNewFalse();
+            }
+            n = n.getParent();
+        } while (n.getParent() != null);
+        //Simple fix for the case when a single condition was used.
+        while (and.getFalseList().size() + and.getCompoundPredicateList().size() + and.getSimplePredicateList().size()
+            + and.getSimpleSetPredicateList().size() + and.getTrueList().size() < 2) {
+            and.addNewTrue();
+        }
+    }
+
+    /** Add the score distribution for the node to the rule. This increases the PMML quite significantly. */
+    private void addScoreDistributionToRule(final DecisionTreeNode node, final SimpleRule rule) {
+        BigDecimal sum = BigDecimal.ZERO;
+        final MathContext mc = new MathContext(7, RoundingMode.HALF_EVEN);
+        final boolean computeProbability = m_rulesToTable.getScorePmmlProbability().getBooleanValue();
+        if (computeProbability) {
+            sum = new BigDecimal(
+                node.getClassCounts().entrySet().stream().mapToDouble(e -> e.getValue().doubleValue()).sum(), mc);
+        }
+        for (final Entry<DataCell, Double> entry : node.getClassCounts().entrySet()) {
+            final ScoreDistribution scoreDistrib = rule.addNewScoreDistribution();
+            scoreDistrib.setValue(entry.getKey().toString());
+            scoreDistrib.setRecordCount(entry.getValue());
+            if (computeProbability) {
+                if (Double.compare(entry.getValue().doubleValue(), 0.0) == 0) {
+                    scoreDistrib.setProbability(new BigDecimal(0.0));
+                } else {
+                    scoreDistrib.setProbability(new BigDecimal(entry.getValue().doubleValue(), mc).divide(sum, mc));
+                }
             }
         }
     }
