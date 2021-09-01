@@ -84,8 +84,8 @@ import org.knime.rsyntaxtextarea.KnimeCompletionProvider;
  */
 final class MultiColumnStringManipulationNodeDialog extends NodeDialogPane {
 
-    /** One settings object to group all settings models and share them with the node model. */
-    private final MultiColumnStringManipulationSettings m_settings;
+    /** One settings object to group all settings models. */
+    private final MultiColumnStringManipulationSettings m_settings = new MultiColumnStringManipulationSettings();
 
     /**
      * Dialog component to select column to iterate over. I tried {@link DialogComponentColumnFilter2} but it had some
@@ -112,12 +112,8 @@ final class MultiColumnStringManipulationNodeDialog extends NodeDialogPane {
 
     /**
      * Create the dialog components. Build the user interface and add to the dialog.
-     *
-     * @param settings
      */
-    MultiColumnStringManipulationNodeDialog(final MultiColumnStringManipulationSettings settings) {
-
-        m_settings = settings;
+    MultiColumnStringManipulationNodeDialog() {
 
         // columns to iterate over selection
         m_dialogCompColFilter = new DataColumnSpecFilterPanel();
