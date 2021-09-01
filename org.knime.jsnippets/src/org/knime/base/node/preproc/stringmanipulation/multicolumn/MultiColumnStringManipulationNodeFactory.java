@@ -48,7 +48,6 @@ package org.knime.base.node.preproc.stringmanipulation.multicolumn;
 import org.knime.core.node.NodeDialogPane;
 import org.knime.core.node.NodeFactory;
 import org.knime.core.node.NodeView;
-import org.knime.core.node.defaultnodesettings.DialogComponentString;
 
 /**
  * Standard factory functionality.
@@ -57,17 +56,9 @@ import org.knime.core.node.defaultnodesettings.DialogComponentString;
  */
 public class MultiColumnStringManipulationNodeFactory extends NodeFactory<MultiColumnStringManipulationNodeModel> {
 
-    /**
-     * One object to share data between the model and the dialog. It's SettingsModel members can be used to represent
-     * the data, persist it, and synchronize it with dialog components (e.g., by passing
-     * {@link MultiColumnStringManipulationSettings#getAppendedColumnsSuffixSettingsModel()} to a
-     * {@link DialogComponentString} instance)
-     */
-    private final MultiColumnStringManipulationSettings m_settings = new MultiColumnStringManipulationSettings();
-
     @Override
     public MultiColumnStringManipulationNodeModel createNodeModel() {
-        return new MultiColumnStringManipulationNodeModel(m_settings);
+        return new MultiColumnStringManipulationNodeModel();
     }
 
     @Override
@@ -89,7 +80,7 @@ public class MultiColumnStringManipulationNodeFactory extends NodeFactory<MultiC
 
     @Override
     public NodeDialogPane createNodeDialogPane() {
-        return new MultiColumnStringManipulationNodeDialog(m_settings);
+        return new MultiColumnStringManipulationNodeDialog();
     }
 
 }

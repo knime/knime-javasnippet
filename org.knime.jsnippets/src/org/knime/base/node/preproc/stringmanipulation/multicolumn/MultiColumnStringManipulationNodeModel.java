@@ -64,6 +64,7 @@ import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
+import org.knime.core.node.defaultnodesettings.DialogComponentString;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.streamable.PartitionInfo;
 import org.knime.core.node.streamable.PortInput;
@@ -103,12 +104,18 @@ class MultiColumnStringManipulationNodeModel extends AbstractConditionalStreamin
      */
     final static VariableType<?>[] SUPPORTED_FLOW_VARIABLE_TYPES =
         new VariableType<?>[]{StringType.INSTANCE, IntType.INSTANCE, DoubleType.INSTANCE};
-    //TODO [Extended flow variable type support] use VariableTypeRegistry.getInstance().getAllTypes();
+    //TODO [Extended flow variable type support] use VariableTypeRegistry.getInstance().getAllTypes()
 
     /** The port index that receives the input data table. */
     private static final int IN_PORT = 0;
 
-    private final MultiColumnStringManipulationSettings m_settings;
+    /**
+     * The members of this object can be used to represent the node's configuration, persist it, and synchronize the
+     * model state with the user selections in the dialog (e.g., by passing
+     * {@link MultiColumnStringManipulationSettings#getAppendedColumnsSuffixSettingsModel()} to a
+     * {@link DialogComponentString} instance)
+     */
+    private final MultiColumnStringManipulationSettings m_settings = new MultiColumnStringManipulationSettings();
 
     private final Function<String, Optional<Object>> m_flowVariableProvider;
 
@@ -138,8 +145,7 @@ class MultiColumnStringManipulationNodeModel extends AbstractConditionalStreamin
      *
      * @param settings The settings object shared with the dialog.
      */
-    MultiColumnStringManipulationNodeModel(final MultiColumnStringManipulationSettings settings) {
-        m_settings = settings;
+    MultiColumnStringManipulationNodeModel() {
 
         // capture getAvailableVariables from node model to access flow variables values in expression
         m_flowVariableProvider = (final String name) -> {
