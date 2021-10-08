@@ -140,8 +140,8 @@ public class RuleManipulatorProvider implements ManipulatorProvider {
 
     private final EnumSet<Operators> m_collectionOps = EnumSet.of(Operators.IN);
 
-    private final EnumSet<Operators> m_stringOps = EnumSet
-        .of(Operators.LIKE, Operators.MATCHES/*, Operators.CONTAINS*/);
+    private final EnumSet<Operators> m_stringOps = EnumSet.of(Operators.LIKE, Operators.MATCHES, Operators.EQ,
+            Operators.GE, Operators.GT, Operators.LE, Operators.LT);
 
     private final SortedMap<String, Collection<Manipulator>> m_manipulators =
         new TreeMap<String, Collection<Manipulator>>();
@@ -155,7 +155,8 @@ public class RuleManipulatorProvider implements ManipulatorProvider {
             "Logical %1$s of two boolean expressions.%nYou can use this in a sequence, like "
                 + "<tt>A %2$s B %2$s C</tt> without parenthesis, but it has no precedence regarding to %3$s or %4$s, "
                 + "so you have to use parenthesis around the logical connectives if you want to combine them.";
-        String compareFormat = "Left %s right";
+        String compareFormat = "Left %s right. For numerical values, the natural ordering will be used. For string " +
+                "values, the lexicographic ordering will be used.";
         m_operatorDescriptions.put(Operators.AND, String.format(connectiveFormat, "and", "AND", "OR", "XOR")
             + shortCircuit);
         m_operatorDescriptions.put(Operators.EQ, String.format(compareFormat, "="));
