@@ -153,8 +153,9 @@ public class ColumnCalculator implements CellFactory {
     }
 
     /**
-     * {@inheritDoc}
+     * @deprecated
      */
+    @Deprecated
     @Override
     public void setProgress(final int curRowNr, final int rowCount,
             final RowKey lastKey, final ExecutionMonitor exec) {
@@ -170,78 +171,29 @@ public class ColumnCalculator implements CellFactory {
      */
     public DataCell calculate(final DataRow row) {
         if (m_flowVarAssignmentMap == null) {
-            m_flowVarAssignmentMap = new HashMap<InputField, Object>();
-            for (Map.Entry<InputField, ExpressionField> e
-                    : m_expression.getFieldMap().entrySet()) {
-                InputField f = e.getKey();
-                if (f.getFieldType().equals(FieldType.Variable)) {
-                    Class<?> c = e.getValue().getFieldClass();
-                    m_flowVarAssignmentMap.put(f,
-                            m_flowVarProvider.readVariable(
-                                    f.getColOrVarName(), c));
-                }
-            }
+            initFlowVarAssignmentMap();
         }
-        DataTableSpec spec = m_settings.getInputSpec();
-        Class<?> returnType = m_settings.getReturnType();
-        boolean isArrayReturn = m_settings.isArrayReturn();
-        Map<InputField, Object> nameValueMap =
-            new HashMap<InputField, Object>();
-        nameValueMap.put(new InputField(Expression.ROWINDEX,
-                FieldType.TableConstant), m_lastProcessedRow++);
-        nameValueMap.put(new InputField(Expression.ROWID,
-                FieldType.TableConstant), row.getKey().getString());
-        nameValueMap.put(new InputField(Expression.ROWCOUNT,
-                FieldType.TableConstant), m_flowVarProvider.getRowCount());
-        nameValueMap.putAll(m_flowVarAssignmentMap);
-        for (int i : m_requiredIndices) { //NOSONAR
-            DataColumnSpec columnSpec = spec.getColumnSpec(i);
-            InputField inputField =
-                new InputField(columnSpec.getName(), FieldType.Column);
-            DataCell cell = row.getCell(i);
-            DataType cellType = columnSpec.getType();
-            boolean isArray = cellType.isCollectionType();
-            if (isArray) {
-                cellType = cellType.getCollectionElementType();
-            }
-            Object cellVal = null;
-            if (cell.isMissing()) {
-                if (m_settings.isInsertMissingAsNull()) {
-                    // leave value as null
-                } else {
-                    if (!m_hasReportedMissing) {
-                        m_hasReportedMissing = true;
-                        String message = "Row \"" + row.getKey() + "\" "
-                                + "contains missing value in column \""
-                                + columnSpec.getName() + "\" - returning missing";
-                        LOGGER.warn(message + " (omitting further warnings)");
-                    }
-                    return DataType.getMissingCell();
-                }
-            } else {
-                for (JavaSnippetType<?, ?, ?> t : JavaSnippetType.TYPES) {
-                    if (t.checkCompatibility(cellType)) {
-                        if (isArray) {
-                            cellVal = t.asJavaArray((CollectionDataValue)cell);
-                        } else {
-                            cellVal = t.asJavaObject(cell);
-                        }
-                        break;
-                    }
-                }
-            }
-            nameValueMap.put(inputField, cellVal);
+        var inputValues = createInputValues(row);
+        if (inputValues == null) {
+            // null indicates that we can't calculate the output because of a
+            // missing value in the input
+            return DataType.getMissingCell();
         }
-        Object o = null;
+        Object o = evaluateExpression(inputValues, row);
+        return getCell(o);
+    }
+
+    private Object evaluateExpression(final Map<InputField, Object> inputValues, final DataRow row) {
         try {
-            m_expression.set(nameValueMap);
-            o = m_expression.evaluate();
+            m_expression.set(inputValues);
+            return m_expression.evaluate();
             // class correctness is asserted by compiler
         } catch (Abort ee) {
-            StringBuilder builder = new StringBuilder("Calculation aborted: ");
+            var builder = new StringBuilder("Calculation aborted: ");
             String message = ee.getMessage();
             builder.append(message == null ? "<no details>" : message);
-            throw new RuntimeException(builder.toString(), ee);
+            // changing the exception type might break backwards compatibility
+            throw new RuntimeException(builder.toString(), ee); //NOSONAR
         } catch (EvaluationFailedException ee) {
             Throwable cause = ee.getCause();
             if (cause instanceof InvocationTargetException) {
@@ -255,24 +207,103 @@ public class ColumnCalculator implements CellFactory {
             LOGGER.warn("Evaluation of expression failed for row \""
                     + row.getKey() + "\": " + ipe.getMessage(), ipe);
         }
-        DataCell result = null;
-        for (JavaSnippetType<?, ?, ?> t : JavaSnippetType.TYPES) {
-            if (returnType.equals(t.getJavaClass(false))) {
-                if (o == null) {
-                    result = DataType.getMissingCell();
-                } else if (isArrayReturn) {
-                    result = t.asKNIMEListCell((Object[])o);
+        return null;
+    }
+
+    private Map<InputField, Object> createInputValues(final DataRow row) {
+        DataTableSpec spec = m_settings.getInputSpec();
+        Map<InputField, Object> nameValueMap =
+            new HashMap<>();
+        nameValueMap.put(new InputField(Expression.ROWINDEX,
+                FieldType.TableConstant), m_lastProcessedRow);
+        m_lastProcessedRow++;
+        nameValueMap.put(new InputField(Expression.ROWID,
+                FieldType.TableConstant), row.getKey().getString());
+        @SuppressWarnings("deprecation") // must be an int
+        var rowCount = m_flowVarProvider.getRowCount();
+        nameValueMap.put(new InputField(Expression.ROWCOUNT,
+                FieldType.TableConstant), rowCount);
+        nameValueMap.putAll(m_flowVarAssignmentMap);
+        for (int i : m_requiredIndices) { //NOSONAR
+            DataColumnSpec columnSpec = spec.getColumnSpec(i);
+            var inputField =
+                new InputField(columnSpec.getName(), FieldType.Column);
+            DataCell cell = row.getCell(i);
+            DataType cellType = columnSpec.getType();
+            Object cellVal = null;
+            if (cell.isMissing()) {
+                if (m_settings.isInsertMissingAsNull()) {
+                    // leave value as null
                 } else {
-                    result = t.asKNIMECell(o);
+                    reportMissing(row, columnSpec);
+                    return null;
                 }
-                break;
+            } else {
+                cellVal = getJavaValue(cell, cellType);
+            }
+            nameValueMap.put(inputField, cellVal);
+        }
+        return nameValueMap;
+    }
+
+    private void reportMissing(final DataRow row, final DataColumnSpec columnSpec) {
+        if (!m_hasReportedMissing) {
+            m_hasReportedMissing = true;
+            String message = "Row \"" + row.getKey() + "\" "
+                    + "contains missing value in column \""
+                    + columnSpec.getName() + "\" - returning missing";
+            LOGGER.warn(message + " (omitting further warnings)");
+        }
+    }
+
+    private void initFlowVarAssignmentMap() {
+        m_flowVarAssignmentMap = new HashMap<>();
+        for (Map.Entry<InputField, ExpressionField> e
+                : m_expression.getFieldMap().entrySet()) {
+            InputField f = e.getKey();
+            if (f.getFieldType() == FieldType.Variable) {
+                Class<?> c = e.getValue().getFieldClass();
+                m_flowVarAssignmentMap.put(f,
+                        m_flowVarProvider.readVariable(
+                                f.getColOrVarName(), c));
             }
         }
-        if (result == null) {
-            throw new InternalError("No mapping for objects of class "
-                    + o.getClass().getName());
+    }
+
+    private DataCell getCell(final Object obj) {
+        var returnType = m_settings.getReturnType();
+        var isArrayReturn = m_settings.isArrayReturn();
+        for (JavaSnippetType<?, ?, ?> t : JavaSnippetType.TYPES) {
+            if (returnType.equals(t.getJavaClass(false))) {
+                if (obj == null) {
+                    return DataType.getMissingCell();
+                } else if (isArrayReturn) {
+                    return t.asKNIMEListCell((Object[])obj);
+                } else {
+                    return t.asKNIMECell(obj);
+                }
+            }
         }
-        return result;
+        var className = obj == null ? "null" : obj.getClass();
+        throw new InternalError("No mapping for objects of class "
+                + className);
+    }
+
+    private static Object getJavaValue(final DataCell cell, DataType cellType) {
+        boolean isArray = cellType.isCollectionType();
+        if (isArray) {
+            cellType = cellType.getCollectionElementType();
+        }
+        for (JavaSnippetType<?, ?, ?> t : JavaSnippetType.TYPES) {
+            if (t.checkCompatibility(cellType)) {
+                if (isArray) {
+                    return t.asJavaArray((CollectionDataValue)cell);
+                } else {
+                    return t.asJavaObject(cell);
+                }
+            }
+        }
+        return null;
     }
 
 }
