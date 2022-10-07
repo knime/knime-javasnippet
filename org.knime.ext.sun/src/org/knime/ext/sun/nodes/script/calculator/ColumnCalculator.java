@@ -48,6 +48,7 @@ package org.knime.ext.sun.nodes.script.calculator;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import org.knime.core.data.DataCell;
 import org.knime.core.data.DataColumnSpec;
@@ -96,6 +97,8 @@ public class ColumnCalculator implements CellFactory {
      */
     private int m_lastProcessedRow = 0;
 
+    private final int[] m_requiredIndices;
+
     /**
      * Creates new factory for a column appender. It creates an instance of the
      * temporary java code, sets the fields dynamically and evaluates the
@@ -118,6 +121,19 @@ public class ColumnCalculator implements CellFactory {
         }
         m_expression = compiledExpression.getInstance();
         m_colSpec = new DataColumnSpec[]{m_settings.getNewColSpec()};
+        var inputSpec = m_settings.getInputSpec();
+        m_requiredIndices = inputSpec.columnsToIndices(inputSpec.stream()//
+                .map(DataColumnSpec::getName)//
+                .map(n -> new InputField(n, FieldType.Column))//
+                .filter(m_expression::needsInputField)//
+                .map(InputField::getColOrVarName)//
+                .toArray(String[]::new));
+
+    }
+
+    @Override
+    public Optional<int[]> getRequiredColumns() {
+        return Optional.of(m_requiredIndices);
     }
 
     /**
@@ -178,13 +194,10 @@ public class ColumnCalculator implements CellFactory {
         nameValueMap.put(new InputField(Expression.ROWCOUNT,
                 FieldType.TableConstant), m_flowVarProvider.getRowCount());
         nameValueMap.putAll(m_flowVarAssignmentMap);
-        for (int i = 0; i < row.getNumCells(); i++) {
+        for (int i : m_requiredIndices) { //NOSONAR
             DataColumnSpec columnSpec = spec.getColumnSpec(i);
             InputField inputField =
                 new InputField(columnSpec.getName(), FieldType.Column);
-            if (!m_expression.needsInputField(inputField)) {
-                continue;
-            }
             DataCell cell = row.getCell(i);
             DataType cellType = columnSpec.getType();
             boolean isArray = cellType.isCollectionType();
