@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE knimeNode PUBLIC "-//UNIKN//DTD KNIME Node 2.0//EN" "http://www.knime.org/Node.dtd">
-<knimeNode icon="string_manipulation_multi_column.png" type="Manipulator">
+<knimeNode icon="string_manipulation_multi_column.png" type="Manipulator" xmlns="http://knime.org/node/v4.1" 
+		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+		xsi:schemaLocation="http://knime.org/node/v4.1 http://knime.org/node/v4.1.xsd">
   <name>String Manipulation (Multi Column)</name>
   
   <shortDescription>
@@ -139,5 +140,10 @@
     <ports>
       <inPort index="0" name="Input data">Input data with multiple columns to proces.</inPort>
       <outPort index="0" name="Output data">Input data with replaced or appended columns.</outPort>
-    </ports>  
+    </ports>
+    <keywords>
+		<keyword>Capitalize</keyword> <!-- Common String Manipulation function -->
+		<keyword>Concatenate</keyword> <!-- Common String Manipulation function -->
+		<keyword>Strip</keyword> <!-- Common String Manipulation function -->
+    </keywords>
 </knimeNode>
