@@ -69,6 +69,7 @@ import org.knime.core.node.port.inactive.InactiveBranchPortObject;
 import org.knime.core.node.port.inactive.InactiveBranchPortObjectSpec;
 import org.knime.ext.sun.nodes.script.calculator.ColumnCalculator;
 import org.knime.ext.sun.nodes.script.calculator.FlowVariableProvider;
+import org.knime.ext.sun.nodes.script.calculator.WarningConsumer;
 import org.knime.ext.sun.nodes.script.settings.JavaScriptingCustomizer;
 import org.knime.ext.sun.nodes.script.settings.JavaScriptingSettings;
 import org.knime.ext.sun.nodes.script.settings.JavaSnippetType.JavaSnippetIntType;
@@ -139,8 +140,8 @@ final class JavaIfSwitchNodeModel extends NodeModel
         }
         try {
             m_settings.setInputAndCompile(EMPTY_SPEC);
-            ColumnCalculator cc = new ColumnCalculator(m_settings, this);
-            DataCell result = cc.calculate(EMPTY_ROW);
+            ColumnCalculator cc = new ColumnCalculator(m_settings, this, WarningConsumer.log(getLogger()));
+            DataCell result = cc.calculate(EMPTY_ROW, 0);
             if (result.isMissing()) {
                 throw new InvalidSettingsException(
                         "Calculation returned missing value");

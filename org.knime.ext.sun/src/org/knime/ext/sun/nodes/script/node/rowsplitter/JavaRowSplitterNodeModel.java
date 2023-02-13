@@ -82,6 +82,7 @@ import org.knime.core.node.streamable.simple.SimpleStreamableOperatorInternals;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.ext.sun.nodes.script.calculator.ColumnCalculator;
 import org.knime.ext.sun.nodes.script.calculator.FlowVariableProvider;
+import org.knime.ext.sun.nodes.script.calculator.WarningConsumer;
 import org.knime.ext.sun.nodes.script.expression.Expression;
 import org.knime.ext.sun.nodes.script.settings.JavaScriptingCustomizer;
 import org.knime.ext.sun.nodes.script.settings.JavaScriptingSettings;
@@ -159,14 +160,13 @@ public class JavaRowSplitterNodeModel extends NodeModel
     private void execute(final RowInput inData, final RowOutput[] outputs, final ExecutionContext exec) throws Exception {
         DataTableSpec spec = inData.getDataTableSpec();
         m_settings.setInputAndCompile(spec);
-        ColumnCalculator cc = new ColumnCalculator(m_settings, this);
-        int rowIndex = 0;
+        ColumnCalculator cc = new ColumnCalculator(m_settings, this, WarningConsumer.log(getLogger()));
         DataRow r;
         RowOutput trueMatch = outputs[0];
         RowOutput falseMatch = outputs.length > 1 ? outputs[1] : null;
-        while ((r = inData.poll()) != null) {
+        for (var rowIndex = 0; (r = inData.poll()) != null; rowIndex++) {
             cc.setProgress(rowIndex, m_rowCount, r.getKey(), exec);
-            DataCell result = cc.calculate(r);
+            DataCell result = cc.calculate(r, rowIndex);
             boolean b;
             if (result.isMissing()) {
                 b = false;
@@ -180,7 +180,6 @@ public class JavaRowSplitterNodeModel extends NodeModel
                 falseMatch.push(r);
             }
             exec.checkCanceled();
-            rowIndex++;
         }
         trueMatch.close();
         if (falseMatch != null) {

@@ -78,6 +78,7 @@ import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.util.UniqueNameGenerator;
 import org.knime.ext.sun.nodes.script.calculator.ColumnCalculator;
 import org.knime.ext.sun.nodes.script.calculator.FlowVariableProvider;
+import org.knime.ext.sun.nodes.script.calculator.WarningConsumer;
 import org.knime.ext.sun.nodes.script.compile.CompilationFailedException;
 import org.knime.ext.sun.nodes.script.settings.JavaScriptingSettings;
 
@@ -128,10 +129,10 @@ public class StringManipulationVariableNodeModel extends NodeModel implements Fl
         settings.setInputAndCompile(new DataTableSpec());
 
         // calculate the result
-        ColumnCalculator cc = new ColumnCalculator(settings, this);
+        ColumnCalculator cc = new ColumnCalculator(settings, this, WarningConsumer.log(getLogger()));
         DataCell calculate = null;
         try {
-            calculate = cc.calculate(new DefaultRow(new RowKey(""), new DataCell[]{}));
+            calculate = cc.calculate(new DefaultRow(new RowKey(""), new DataCell[]{}), 0);
         } catch (NoSuchElementException e){
             throw new InvalidSettingsException(e.getMessage());
         }
