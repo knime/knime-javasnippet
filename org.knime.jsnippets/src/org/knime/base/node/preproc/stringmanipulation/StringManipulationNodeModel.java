@@ -61,8 +61,10 @@ import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
+import org.knime.core.node.message.MessageBuilder;
 import org.knime.ext.sun.nodes.script.calculator.ColumnCalculator;
 import org.knime.ext.sun.nodes.script.calculator.FlowVariableProvider;
+import org.knime.ext.sun.nodes.script.calculator.WarningConsumer;
 import org.knime.ext.sun.nodes.script.expression.Expression;
 import org.knime.ext.sun.nodes.script.settings.JavaScriptingSettings;
 
@@ -92,7 +94,8 @@ public class StringManipulationNodeModel extends AbstractConditionalStreamingNod
     @Override
     protected DataTableSpec[] configure(final DataTableSpec[] inSpecs)
             throws InvalidSettingsException {
-        ColumnRearranger c = createColumnRearranger(inSpecs[0]);
+        // only used for configuration, so no warnings are actually issued
+        ColumnRearranger c = createColumnRearranger(inSpecs[0], WarningConsumer.log(getLogger()));
         return new DataTableSpec[]{c.createSpec()};
     }
 
@@ -103,18 +106,32 @@ public class StringManipulationNodeModel extends AbstractConditionalStreamingNod
     protected BufferedDataTable[] execute(final BufferedDataTable[] inData,
             final ExecutionContext exec) throws Exception {
         DataTableSpec inSpec = inData[0].getDataTableSpec();
-        ColumnRearranger c = createColumnRearranger(inSpec);
+        var messageBuilder = createMessageBuilder();
+        ColumnRearranger c = createColumnRearranger(inSpec, WarningConsumer.wrap(messageBuilder, 0));
         m_rowCount = inData[0].size();
         try {
             BufferedDataTable o = exec.createColumnRearrangeTable(
                     inData[0], c, exec);
+            setWarningIfNecessary(messageBuilder);
             return new BufferedDataTable[]{o};
         } finally {
             m_rowCount = -1L;
         }
     }
 
-    private ColumnRearranger createColumnRearranger(final DataTableSpec spec)
+    private void setWarningIfNecessary(final MessageBuilder messageBuilder) {
+        var issueCount = messageBuilder.getIssueCount();
+        if (issueCount == 1) {
+            messageBuilder.withSummary("Problems in one row: " + messageBuilder.getFirstIssue().orElseThrow());
+        } else if (issueCount > 1) {
+            messageBuilder.withSummary("Problems in " + issueCount + " rows. First error: "
+                + messageBuilder.getFirstIssue().orElseThrow());
+        }
+        messageBuilder.build().ifPresent(this::setWarning);
+    }
+
+
+    private ColumnRearranger createColumnRearranger(final DataTableSpec spec, final WarningConsumer warningConsumer)
             throws InvalidSettingsException {
         if (m_settings.getExpression() == null) {
             throw new InvalidSettingsException("No expression has been set.");
@@ -125,7 +142,7 @@ public class StringManipulationNodeModel extends AbstractConditionalStreamingNod
             m_settings.getJavaScriptingSettings();
         try {
             settings.setInputAndCompile(spec);
-            ColumnCalculator cc = new ColumnCalculator(settings, this);
+            ColumnCalculator cc = new ColumnCalculator(settings, this, warningConsumer);
             ColumnRearranger result = new ColumnRearranger(spec);
             if (isReplace) {
                 result.replace(cc, colName);
@@ -146,7 +163,7 @@ public class StringManipulationNodeModel extends AbstractConditionalStreamingNod
     protected ColumnRearranger createColumnRearranger(final DataTableSpec spec, final long rowCount)
         throws InvalidSettingsException {
         m_rowCount = rowCount;
-        return createColumnRearranger(spec);
+        return createColumnRearranger(spec, WarningConsumer.log(getLogger()));
     }
 
     /**
@@ -189,7 +206,7 @@ public class StringManipulationNodeModel extends AbstractConditionalStreamingNod
         } else if (String.class.equals(type)) {
             return peekFlowVariableString(name);
         } else {
-            throw new RuntimeException("Invalid variable class: " + type);
+            throw new RuntimeException(String.format("Unsupported variable type '%s' selected.", type.getSimpleName()));
         }
     }
 
