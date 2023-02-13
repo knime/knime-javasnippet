@@ -88,6 +88,8 @@ public class ColumnCalculator implements CellFactory {
 
     private final DataColumnSpec[] m_colSpec;
 
+    private final WarningConsumer m_warningConsumer;
+
     private Map<InputField, Object> m_flowVarAssignmentMap;
 
     /**
@@ -105,19 +107,38 @@ public class ColumnCalculator implements CellFactory {
      * @param flowVarProvider Accessor for flow variables (the NodeModel)
      * @throws InstantiationException if the instance cannot be instantiated.
      * @throws InvalidSettingsException If settings invalid.
+     * @deprecated use {@link #ColumnCalculator(JavaScriptingSettings, FlowVariableProvider, WarningConsumer)} instead
      */
+    @Deprecated
     public ColumnCalculator(final JavaScriptingSettings settings,
             final FlowVariableProvider flowVarProvider)
             throws InstantiationException, InvalidSettingsException {
+        this(settings, flowVarProvider, WarningConsumer.log(LOGGER));
+    }
+
+    /**
+     * Creates new factory for a column appender. It creates an instance of the
+     * temporary java code, sets the fields dynamically and evaluates the
+     * expression.
+     *
+     * @param settings settings & other infos (e.g. return type)
+     * @param flowVarProvider Accessor for flow variables (the NodeModel)
+     * @param warningConsumer accepts warnings that are uttered during the execution
+     * @throws InstantiationException if the instance cannot be instantiated.
+     * @throws InvalidSettingsException If settings invalid.
+     */
+    public ColumnCalculator(final JavaScriptingSettings settings, final FlowVariableProvider flowVarProvider,
+        final WarningConsumer warningConsumer) throws InstantiationException, InvalidSettingsException {
         m_settings = settings;
         m_flowVarProvider = flowVarProvider;
+        @SuppressWarnings("resource")
         Expression compiledExpression = settings.getCompiledExpression();
         if (compiledExpression == null) {
-            throw new InstantiationException(
-                    "No compiled expression in settings");
+            throw new InstantiationException("No compiled expression in the node settings.");
         }
         m_expression = compiledExpression.getInstance();
         m_colSpec = new DataColumnSpec[]{m_settings.getNewColSpec()};
+        m_warningConsumer = warningConsumer;
     }
 
     /**
@@ -132,8 +153,13 @@ public class ColumnCalculator implements CellFactory {
      * {@inheritDoc}
      */
     @Override
-    public DataCell[] getCells(final DataRow row) {
-        return new DataCell[]{calculate(row)};
+    public DataCell[] getCells(final DataRow row, final long rowIndex) {
+        if (rowIndex > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException(String.format(
+                "The Java Snippet based nodes don't support input tables with more than %s rows."
+                    , Integer.MAX_VALUE));
+        }
+        return new DataCell[]{calculate(row, (int)rowIndex)};
     }
 
     /**
@@ -150,38 +176,31 @@ public class ColumnCalculator implements CellFactory {
      * Performs the calculation.
      *
      * @param row the row to process
+     * @param rowIndex the index of the row
      * @return the resulting cell
      */
-    public DataCell calculate(final DataRow row) {
+    public DataCell calculate(final DataRow row, final int rowIndex) {
         if (m_flowVarAssignmentMap == null) {
-            m_flowVarAssignmentMap = new HashMap<InputField, Object>();
-            for (Map.Entry<InputField, ExpressionField> e
-                    : m_expression.getFieldMap().entrySet()) {
+            m_flowVarAssignmentMap = new HashMap<>();
+            for (Map.Entry<InputField, ExpressionField> e : m_expression.getFieldMap().entrySet()) {
                 InputField f = e.getKey();
                 if (f.getFieldType().equals(FieldType.Variable)) {
                     Class<?> c = e.getValue().getFieldClass();
-                    m_flowVarAssignmentMap.put(f,
-                            m_flowVarProvider.readVariable(
-                                    f.getColOrVarName(), c));
+                    m_flowVarAssignmentMap.put(f, m_flowVarProvider.readVariable(f.getColOrVarName(), c));
                 }
             }
         }
         DataTableSpec spec = m_settings.getInputSpec();
         Class<?> returnType = m_settings.getReturnType();
         boolean isArrayReturn = m_settings.isArrayReturn();
-        Map<InputField, Object> nameValueMap =
-            new HashMap<InputField, Object>();
-        nameValueMap.put(new InputField(Expression.ROWINDEX,
-                FieldType.TableConstant), m_lastProcessedRow++);
-        nameValueMap.put(new InputField(Expression.ROWID,
-                FieldType.TableConstant), row.getKey().getString());
-        nameValueMap.put(new InputField(Expression.ROWCOUNT,
-                FieldType.TableConstant), m_flowVarProvider.getRowCount());
+        Map<InputField, Object> nameValueMap = new HashMap<>();
+        nameValueMap.put(new InputField(Expression.ROWINDEX, FieldType.TableConstant), rowIndex);
+        nameValueMap.put(new InputField(Expression.ROWID, FieldType.TableConstant), row.getKey().getString());
+        nameValueMap.put(new InputField(Expression.ROWCOUNT, FieldType.TableConstant), m_flowVarProvider.getRowCount());
         nameValueMap.putAll(m_flowVarAssignmentMap);
         for (int i = 0; i < row.getNumCells(); i++) {
             DataColumnSpec columnSpec = spec.getColumnSpec(i);
-            InputField inputField =
-                new InputField(columnSpec.getName(), FieldType.Column);
+            InputField inputField = new InputField(columnSpec.getName(), FieldType.Column);
             if (!m_expression.needsInputField(inputField)) {
                 continue;
             }
@@ -198,9 +217,8 @@ public class ColumnCalculator implements CellFactory {
                 } else {
                     if (!m_hasReportedMissing) {
                         m_hasReportedMissing = true;
-                        String message = "Row \"" + row.getKey() + "\" "
-                                + "contains missing value in column \""
-                                + columnSpec.getName() + "\" - returning missing";
+                        String message = "Row \"" + row.getKey() + "\" " + "contains missing value in column \""
+                            + columnSpec.getName() + "\" - returning missing";
                         LOGGER.warn(message + " (omitting further warnings)");
                     }
                     return DataType.getMissingCell();
@@ -234,13 +252,13 @@ public class ColumnCalculator implements CellFactory {
             if (cause instanceof InvocationTargetException) {
                 cause = ((InvocationTargetException)cause).getCause();
             }
-            String message =
-                cause != null ? cause.getMessage() : ee.getMessage();
-            LOGGER.warn("Evaluation of expression failed for row \""
-                    + row.getKey() + "\": " + message, ee);
+            String message = cause != null ? cause.getMessage() : ee.getMessage();
+            m_warningConsumer.addWarning(String.format(
+                "Evaluation of expression failed for row \"%s\": %s",row.getKey(), message), rowIndex);
         } catch (IllegalPropertyException ipe) {
-            LOGGER.warn("Evaluation of expression failed for row \""
-                    + row.getKey() + "\": " + ipe.getMessage(), ipe);
+            m_warningConsumer.addWarning(String.format(
+                "Evaluation of expression failed for row \"%s\": %s", row.getKey(), ipe.getMessage()),
+                rowIndex);
         }
         DataCell result = null;
         for (JavaSnippetType<?, ?, ?> t : JavaSnippetType.TYPES) {
@@ -256,9 +274,22 @@ public class ColumnCalculator implements CellFactory {
             }
         }
         if (result == null) {
-            throw new InternalError("No mapping for objects of class "
-                    + o.getClass().getName());
+            throw new InternalError("No mapping for objects of class " + o.getClass().getName());
         }
+        return result;
+    }
+
+    /**
+     * Performs the calculation.
+     *
+     * @param row the row to process
+     * @return the resulting cell
+     * @deprecated call {@link #calculate(DataRow, int)} instead
+     */
+    @Deprecated
+    public DataCell calculate(final DataRow row) {
+        var result = calculate(row, m_lastProcessedRow);
+        m_lastProcessedRow++;
         return result;
     }
 
