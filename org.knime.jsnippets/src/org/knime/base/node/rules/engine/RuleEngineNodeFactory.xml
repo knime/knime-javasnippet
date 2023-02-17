@@ -137,5 +137,7 @@ $Col0$ > 5 => $${SCol1}$$
 	<keywords>
 		<keyword>Condition</keyword>
 		<keyword>If then</keyword>
+		<keyword>Formula</keyword>
+		<keyword>Imputation</keyword>
 	</keywords>
 </knimeNode>

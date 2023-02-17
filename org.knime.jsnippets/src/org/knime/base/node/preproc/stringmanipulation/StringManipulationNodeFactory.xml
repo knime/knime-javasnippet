@@ -90,5 +90,7 @@
 		<keyword>Capitalize</keyword> <!-- Common String Manipulation function -->
 		<keyword>Concatenate</keyword> <!-- Common String Manipulation function -->
 		<keyword>Strip</keyword> <!-- Common String Manipulation function -->
+		<keyword>Formula</keyword>
+		<keyword>Replace</keyword>
 	</keywords>
 </knimeNode>

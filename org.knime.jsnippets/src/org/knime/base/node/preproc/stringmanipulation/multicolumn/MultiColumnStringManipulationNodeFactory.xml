@@ -145,5 +145,6 @@
 		<keyword>Capitalize</keyword> <!-- Common String Manipulation function -->
 		<keyword>Concatenate</keyword> <!-- Common String Manipulation function -->
 		<keyword>Strip</keyword> <!-- Common String Manipulation function -->
+		<keyword>Multi-field formula</keyword>
     </keywords>
 </knimeNode>
