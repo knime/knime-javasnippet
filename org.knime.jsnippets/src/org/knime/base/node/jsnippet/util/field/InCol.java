@@ -98,6 +98,13 @@ public class InCol extends JavaColumnField {
                     "Cannot convert from " + getDataType().getName() + " to " + getJavaType().getName());
             }
             m_converterFactoryId = m_factory.get().getIdentifier();
+        } else {
+            // m_converterFactoryId might be an outdated identifier/alias (AP-20486) - find & use the "true" identifier
+            Optional<DataCellToJavaConverterFactory<?, ?>> trueConverterFactory =
+                    ConverterUtil.getDataCellToJavaConverterFactory(m_converterFactoryId);
+            if (trueConverterFactory.map(f -> getDataType().isCompatible(f.getSourceType())).orElse(false)) {
+                setConverterFactory(m_knimeType, trueConverterFactory.get()); // NOSONAR guaranteed to be present
+            }
         }
     }
 
@@ -125,7 +132,7 @@ public class InCol extends JavaColumnField {
      * @return An optional converter factory, present if converter factory id setting is valid, empty if not found.
      */
     public Optional<DataCellToJavaConverterFactory<?, ?>> getConverterFactory() {
-        if (!m_factory.isPresent() || (m_factory.isPresent() && !m_factory.get().getIdentifier().equals(m_converterFactoryId))) {
+        if (m_factory.isEmpty() || !m_factory.get().getIdentifier().equals(m_converterFactoryId)) {
             m_factory = ConverterUtil.getDataCellToJavaConverterFactory(m_converterFactoryId);
         }
         return m_factory;
