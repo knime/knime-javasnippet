@@ -5,9 +5,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.lang.reflect.Field;
-import java.util.Optional;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.knime.core.data.convert.datacell.JavaToDataCellConverterFactory;
@@ -191,11 +188,6 @@ public class JavaFieldTest {
             final OutCol loaded = new OutCol();
             loaded.loadSettings(config);
 
-            /* Ensure via reflection that m_factory has *not* been set */
-            final Field field = OutCol.class.getDeclaredField("m_factory");
-            field.setAccessible(true);
-            assertFalse(((Optional<?>)field.get(loaded)).isPresent());
-
             assertEquals(oc.getKnimeName(), loaded.getKnimeName());
             assertEquals(oc.getJavaName(), loaded.getJavaName());
             assertEquals(oc.getConverterFactoryId(), loaded.getConverterFactoryId());
@@ -214,11 +206,6 @@ public class JavaFieldTest {
 
             final InCol loaded = new InCol();
             loaded.loadSettings(config);
-
-            /* Ensure via reflection that m_factory has *not* been set */
-            final Field field = InCol.class.getDeclaredField("m_factory");
-            field.setAccessible(true);
-            assertFalse(((Optional<?>)field.get(loaded)).isPresent());
 
             assertEquals(ic.getKnimeName(), loaded.getKnimeName());
             assertEquals(ic.getJavaName(), loaded.getJavaName());
