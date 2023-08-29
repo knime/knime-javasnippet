@@ -49,25 +49,31 @@ package org.knime.base.node.rules.engine;
 
 import java.text.ParseException;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import org.knime.base.node.rules.engine.Condition.MatchOutcome.MatchState;
 import org.knime.core.data.BooleanValue;
+import org.knime.core.data.DataCell;
 import org.knime.core.data.DataRow;
 import org.knime.core.data.DataTableSpec;
+import org.knime.core.data.DataType;
 import org.knime.core.data.DataValue;
-import org.knime.core.node.BufferedDataContainer;
+import org.knime.core.data.RowKey;
+import org.knime.core.data.TableBackend.RowFilter;
+import org.knime.core.data.v2.ReadValue;
+import org.knime.core.data.v2.RowRead;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.BufferedDataTable.KnowsRowCountTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
+import org.knime.core.node.InternalTableAPI;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.defaultnodesettings.SettingsModelBoolean;
 import org.knime.core.node.port.PortObjectSpec;
-import org.knime.core.node.streamable.BufferedDataTableRowOutput;
-import org.knime.core.node.streamable.DataTableRowInput;
 import org.knime.core.node.streamable.InputPortRole;
 import org.knime.core.node.streamable.OutputPortRole;
 import org.knime.core.node.streamable.PartitionInfo;
@@ -129,13 +135,51 @@ public class RuleEngineFilterNodeModel extends RuleEngineNodeModel {
     @Override
     protected BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec)
             throws Exception {
-        RowInput input = new DataTableRowInput(inData[0]);
-        final BufferedDataContainer first = exec.createDataContainer(inData[0].getDataTableSpec(), true);
-        final int nrOutPorts = getNrOutPorts();
-        final BufferedDataContainer second = exec.createDataContainer(inData[0].getDataTableSpec(), true);
-        BufferedDataTableRowOutput[] outputs = new BufferedDataTableRowOutput[] {new BufferedDataTableRowOutput(first), new BufferedDataTableRowOutput(second)};
-        execute(input , outputs, inData[0].size(), exec);
-        return nrOutPorts == 2 ? new BufferedDataTable[] {outputs[0].getDataTable(), outputs[1].getDataTable()} : new BufferedDataTable[] {outputs[0].getDataTable()};
+//        RowInput input = new DataTableRowInput(inData[0]);
+//        final BufferedDataContainer first = exec.createDataContainer(inData[0].getDataTableSpec(), true);
+//        final int nrOutPorts = getNrOutPorts();
+//        final BufferedDataContainer second = exec.createDataContainer(inData[0].getDataTableSpec(), true);
+//        BufferedDataTableRowOutput[] outputs = new BufferedDataTableRowOutput[] {new BufferedDataTableRowOutput(first),
+//            new BufferedDataTableRowOutput(second)};
+//        execute(input , outputs, inData[0].size(), exec);
+//        return nrOutPorts == 2 ? new BufferedDataTable[] {outputs[0].getDataTable(), outputs[1].getDataTable()} : new BufferedDataTable[] {outputs[0].getDataTable()};
+
+        BufferedDataTable table = inData[0];
+        DataTableSpec tableSpec = table.getDataTableSpec();
+        var filterColumns = IntStream.range(0, tableSpec.getNumColumns()).toArray();
+        // TODO row index should be input to filter
+        final VariableProvider provider = new VariableProvider() {
+            @Override
+            public Object readVariable(final String name, final Class<?> type) {
+                return RuleEngineFilterNodeModel.this.readVariable(name, type);
+            }
+
+            @Override
+            public long getRowCountLong() {
+                return table.size();
+            }
+
+            @Deprecated
+            @Override
+            public int getRowCount() {
+                return table.getRowCount();
+            }
+
+            @Override
+            @Deprecated
+            public int getRowIndex() {
+                return 0;
+            }
+
+            @Override
+            public long getRowIndexLong() {
+                return 0;
+            }
+        };
+        var filter = new RuleRowFilter(parseRules(tableSpec, RuleNodeSettings.RuleFilter), filterColumns, provider,
+            m_includeOnMatch.getBooleanValue());
+        var filteredTable = InternalTableAPI.filter(exec, table, filter);
+        return new BufferedDataTable[] {filteredTable};
     }
     /**
      * The real worker.
@@ -222,6 +266,89 @@ public class RuleEngineFilterNodeModel extends RuleEngineNodeModel {
         }
     }
 
+    private static final class RuleRowFilter implements RowFilter {
+
+        private final List<Rule> m_rules;
+
+        private final int[] m_filterColumns;
+
+        VariableProvider m_provider;
+
+        private final boolean m_includeOnMatch;
+
+        RuleRowFilter(final List<Rule> rules, final int[] filterColumns, final VariableProvider provider,
+            final boolean includeOnMatch) {
+            m_rules = rules;
+            m_filterColumns = filterColumns;
+            m_provider = provider;
+            m_includeOnMatch = includeOnMatch;
+        }
+
+        @Override
+        public boolean test(final RowRead t) {
+            var row = new RowReadDataRow(t);
+            for (Rule r : m_rules) {
+                if (r.getCondition().matches(row, m_provider).getOutcome() == MatchState.matchedAndStop) {
+                    //                        r.getSideEffect().perform(row, provider);
+                    DataValue value = r.getOutcome().getComputedResult(row, m_provider);
+                    if (value instanceof BooleanValue) {
+                        final BooleanValue bv = (BooleanValue)value;
+                        var isMatch = bv.getBooleanValue();
+                        return m_includeOnMatch ? isMatch : !isMatch;
+                    }
+                    // TODO the other match condition is confusing
+                }
+            }
+            return !m_includeOnMatch;
+        }
+
+        @Override
+        public int[] filterColumns() {
+            return m_filterColumns;
+        }
+
+    }
+
+    // TODO add RowFilter interface that accepts DataRow in core
+    private static final class RowReadDataRow implements DataRow {
+        private final RowRead m_rowRead;
+
+        RowReadDataRow(final RowRead rowRead) {
+            m_rowRead = rowRead;
+        }
+
+        @Override
+        public Iterator<DataCell> iterator() {
+            return null;
+        }
+
+        @Override
+        public int getNumCells() {
+            return m_rowRead.getNumColumns();
+        }
+
+        @Override
+        public RowKey getKey() {
+            return new RowKey(m_rowRead.getRowKey().getString());
+        }
+
+        @Override
+        public DataCell getCell(final int index) {
+            if (m_rowRead.isMissing(index)) {
+                return DataType.getMissingCell();
+            } else {
+                var value = m_rowRead.getValue(index);
+                if (value instanceof ReadValue readValue) {
+                    return readValue.getDataCell();
+                } else {
+                    return (DataCell)value;
+                }
+            }
+        }
+
+
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -258,7 +385,7 @@ public class RuleEngineFilterNodeModel extends RuleEngineNodeModel {
         final RuleFactory ruleFactory = RuleFactory.getInstance(RuleNodeSettings.RuleFilter);
         final boolean isDistributable = !hasNonDistributableRule(ruleFactory);
         //!hasNonStreamingRule(ruleFactory);
-        inputPortRoles[0] = isDistributable 
+        inputPortRoles[0] = isDistributable
                 ? InputPortRole.DISTRIBUTED_STREAMABLE : InputPortRole.NONDISTRIBUTED_STREAMABLE;
         return inputPortRoles;
     }
