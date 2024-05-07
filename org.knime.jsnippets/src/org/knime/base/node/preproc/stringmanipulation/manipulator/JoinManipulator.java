@@ -103,7 +103,7 @@ public class JoinManipulator extends AbstractDefaultToStringManipulator {
      */
     @Override
     public String getDescription() {
-        return "Joins to or more strings into a single string. "
+        return "Joins two or more strings into a single string. "
             + ""
             + "<br/>"
             + "<br/>"
