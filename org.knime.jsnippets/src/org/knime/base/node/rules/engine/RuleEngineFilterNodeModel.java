@@ -56,7 +56,7 @@ import org.knime.core.data.BooleanValue;
 import org.knime.core.data.DataRow;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DataValue;
-import org.knime.core.node.BufferedDataContainer;
+import org.knime.core.data.container.DataContainerSettings;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.BufferedDataTable.KnowsRowCountTable;
 import org.knime.core.node.CanceledExecutionException;
@@ -128,15 +128,24 @@ public class RuleEngineFilterNodeModel extends RuleEngineNodeModel {
      */
     @Override
     protected BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec)
-            throws Exception {
+        throws Exception {
         RowInput input = new DataTableRowInput(inData[0]);
-        final BufferedDataContainer first = exec.createDataContainer(inData[0].getDataTableSpec(), true);
-        final int nrOutPorts = getNrOutPorts();
-        final BufferedDataContainer second = exec.createDataContainer(inData[0].getDataTableSpec(), true);
-        BufferedDataTableRowOutput[] outputs = new BufferedDataTableRowOutput[] {new BufferedDataTableRowOutput(first), new BufferedDataTableRowOutput(second)};
-        execute(input , outputs, inData[0].size(), exec);
-        return nrOutPorts == 2 ? new BufferedDataTable[] {outputs[0].getDataTable(), outputs[1].getDataTable()} : new BufferedDataTable[] {outputs[0].getDataTable()};
+
+        final var containerSettings = DataContainerSettings.builder()//
+            .withInitializedDomain(true)// take the domain from the input table
+            .withDomainUpdate(true)// needed for backwards-compatibility
+            .withCheckDuplicateRowKeys(false)// no row keys are created
+            .build();
+
+        final var first = exec.createDataContainer(inData[0].getDataTableSpec(), containerSettings);
+        final var second = exec.createDataContainer(inData[0].getDataTableSpec(), containerSettings);
+        final var outputs = new BufferedDataTableRowOutput[]{new BufferedDataTableRowOutput(first),
+            new BufferedDataTableRowOutput(second)};
+        execute(input, outputs, inData[0].size(), exec);
+        return getNrOutPorts() == 2 ? new BufferedDataTable[]{outputs[0].getDataTable(), outputs[1].getDataTable()}
+            : new BufferedDataTable[]{outputs[0].getDataTable()};
     }
+
     /**
      * The real worker.
      * @param inData The input data as {@link RowInput}.
@@ -258,7 +267,7 @@ public class RuleEngineFilterNodeModel extends RuleEngineNodeModel {
         final RuleFactory ruleFactory = RuleFactory.getInstance(RuleNodeSettings.RuleFilter);
         final boolean isDistributable = !hasNonDistributableRule(ruleFactory);
         //!hasNonStreamingRule(ruleFactory);
-        inputPortRoles[0] = isDistributable 
+        inputPortRoles[0] = isDistributable
                 ? InputPortRole.DISTRIBUTED_STREAMABLE : InputPortRole.NONDISTRIBUTED_STREAMABLE;
         return inputPortRoles;
     }
