@@ -55,13 +55,16 @@ import java.io.StringReader;
 import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.tools.JavaFileObject.Kind;
 
+import org.apache.commons.io.FileUtils;
 import org.eclipse.jdt.internal.compiler.tool.EclipseFileObject;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DataType;
@@ -397,24 +400,19 @@ public final class Expression implements AutoCloseable {
     private static synchronized void ensureStaticTempClassPathExists()
         throws IOException {
         // the temp directory may get deleted under Linux if it has not been
-        // accessed for some time, see bug #3319
-        if ((tempClassPath == null) || !tempClassPath.isDirectory()) {
-            File tempClassPathDir =
+        // accessed for some time, see bug #3319 and AP-19656
+        if (!isStaticTempClassPathExistentAndValid()) {
+            FileUtils.deleteQuietly(tempClassPath); // apache commons, no exception thrown
+            final File tempClassPathDir =
                 FileUtil.createTempDir("knime_javasnippet", new File(KNIMEConstants.getKNIMETempDir()));
             for (Class<?> cl : REQUIRED_COMPILATION_UNITS) {
-                Package pack = cl.getPackage();
-                File childDir = tempClassPathDir;
-                for (String subDir : pack.getName().split("\\.")) {
-                    childDir = new File(childDir, subDir);
-                }
+                final File classFile = resolveToClassFileLocation(cl, tempClassPathDir);
+                final File childDir = classFile.getParentFile();
                 if (!childDir.isDirectory() && !childDir.mkdirs()) {
                     throw new IOException("Could not create temporary directory for Java Snippet class files: "
                         + childDir.getAbsolutePath());
                 }
-                String className = cl.getSimpleName();
-                className = className.concat(".class");
-                File classFile = new File(childDir, className);
-                ClassLoader loader = cl.getClassLoader();
+                final ClassLoader loader = cl.getClassLoader();
                 try (InputStream inStream = loader.getResourceAsStream(cl.getName().replace('.', '/') + ".class");
                         OutputStream outStream = new FileOutputStream(classFile)) {
                     FileUtil.copy(inStream, outStream);
@@ -422,6 +420,39 @@ public final class Expression implements AutoCloseable {
             }
             tempClassPath = tempClassPathDir;
         }
+    }
+
+    /**
+     * Added as part of AP-19656: Temp files, especially on Windows, are occasionally deleted. While the
+     * {@link FileUtil} class touches temp files regularly to prevent this, there is some unknown behavior that still
+     * deletes these files. So this method checks if the temporary class path exists and is valid. It iterates over the
+     * required compilation units and checks if the corresponding class files exist in the temporary directory. If the
+     * temporary class path does not exist, or if any of the required class files are missing, the method returns false.
+     * Otherwise, it returns true.
+     *
+     * @return boolean - true if the temporary class path exists and contains all required class files, false otherwise.
+     */
+    private static boolean isStaticTempClassPathExistentAndValid() {
+        if (!FileUtils.isDirectory(tempClassPath)) {
+            return false;
+        }
+        return Arrays.stream(REQUIRED_COMPILATION_UNITS) //
+            .map(cl -> resolveToClassFileLocation(cl, tempClassPath)) //
+            .allMatch(FileUtils::isRegularFile);
+        }
+
+    /**
+     * Resolve the class file location relative to the temp folder for the given class.
+     */
+    private static File resolveToClassFileLocation(final Class<?> cl, final File tempParentFolder) {
+        final Package pack = cl.getPackage();
+        File childDir = tempParentFolder;
+        for (String subDir : pack.getName().split("\\.")) {
+            childDir = new File(childDir, subDir);
+        }
+        String className = cl.getSimpleName();
+        className = className.concat(".class");
+        return new File(childDir, className);
     }
 
     /**
@@ -640,6 +671,17 @@ public final class Expression implements AutoCloseable {
     public void close() throws IOException {
         m_abstractExpressionClassLoader.close();
         FileUtil.deleteRecursively(m_instanceTempFolder);
+    }
+
+    /**
+     * Used in tests, do not use.
+     *
+     * @return the tempClassPath that is set, if at all.
+     * @noreference This method is not intended to be referenced by clients.
+     * @since 5.4
+     */
+    static Optional<File> getTempClassPathFolder() {
+        return Optional.ofNullable(tempClassPath);
     }
 
     /** Object that pairs the name of the field used in the temporarily created
