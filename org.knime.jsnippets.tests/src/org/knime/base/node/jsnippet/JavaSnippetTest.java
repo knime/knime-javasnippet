@@ -1,26 +1,3 @@
-package org.knime.base.node.jsnippet;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
-
-import java.lang.reflect.Field;
-
-import javax.swing.text.Document;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.knime.base.node.jsnippet.expression.Abort;
-import org.knime.base.node.jsnippet.expression.AbstractJSnippet;
-import org.knime.base.node.jsnippet.type.ConverterUtil;
-import org.knime.base.node.jsnippet.util.JavaSnippetFields;
-import org.knime.base.node.jsnippet.util.JavaSnippetSettings;
-import org.knime.base.node.jsnippet.util.field.InCol;
-import org.knime.base.node.jsnippet.util.field.OutCol;
-import org.knime.core.data.def.IntCell;
-import org.knime.core.data.def.StringCell;
-
 /*
  * ------------------------------------------------------------------------
  *
@@ -69,6 +46,28 @@ import org.knime.core.data.def.StringCell;
  * History
  *   20.02.2018 (Jonathan Hale): created
  */
+package org.knime.base.node.jsnippet;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
+
+import java.lang.reflect.Field;
+
+import javax.swing.text.Document;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.knime.base.node.jsnippet.expression.Abort;
+import org.knime.base.node.jsnippet.expression.AbstractJSnippet;
+import org.knime.base.node.jsnippet.type.ConverterUtil;
+import org.knime.base.node.jsnippet.util.JavaSnippetFields;
+import org.knime.base.node.jsnippet.util.JavaSnippetSettings;
+import org.knime.base.node.jsnippet.util.field.InCol;
+import org.knime.base.node.jsnippet.util.field.OutCol;
+import org.knime.core.data.def.IntCell;
+import org.knime.core.data.def.StringCell;
 
 /**
  * Test for {@link JavaSnippet}.
