@@ -58,6 +58,7 @@ import org.knime.core.data.DataType;
 import org.knime.core.data.DataValue;
 import org.knime.core.data.collection.CollectionDataValue;
 import org.knime.core.data.collection.ListCell;
+import org.knime.core.data.convert.ConverterFactory;
 import org.knime.core.data.convert.datacell.ArrayToCollectionConverterFactory;
 import org.knime.core.data.convert.datacell.JavaToDataCellConverterFactory;
 import org.knime.core.data.convert.datacell.JavaToDataCellConverterRegistry;
@@ -192,19 +193,21 @@ public class DeprecatedDateAndTimeUtil {
      * @return an optional converter factory.
      */
     public static Optional<DataCellToJavaConverterFactory<?, ?>> getDataCellToJavaConverterFactory(final String id) {
-        if (id == null)  {
+        if (id == null) {
             return Optional.empty();
         }
 
         if (id.startsWith(CollectionConverterFactory.class.getName())) {
-            final String elementConverterId = id.substring(CollectionConverterFactory.class.getName().length()+1, id.length()-1);
-            final Optional<DataCellToJavaConverterFactory<?, ?>> elementFactory = getDataCellToJavaConverterFactory(elementConverterId);
+            final var elementConverterId =
+                id.substring(CollectionConverterFactory.class.getName().length() + 1, id.length() - 1);
+            final var elementFactory = getDataCellToJavaConverterFactory(elementConverterId);
             if (elementFactory.isPresent()) {
-                return Optional.of(DataCellToJavaConverterRegistry.getInstance().getCollectionConverterFactory(elementFactory.get()));
+                return Optional.of(
+                    DataCellToJavaConverterRegistry.getInstance().getCollectionConverterFactory(elementFactory.get()));
             }
-        } else if (id.equals(toDateConverterFactory.getIdentifier())) {
+        } else if (idOrAnyAliasMatches(toDateConverterFactory, id)) {
             return Optional.of(toDateConverterFactory);
-        } else if (id.equals(toCalendarConverterFactory.getIdentifier())) {
+        } else if (idOrAnyAliasMatches(toCalendarConverterFactory, id)) {
             return Optional.of(toCalendarConverterFactory);
         }
 
@@ -218,23 +221,37 @@ public class DeprecatedDateAndTimeUtil {
      * @return an optional converter factory.
      */
     public static Optional<JavaToDataCellConverterFactory<?>> getJavaToDataCellConverterFactory(final String id) {
-        if (id == null)  {
+        if (id == null) {
             return Optional.empty();
         }
 
-       if (id.startsWith(ArrayToCollectionConverterFactory.class.getName())) {
-            final String elementConverterId = id.substring(ArrayToCollectionConverterFactory.class.getName().length()+1, id.length()-1);
-            final Optional<JavaToDataCellConverterFactory<?>> elementFactory = getJavaToDataCellConverterFactory(elementConverterId);
+        if (id.startsWith(ArrayToCollectionConverterFactory.class.getName())) {
+            final var elementConverterId =
+                id.substring(ArrayToCollectionConverterFactory.class.getName().length() + 1, id.length() - 1);
+            final var elementFactory = getJavaToDataCellConverterFactory(elementConverterId);
             if (elementFactory.isPresent()) {
-                return Optional.of(JavaToDataCellConverterRegistry.getInstance().getArrayConverterFactory(elementFactory.get()));
+                return Optional
+                    .of(JavaToDataCellConverterRegistry.getInstance().getArrayConverterFactory(elementFactory.get()));
             }
-        } else if (id.equals(calendarConverterFactory.getIdentifier())) {
+        } else if (idOrAnyAliasMatches(calendarConverterFactory, id)) {
             return Optional.of(calendarConverterFactory);
-        } else if (id.equals(dateConverterFactory.getIdentifier())) {
+        } else if (idOrAnyAliasMatches(dateConverterFactory, id)) {
             return Optional.of(dateConverterFactory);
         }
 
         return Optional.empty();
+    }
+
+    private static final boolean idOrAnyAliasMatches(final ConverterFactory<?, ?> fac, final String idToMatch) {
+        if (fac.getIdentifier().equals(idToMatch)) {
+            return true;
+        }
+        for (String alias : fac.getIdentifierAliases()) {
+            if (alias.equals(idToMatch)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
