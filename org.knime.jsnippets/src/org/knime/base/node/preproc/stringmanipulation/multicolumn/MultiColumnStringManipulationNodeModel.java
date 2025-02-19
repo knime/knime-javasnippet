@@ -281,8 +281,8 @@ class MultiColumnStringManipulationNodeModel extends AbstractConditionalStreamin
 
     @Override
     protected void reset() {
-        // called for instance after changing something and confirming in the node dialog
-        // or if something goes wrong in the node execution
+        m_inputSpecification = null;
+        m_configurator = null;
     }
 
     @Override
