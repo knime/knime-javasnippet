@@ -1,8 +1,4 @@
 autoEnabled=true
 bindingSuggestionsDisabled=false
 eclipse.preferences.version=1
-idePrefixKey=
 indexingBasedOnEclipsePlugIns=true
-projectKey=KNIME_knime-javasnippet
-serverId=SonarCloud
-sqPrefixKey=org.knime.ext.sun
