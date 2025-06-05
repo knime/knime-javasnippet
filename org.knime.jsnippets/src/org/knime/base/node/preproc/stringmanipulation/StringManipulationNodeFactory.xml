@@ -7,6 +7,9 @@
      capitalize or remove leading and trailing white spaces.</shortDescription>
     <fullDescription>
         <intro>
+        	<p>
+				This node is superseded by the "Expression" node. We advise to use the "Expression" node instead of this node.
+			</p>
 	        <p>
 				Manipulates strings like search and replace,
 				capitalize or remove leading and trailing white spaces.

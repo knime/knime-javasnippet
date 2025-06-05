@@ -6,6 +6,9 @@
 	<fullDescription>
 		<intro>
 			<p>
+				This node is superseded by the "Variable Expression" node. We advise to use the "Variable Expression" node instead of this node.
+			</p>
+			<p>
 				Manipulates or defines values of variables like search and replace,
                 capitalize or remove leading and trailing white spaces.
 			</p>
