@@ -58,6 +58,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -73,9 +75,6 @@ import org.knime.core.data.DataType;
 import org.knime.core.data.container.AbstractCellFactory;
 import org.knime.core.data.container.CellFactory;
 import org.knime.core.data.container.ColumnRearranger;
-import org.knime.core.data.def.DoubleCell;
-import org.knime.core.data.def.IntCell;
-import org.knime.core.data.def.StringCell;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeLogger;
 import org.knime.ext.sun.nodes.script.calculator.ColumnCalculator;
@@ -89,6 +88,7 @@ import org.knime.ext.sun.nodes.script.expression.Expression.InputField;
 import org.knime.ext.sun.nodes.script.expression.ExpressionInstance;
 import org.knime.ext.sun.nodes.script.expression.IllegalPropertyException;
 import org.knime.ext.sun.nodes.script.settings.JavaScriptingSettings;
+import org.knime.ext.sun.nodes.script.settings.JavaSnippetType;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 
@@ -376,7 +376,11 @@ public class MultiColumnStringManipulationCalculator extends AbstractCellFactory
         m_expressionsByType = managedExpressions;
         m_evaluateWithMissingValues = evaluateWithMissingValues;
         m_failOnEvaluationProblems = failOnEvaluationProblems;
-        m_transformer = transformer;    }
+        m_transformer = transformer;
+    }
+
+    private static final Pattern CURRENT_COLUMN_PATTERN =
+        Pattern.compile(Pattern.quote(MultiColumnStringManipulationSettings.getCurrentColumnReference()));
 
     /**
      * Prepare the compilation of the expression by configuring a JavaScriptingSettings objects.
@@ -389,10 +393,11 @@ public class MultiColumnStringManipulationCalculator extends AbstractCellFactory
         final MultiColumnStringManipulationConfigurator transformer) throws InvalidSettingsException {
 
         // TODO this would be nicer to have in one place
-        Map<DataType, String> typeStrings = new HashMap<>();
-        typeStrings.put(DataType.getType(StringCell.class), "S");
-        typeStrings.put(DataType.getType(IntCell.class), "I");
-        typeStrings.put(DataType.getType(DoubleCell.class), "D");
+        final Map<Class<?>, String> typeStrings = Map.of(
+            String.class, "S",
+            Integer.class, "I",
+            Double.class, "D"
+        );
 
         Map<DataType, JavaScriptingSettings> result = new HashMap<>();
 
@@ -409,19 +414,30 @@ public class MultiColumnStringManipulationCalculator extends AbstractCellFactory
             // replace occurrences of the current column reference with a virtual flow variable
             //
 
-            final String searchFor = MultiColumnStringManipulationSettings.getCurrentColumnReference();
-            final String currentColumnReferenceName =
-                MultiColumnStringManipulationSettings.getCurrentColumnReferenceName();
-
-            final String typeString = typeStrings.get(columnType);
-
             // replace $$CURRENTCOLUMN$$ with a virtual flow variable $${SCURRENTCOLUMN}$$ (see class documentation)
-            final String expressionWithVariable = transformer.getExpressionString().replaceAll(
-                // e.g., search for $$CURRENTCOLUMN$$
-                java.util.regex.Pattern.quote(searchFor),
-                // ...and replace with $${SCURRENTCOLUMN}$$
+            // e.g., search for $$CURRENTCOLUMN$$ and replace with $${SCURRENTCOLUMN}$$
+            final String expressionString = transformer.getExpressionString();
+            final Matcher matcher = CURRENT_COLUMN_PATTERN.matcher(expressionString);
+
+            final String expressionWithVariable;
+            if (matcher.find()) {
+                // the current column is actually being used
+                final Class<?> javaClass = JavaSnippetType.findType(columnType).getJavaClass(false);
+                final String typeString = typeStrings.get(javaClass);
+                if (typeString == null) {
+                    throw new InvalidSettingsException(
+                        "Column type %s maps to Java type %s, this node only supports Integer, Double or String"
+                            .formatted(columnType, javaClass.getSimpleName()));
+                }
+
+                final String currentColumnRef = MultiColumnStringManipulationSettings.getCurrentColumnReferenceName();
+
                 // escape $ since it is not a regex group reference
-                "\\$\\${" + typeString + currentColumnReferenceName + "}\\$\\$");
+                expressionWithVariable = matcher.replaceAll("\\$\\${" + typeString + currentColumnRef + "}\\$\\$");
+            } else {
+                // nothing to do
+                expressionWithVariable = expressionString;
+            }
 
             s.setExpression("return " + expressionWithVariable + ";");
 
