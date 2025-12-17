@@ -85,24 +85,24 @@ public class StringManipulationSettings {
     private static final NodeLogger LOGGER =
         NodeLogger.getLogger(StringManipulationSettings.class);
     /** NodeSettings key for the expression. */
-    private static final String CFG_EXPRESSION = "expression";
+    static final String CFG_EXPRESSION = "expression";
 
     /** NodeSettings key which column is to be replaced or appended. */
-    private static final String CFG_COLUMN_NAME = "replaced_column";
+    static final String CFG_COLUMN_NAME = "replaced_column";
 
     /** NodeSettings key is replace or append column? */
-    private static final String CFG_IS_REPLACE = "append_column";
+    static final String CFG_IS_REPLACE = "append_column";
 
     /** NodeSettings key for the return type of the expression. */
-    private static final String CFG_RETURN_TYPE = "return_type";
+    static final String CFG_RETURN_TYPE = "return_type";
 
     /** NodeSettings key whether to check for compilation problems when
      * dialog closes (not used in the nodemodel, though). */
-    private static final String CFG_TEST_COMPILATION =
+    static final String CFG_TEST_COMPILATION =
         "test_compilation_on_dialog_close";
 
     /** NodeSettings key how to treat missing values. */
-    private static final String CFG_INSERT_MISSING_AS_NULL =
+    static final String CFG_INSERT_MISSING_AS_NULL =
         "insert_missing_as_null";
 
     private String m_expression;
