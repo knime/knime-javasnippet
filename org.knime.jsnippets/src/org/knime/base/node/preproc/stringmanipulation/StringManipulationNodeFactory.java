@@ -48,8 +48,9 @@
 package org.knime.base.node.preproc.stringmanipulation;
 
 import org.knime.core.node.NodeDialogPane;
-import org.knime.core.node.NodeFactory;
 import org.knime.core.node.NodeView;
+import org.knime.core.webui.node.dialog.scripting.AbstractDefaultScriptingNodeDialog;
+import org.knime.core.webui.node.dialog.scripting.AbstractFallbackScriptingNodeFactory;
 
 /**
  * The node factory of the string manipulation node.
@@ -57,7 +58,7 @@ import org.knime.core.node.NodeView;
  * @author Heiko Hofer
  */
 public class StringManipulationNodeFactory
-    extends NodeFactory<StringManipulationNodeModel> {
+    extends AbstractFallbackScriptingNodeFactory<StringManipulationNodeModel> {
 
     /**
      * {@inheritDoc}
@@ -85,19 +86,22 @@ public class StringManipulationNodeFactory
         throw new IndexOutOfBoundsException();
     }
 
+
     /**
      * {@inheritDoc}
+     * @since 5.9
      */
     @Override
-    protected boolean hasDialog() {
-        return true;
+    public AbstractDefaultScriptingNodeDialog createNodeDialog() {
+        return new StringManipulationScriptingNodeDialog();
     }
 
     /**
      * {@inheritDoc}
+     * @since 5.9
      */
     @Override
-    protected NodeDialogPane createNodeDialogPane() {
+    public NodeDialogPane createLegacyNodeDialogPane() {
         return new StringManipulationNodeDialog(false);
     }
 
