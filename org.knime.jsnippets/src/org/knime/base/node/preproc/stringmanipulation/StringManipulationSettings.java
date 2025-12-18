@@ -124,7 +124,7 @@ public class StringManipulationSettings {
      * @param settings To save to.
      */
     public void saveSettingsTo(final NodeSettingsWO settings) {
-        settings.addString(CFG_EXPRESSION, m_expression);
+        settings.addString(CFG_EXPRESSION, m_expression == null ? "" : m_expression);
         settings.addString(CFG_COLUMN_NAME, m_colName);
         settings.addBoolean(CFG_IS_REPLACE, m_isReplace);
         String rType = m_returnType != null ? m_returnType.getName() : null;
