@@ -79,6 +79,22 @@ public class StringManipulationScriptingNodeDialog extends AbstractDefaultScript
         super(StringManipulationScriptingNodeSettings.class);
     }
 
+    private static final String COLUMN_ALIAS_TEMPLATE = """
+            {{~#if subItems.[0].insertionText~}}
+                {{ subItems.[0].insertionText }}
+            {{~else~}}
+                ${{~{ subItems.[0].name }~}}$
+            {{~/if~}}
+            """;
+
+    private static final String FLOWVAR_ALIAS_TEMPLATE = """
+            {{~#if subItems.[0].insertionText~}}
+                {{ subItems.[0].insertionText }}
+            {{~else~}}
+                $${ {{~{ subItems.[0].name }~}} }$$
+            {{~/if~}}
+            """;
+
     /**
      * {@inheritDoc}
      */
@@ -97,7 +113,7 @@ public class StringManipulationScriptingNodeDialog extends AbstractDefaultScript
                     // Create a single InputOutputModel representing the table with all its columns
                     var inputModel = InputOutputModel.table() //
                         .name("Input Table") //
-                        .codeAlias("knime_input") //
+                        .subItemCodeAliasTemplate(COLUMN_ALIAS_TEMPLATE) //
                         .subItems(tableSpec, dataType -> dataType.getName()) //
                         .build();
                     inputObjects.add(inputModel);
@@ -111,6 +127,7 @@ public class StringManipulationScriptingNodeDialog extends AbstractDefaultScript
                     .orElseGet(List::of);
                 return InputOutputModel.flowVariables() //
                     .subItems(flowVariables, varType -> true) //
+                    .subItemCodeAliasTemplate(FLOWVAR_ALIAS_TEMPLATE) //
                     .build();
             }) //
             .addDataSupplier("outputObjects", Collections::emptyList) //
