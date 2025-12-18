@@ -50,8 +50,10 @@ package org.knime.base.node.preproc.stringmanipulation;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.port.PortObjectSpec;
@@ -63,9 +65,11 @@ import org.knime.core.webui.node.dialog.scripting.WorkflowControl;
 
 /**
  *
- * @author Marc Lehner
+ * @author Marc Lehner, KNIME AG, Zurich, Switzerland
+ * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  * @since 5.9
  */
+@SuppressWarnings("restriction")
 public class StringManipulationScriptingNodeDialog extends AbstractDefaultScriptingNodeDialog {
 
     /**
@@ -82,25 +86,25 @@ public class StringManipulationScriptingNodeDialog extends AbstractDefaultScript
     protected GenericInitialDataBuilder getInitialData(final NodeContext context) {
         var workflowControl = new WorkflowControl(context.getNodeContainer());
         return GenericInitialDataBuilder.createDefaultInitialDataBuilder(NodeContext.getContext()) //
-                .addDataSupplier("inputObjects", () -> {
-                    var inputSpecs = Optional.ofNullable(workflowControl.getInputSpec()) //
-                        .orElse(new PortObjectSpec[0]);
+            .addDataSupplier("inputObjects", () -> {
+                var inputSpecs = Optional.ofNullable(workflowControl.getInputSpec()) //
+                    .orElse(new PortObjectSpec[0]);
 
-                    var inputObjects = new ArrayList<InputOutputModel>();
+                var inputObjects = new ArrayList<InputOutputModel>();
 
-                    // Check if we have at least one input and it's a DataTableSpec
-                    if (inputSpecs.length > 0 && inputSpecs[0] instanceof DataTableSpec tableSpec) {
-                        // Create a single InputOutputModel representing the table with all its columns
-                        var inputModel = InputOutputModel.table() //
-                            .name("Input Table") //
-                            .codeAlias("knime_input") //
-                            .subItems(tableSpec, dataType -> dataType.getName()) //
-                            .build();
-                        inputObjects.add(inputModel);
-                    }
+                // Check if we have at least one input and it's a DataTableSpec
+                if (inputSpecs.length > 0 && inputSpecs[0] instanceof DataTableSpec tableSpec) {
+                    // Create a single InputOutputModel representing the table with all its columns
+                    var inputModel = InputOutputModel.table() //
+                        .name("Input Table") //
+                        .codeAlias("knime_input") //
+                        .subItems(tableSpec, dataType -> dataType.getName()) //
+                        .build();
+                    inputObjects.add(inputModel);
+                }
 
-                    return inputObjects;
-                }) //
+                return inputObjects;
+            }) //
             .addDataSupplier("flowVariables", () -> {
                 var flowVariables = Optional.ofNullable(workflowControl.getFlowObjectStack()) //
                     .map(stack -> stack.getAllAvailableFlowVariables().values()) //
@@ -111,7 +115,44 @@ public class StringManipulationScriptingNodeDialog extends AbstractDefaultScript
             }) //
             .addDataSupplier("outputObjects", Collections::emptyList) //
             .addDataSupplier("language", () -> "plaintext") //
-            .addDataSupplier("fileName", () -> "script.txt");
+            .addDataSupplier("fileName", () -> "script.txt") //
+            .addDataSupplier("staticCompletionItems", () -> getCompletionItems(workflowControl));
+    }
+
+    private static StaticCompletionItem[] getCompletionItems(final WorkflowControl workflowControl) {
+        Set<StaticCompletionItem> items = new HashSet<>();
+        StringManipulatorProvider.getDefault().getCategories().stream()
+            .forEach(c -> StringManipulatorProvider.getDefault().getManipulators(c).forEach(m -> {
+                var displayName = m.getDisplayName();
+                var arguments = displayName.substring(displayName.indexOf('(') + 1, displayName.lastIndexOf(')'));
+                items.add(new StaticCompletionItem(m.getName(), arguments, m.getDescription(), m.getReturnType().getSimpleName()));
+            }));
+
+        // Add flow variables
+        Optional.ofNullable(workflowControl.getFlowObjectStack()) //
+                .map(stack -> stack.getAllAvailableFlowVariables().values()) //
+                .orElseGet(List::of) //
+                .forEach(fv -> items.add( //
+                    new StaticCompletionItem(//
+                        "$$" + fv.getName() + "$$", //
+                        null, //
+                        "Input flow variable '" + fv.getName() + "'", //
+                        fv.getVariableType().getSimpleType().getSimpleName())));
+
+        // Add columns
+        var inputSpecs = Optional.ofNullable(workflowControl.getInputSpec()) //
+                .orElse(new PortObjectSpec[0]);
+
+        if (inputSpecs.length > 0 && inputSpecs[0] instanceof DataTableSpec tableSpec) {
+            tableSpec.forEach(dcs -> items.add( //
+                new StaticCompletionItem( //
+                    "$" + dcs.getName() + "$", //
+                    null, //
+                    "Input column '" + dcs.getName() + "'", //
+                    dcs.getType().getName())));
+        }
+
+        return items.toArray(StaticCompletionItem[]::new);
     }
 
 }
