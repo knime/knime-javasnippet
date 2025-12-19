@@ -57,6 +57,7 @@ import java.util.Set;
 
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.port.PortObjectSpec;
+import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.webui.node.dialog.scripting.AbstractDefaultScriptingNodeDialog;
@@ -150,29 +151,45 @@ public class StringManipulationScriptingNodeDialog extends AbstractDefaultScript
             .addDataSupplier("staticCompletionItems", () -> getCompletionItems(workflowControl));
     }
 
+    private static char getFlowVariableTypePrefix(final FlowVariable variable) {
+        if (variable.getVariableType().getSimpleType() == Double.class) {
+            return 'D';
+        } else if (variable.getVariableType().getSimpleType() == String.class) {
+            return 'S';
+        } else if (variable.getVariableType().getSimpleType() == Integer.class) {
+            return 'I';
+        }
+        throw new IllegalArgumentException(
+            "Flow Variable is of unsupported type: " + variable.getVariableType().getIdentifier());
+    }
+
     private static StaticCompletionItem[] getCompletionItems(final WorkflowControl workflowControl) {
         Set<StaticCompletionItem> items = new HashSet<>();
         StringManipulatorProvider.getDefault().getCategories().stream()
             .forEach(c -> StringManipulatorProvider.getDefault().getManipulators(c).forEach(m -> {
                 var displayName = m.getDisplayName();
                 var arguments = displayName.substring(displayName.indexOf('(') + 1, displayName.lastIndexOf(')'));
-                items.add(new StaticCompletionItem(m.getName(), arguments, m.getDescription(), m.getReturnType().getSimpleName()));
+                items.add(new StaticCompletionItem(m.getName(), arguments, m.getDescription(),
+                    m.getReturnType().getSimpleName()));
             }));
 
         // Add flow variables
         Optional.ofNullable(workflowControl.getFlowObjectStack()) //
-                .map(stack -> stack.getAllAvailableFlowVariables().values()) //
-                .orElseGet(List::of) //
-                .forEach(fv -> items.add( //
-                    new StaticCompletionItem(//
-                        "$$" + fv.getName() + "$$", //
+            .map(stack -> stack.getAllAvailableFlowVariables().values()) //
+            .orElseGet(List::of) //
+            .forEach(fv -> {
+                if (SUPPORTED_VARIABLE_TYPES.contains(fv.getVariableType())) {
+                    items.add(new StaticCompletionItem(//
+                        "$${" + getFlowVariableTypePrefix(fv) + fv.getName() + "}$$", //
                         null, //
                         "Input flow variable '" + fv.getName() + "'", //
-                        fv.getVariableType().getSimpleType().getSimpleName())));
+                        fv.getVariableType().getSimpleType().getSimpleName()));
+                }
+            });
 
         // Add columns
         var inputSpecs = Optional.ofNullable(workflowControl.getInputSpec()) //
-                .orElse(new PortObjectSpec[0]);
+            .orElse(new PortObjectSpec[0]);
 
         if (inputSpecs.length > 0 && inputSpecs[0] instanceof DataTableSpec tableSpec) {
             tableSpec.forEach(dcs -> items.add( //
