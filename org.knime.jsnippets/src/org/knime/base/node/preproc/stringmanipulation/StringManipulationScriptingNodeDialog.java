@@ -58,6 +58,7 @@ import java.util.Set;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.workflow.NodeContext;
+import org.knime.core.node.workflow.VariableType;
 import org.knime.core.webui.node.dialog.scripting.AbstractDefaultScriptingNodeDialog;
 import org.knime.core.webui.node.dialog.scripting.GenericInitialDataBuilder;
 import org.knime.core.webui.node.dialog.scripting.InputOutputModel;
@@ -88,12 +89,21 @@ public class StringManipulationScriptingNodeDialog extends AbstractDefaultScript
             """;
 
     private static final String FLOWVAR_ALIAS_TEMPLATE = """
-            {{~#if subItems.[0].insertionText~}}
-                {{ subItems.[0].insertionText }}
-            {{~else~}}
-                $${ {{~{ subItems.[0].name }~}} }$$
-            {{~/if~}}
-            """;
+            {{#when subItems.[0].type.id 'eq' 'INTEGER'~}}
+              $${I {{~{ subItems.[0].name }~}} }$$
+            {{~/when~}}
+            {{~#when subItems.[0].type.id 'eq' 'DOUBLE'~}}
+              $${D {{~{subItems.[0].name}~}} }$$
+            {{~/when~}}
+            {{~#when subItems.[0].type.id 'eq' 'STRING'~}}
+              $${S {{~{subItems.[0].name}~}} }$$
+            {{~/when}}""";
+
+    private static final Set<VariableType<?>> SUPPORTED_VARIABLE_TYPES = Set.of(
+        VariableType.StringType.INSTANCE,
+        VariableType.IntType.INSTANCE,
+        VariableType.DoubleType.INSTANCE
+    );
 
     /**
      * {@inheritDoc}
@@ -124,7 +134,11 @@ public class StringManipulationScriptingNodeDialog extends AbstractDefaultScript
             .addDataSupplier("flowVariables", () -> {
                 var flowVariables = Optional.ofNullable(workflowControl.getFlowObjectStack()) //
                     .map(stack -> stack.getAllAvailableFlowVariables().values()) //
-                    .orElseGet(List::of);
+                    .orElseGet(List::of) //
+                    .stream() //
+                    .filter(fv -> SUPPORTED_VARIABLE_TYPES.contains(fv.getVariableType())) //
+                    .toList();
+
                 return InputOutputModel.flowVariables() //
                     .subItems(flowVariables, varType -> true) //
                     .subItemCodeAliasTemplate(FLOWVAR_ALIAS_TEMPLATE) //
