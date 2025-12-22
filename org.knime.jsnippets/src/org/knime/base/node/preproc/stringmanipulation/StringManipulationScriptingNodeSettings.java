@@ -81,7 +81,7 @@ import org.knime.node.parameters.widget.text.TextInputWidget;
  */
 class StringManipulationScriptingNodeSettings implements NodeParameters {
     @Persist(configKey = StringManipulationSettings.CFG_EXPRESSION)
-    String m_script = "this could be a string manipulation script";
+    String m_expression = "";
 
     @Widget(title = "Insert missing as null",
             description = "If checked, missing values in the input columns will be treated as null in the expression.")

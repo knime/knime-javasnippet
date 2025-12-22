@@ -148,6 +148,7 @@ public class StringManipulationScriptingNodeDialog extends AbstractDefaultScript
             .addDataSupplier("outputObjects", Collections::emptyList) //
             .addDataSupplier("language", () -> "plaintext") //
             .addDataSupplier("fileName", () -> "script.txt") //
+            .addDataSupplier("mainScriptConfigKey", () -> "expression") //
             .addDataSupplier("staticCompletionItems", () -> getCompletionItems(workflowControl));
     }
 
