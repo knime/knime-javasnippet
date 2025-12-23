@@ -1,5 +1,6 @@
 /*
  * ------------------------------------------------------------------------
+ *
  *  Copyright by KNIME AG, Zurich, Switzerland
  *  Website: http://www.knime.com; Email: contact@knime.com
  *
@@ -40,70 +41,59 @@
  *  propagated with or for interoperation with KNIME.  The owner of a Node
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
- * ------------------------------------------------------------------------
+ * ---------------------------------------------------------------------
  *
  * History
- *   30.09.2011 (hofer): created
+ *   13 Jan 2026 (Ali Asghar Marvi): created
  */
-package org.knime.base.node.preproc.stringmanipulation.variable;
+package org.knime.base.node.preproc.stringmanipulation;
 
-import org.knime.base.node.preproc.stringmanipulation.StringManipulationNodeDialog;
-import org.knime.core.node.NodeDialogPane;
-import org.knime.core.node.NodeView;
-import org.knime.core.webui.node.dialog.scripting.AbstractDefaultScriptingNodeDialog;
-import org.knime.core.webui.node.dialog.scripting.AbstractFallbackScriptingNodeFactory;
+import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeSettingsRO;
+import org.knime.core.node.NodeSettingsWO;
+import org.knime.node.parameters.persistence.NodeParametersPersistor;
 
 /**
- * The node factory of the string manipulation (variable) node.
+ * Utility class for String Manipulation WebUI components.
  *
- * @author Simon Schmid
+ * @author Ali Asghar Marvi, KNIME GmbH, Berlin, Germany
+ * @since 5.10
  */
-public class StringManipulationVariableNodeFactory
-    extends AbstractFallbackScriptingNodeFactory<StringManipulationVariableNodeModel> {
+public final class StringManipulationWebUIUtils {
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public StringManipulationVariableNodeModel createNodeModel() {
-        return new StringManipulationVariableNodeModel();
+    private StringManipulationWebUIUtils() {
+        // Utility class, do not instantiate
     }
 
     /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected int getNrNodeViews() {
-        return 0;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public NodeView<StringManipulationVariableNodeModel> createNodeView(final int viewIndex,
-        final StringManipulationVariableNodeModel nodeModel) {
-        throw new IndexOutOfBoundsException();
-    }
-
-    /**
-     * {@inheritDoc}
+     * This custom persistor is used to persist the return type class name in the String Manipulation and String
+     * Manipulation (Variable) nodes. This is needed for backward compatibility with old settings which expect specific
+     * null handling for the {@code return_type} config key, as previously done in {@link StringManipulationSettings}.
      *
-     * @since 5.10
      */
-    @Override
-    public AbstractDefaultScriptingNodeDialog createNodeDialog() {
-        return new StringManipulationVariableScriptingNodeDialog();
-    }
+    public static final class ReturnTypePersistor implements NodeParametersPersistor<Class<?>> {
 
-    /**
-     * {@inheritDoc}
-     *
-     * @since 5.10
-     */
-    @Override
-    public NodeDialogPane createLegacyNodeDialogPane() {
-        return new StringManipulationNodeDialog(true);
-    }
+        @Override
+        public Class<?> load(final NodeSettingsRO settings) throws InvalidSettingsException {
+            String returnType = settings.getString(StringManipulationSettings.CFG_RETURN_TYPE, null);
 
+            if (returnType == null) {
+                return null;
+            } else {
+                return StringManipulationSettings.getClassForReturnType(returnType);
+            }
+
+        }
+
+        @Override
+        public void save(final Class<?> param, final NodeSettingsWO settings) {
+            String returnTypeStr = param != null ? param.getName() : null;
+            settings.addString(StringManipulationSettings.CFG_RETURN_TYPE, returnTypeStr);
+        }
+
+        @Override
+        public String[][] getConfigPaths() {
+            return new String[][]{{StringManipulationSettings.CFG_RETURN_TYPE}};
+        }
+    }
 }
