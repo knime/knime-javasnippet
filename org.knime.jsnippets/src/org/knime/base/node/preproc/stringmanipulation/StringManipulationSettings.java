@@ -82,45 +82,70 @@ import org.osgi.framework.FrameworkUtil;
  * @author Heiko Hofer
  */
 public class StringManipulationSettings {
-    private static final NodeLogger LOGGER =
-        NodeLogger.getLogger(StringManipulationSettings.class);
-    /** NodeSettings key for the expression. */
-    static final String CFG_EXPRESSION = "expression";
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(StringManipulationSettings.class);
 
-    /** NodeSettings key which column is to be replaced or appended. */
-    static final String CFG_COLUMN_NAME = "replaced_column";
+    /**
+     * NodeSettings key for the expression.
+     *
+     * @since 5.10
+     */
+    public static final String CFG_EXPRESSION = "expression";
 
-    /** NodeSettings key is replace or append column? */
-    static final String CFG_IS_REPLACE = "append_column";
+    /**
+     * NodeSettings key which column is to be replaced or appended.
+     *
+     * @since 5.10
+     */
+    public static final String CFG_COLUMN_NAME = "replaced_column";
+
+    /**
+     * NodeSettings key is replace or append column?
+     *
+     * @since 5.10
+     */
+    public static final String CFG_IS_REPLACE = "append_column";
 
     /** NodeSettings key for the return type of the expression. */
     static final String CFG_RETURN_TYPE = "return_type";
 
-    /** NodeSettings key whether to check for compilation problems when
-     * dialog closes (not used in the nodemodel, though). */
-    static final String CFG_TEST_COMPILATION =
-        "test_compilation_on_dialog_close";
+    /**
+     * NodeSettings key whether to check for compilation problems when dialog closes (not used in the nodemodel,
+     * though).
+     *
+     * @since 5.10
+     */
+    public static final String CFG_TEST_COMPILATION = "test_compilation_on_dialog_close";
 
-    /** NodeSettings key how to treat missing values. */
-    static final String CFG_INSERT_MISSING_AS_NULL =
-        "insert_missing_as_null";
+    /**
+     * NodeSettings key how to treat missing values.
+     *
+     * @since 5.10
+     */
+    public static final String CFG_INSERT_MISSING_AS_NULL = "insert_missing_as_null";
 
     private String m_expression;
+
     private Class<?> m_returnType;
 
     private String m_colName;
+
     private boolean m_isReplace;
-    /** Only important for dialog: Test the syntax of the snippet code
-     * when the dialog closes, bug fix #1229. */
+
+    /**
+     * Only important for dialog: Test the syntax of the snippet code when the dialog closes, bug fix #1229.
+     */
     private boolean m_isTestCompilationOnDialogClose = true;
 
-    /** if true any missing value in the (relevant) input will result
-     * in a "missing" result. */
+    /**
+     * if true any missing value in the (relevant) input will result in a "missing" result.
+     */
     private boolean m_insertMissingAsNull = false;
 
     private JavaScriptingSettings m_javaScriptingSettings;
 
-    /** Saves current parameters to settings object.
+    /**
+     * Saves current parameters to settings object.
+     *
      * @param settings To save to.
      */
     public void saveSettingsTo(final NodeSettingsWO settings) {
@@ -128,18 +153,18 @@ public class StringManipulationSettings {
         settings.addString(CFG_COLUMN_NAME, m_colName);
         settings.addBoolean(CFG_IS_REPLACE, m_isReplace);
         String rType = m_returnType != null ? m_returnType.getName() : null;
-        settings.addBoolean(
-                CFG_TEST_COMPILATION, m_isTestCompilationOnDialogClose);
+        settings.addBoolean(CFG_TEST_COMPILATION, m_isTestCompilationOnDialogClose);
         settings.addBoolean(CFG_INSERT_MISSING_AS_NULL, m_insertMissingAsNull);
         settings.addString(CFG_RETURN_TYPE, rType);
     }
 
-    /** Loads parameters in NodeModel.
+    /**
+     * Loads parameters in NodeModel.
+     *
      * @param settings To load from.
      * @throws InvalidSettingsException If incomplete or wrong.
      */
-    public void loadSettingsInModel(final NodeSettingsRO settings)
-            throws InvalidSettingsException {
+    public void loadSettingsInModel(final NodeSettingsRO settings) throws InvalidSettingsException {
         m_expression = settings.getString(CFG_EXPRESSION);
         m_colName = settings.getString(CFG_COLUMN_NAME);
         m_isReplace = settings.getBoolean(CFG_IS_REPLACE);
@@ -147,40 +172,35 @@ public class StringManipulationSettings {
             throw new InvalidSettingsException("Column name must not be empty");
         }
         String returnType = settings.getString(CFG_RETURN_TYPE, null);
-        m_returnType = null == returnType ? null
-                : getClassForReturnType(returnType);
+        m_returnType = null == returnType ? null : getClassForReturnType(returnType);
         // this setting is not available in 1.2.x
-        m_isTestCompilationOnDialogClose =
-            settings.getBoolean(CFG_TEST_COMPILATION, true);
+        m_isTestCompilationOnDialogClose = settings.getBoolean(CFG_TEST_COMPILATION, true);
         // added in v2.3
-        m_insertMissingAsNull  =
-            settings.getBoolean(CFG_INSERT_MISSING_AS_NULL, false);
+        m_insertMissingAsNull = settings.getBoolean(CFG_INSERT_MISSING_AS_NULL, false);
         // only discards previous JavaScriptSettings
         discard();
     }
 
-    /** Loads parameters in Dialog.
+    /**
+     * Loads parameters in Dialog.
+     *
      * @param settings To load from.
      * @param spec Spec of input table.
      */
-    public void loadSettingsInDialog(final NodeSettingsRO settings,
-            final DataTableSpec spec) {
+    public void loadSettingsInDialog(final NodeSettingsRO settings, final DataTableSpec spec) {
         m_expression = settings.getString(CFG_EXPRESSION, "");
         String returnType = settings.getString(CFG_RETURN_TYPE, null);
         try {
-            m_returnType = null == returnType ? null
-                    : getClassForReturnType(returnType);
+            m_returnType = null == returnType ? null : getClassForReturnType(returnType);
         } catch (InvalidSettingsException e) {
             m_returnType = null;
         }
         String defaultColName = "new column";
         m_colName = settings.getString(CFG_COLUMN_NAME, defaultColName);
         m_isReplace = settings.getBoolean(CFG_IS_REPLACE, false);
-        m_isTestCompilationOnDialogClose =
-            settings.getBoolean(CFG_TEST_COMPILATION, true);
+        m_isTestCompilationOnDialogClose = settings.getBoolean(CFG_TEST_COMPILATION, true);
         // added in v2.3
-        m_insertMissingAsNull  =
-            settings.getBoolean(CFG_INSERT_MISSING_AS_NULL, false);
+        m_insertMissingAsNull = settings.getBoolean(CFG_INSERT_MISSING_AS_NULL, false);
         // only discards previous JavaScriptingSettings
         discard();
     }
@@ -245,8 +265,7 @@ public class StringManipulationSettings {
     /**
      * @param isTestCompilationOnDialogClose Flag to set
      */
-    public void setTestCompilationOnDialogClose(
-            final boolean isTestCompilationOnDialogClose) {
+    public void setTestCompilationOnDialogClose(final boolean isTestCompilationOnDialogClose) {
         m_isTestCompilationOnDialogClose = isTestCompilationOnDialogClose;
     }
 
@@ -260,18 +279,16 @@ public class StringManipulationSettings {
         m_insertMissingAsNull = insertMissingAsNull;
     }
 
-    /** Convert jar file location to File. Also accepts file in URL format
-     * (e.g. local drop files as URL).
+    /**
+     * Convert jar file location to File. Also accepts file in URL format (e.g. local drop files as URL).
+     *
      * @param location The location string.
      * @return The file to the location
-     * @throws InvalidSettingsException if argument is null, empty or the file
-     * does not exist.
+     * @throws InvalidSettingsException if argument is null, empty or the file does not exist.
      */
-    public static final File toFile(final String location)
-        throws InvalidSettingsException {
+    public static final File toFile(final String location) throws InvalidSettingsException {
         if (location == null || location.length() == 0) {
-            throw new InvalidSettingsException(
-                    "Invalid (empty) jar file location");
+            throw new InvalidSettingsException("Invalid (empty) jar file location");
         }
         File result;
         if (location.startsWith("file:/")) {
@@ -279,20 +296,21 @@ public class StringManipulationSettings {
                 URL fileURL = new URL(location);
                 result = new File(fileURL.toURI());
             } catch (Exception e) {
-                throw new InvalidSettingsException("Can't read file "
-                        + "URL \"" + location + "\"; invalid class path", e);
+                throw new InvalidSettingsException("Can't read file " + "URL \"" + location + "\"; invalid class path",
+                    e);
             }
         } else {
             result = new File(location);
         }
         if (!result.exists()) {
-            throw new InvalidSettingsException("Can't read file \""
-                    + location + "\"; invalid class path");
+            throw new InvalidSettingsException("Can't read file \"" + location + "\"; invalid class path");
         }
         return result;
     }
 
-    /** The column spec of the generated column.
+    /**
+     * The column spec of the generated column.
+     *
      * @return The col spec.
      * @throws InvalidSettingsException If settings are inconsistent.
      */
@@ -307,12 +325,10 @@ public class StringManipulationSettings {
             }
         }
         if (type == null) {
-            throw new InvalidSettingsException("Illegal return type: "
-                    + returnType.getName());
+            throw new InvalidSettingsException("Illegal return type: " + returnType.getName());
         }
         return new DataColumnSpecCreator(colName, type).createSpec();
     }
-
 
     /**
      * Get the class associated with returnType.
@@ -321,8 +337,7 @@ public class StringManipulationSettings {
      * @return the associated class
      * @throws InvalidSettingsException if the argument is invalid
      */
-    static Class<?> getClassForReturnType(final String returnType)
-            throws InvalidSettingsException {
+    static Class<?> getClassForReturnType(final String returnType) throws InvalidSettingsException {
         if (Integer.class.getName().equals(returnType)) {
             return Integer.class;
         } else if (Boolean.class.getName().equals(returnType)) {
@@ -336,16 +351,13 @@ public class StringManipulationSettings {
         } else if (String.class.getName().equals(returnType)) {
             return String.class;
         } else {
-            throw new InvalidSettingsException("Not a valid return type: "
-                    + returnType);
+            throw new InvalidSettingsException("Not a valid return type: " + returnType);
         }
     }
 
-    private Class<?> determineReturnType(final String expression)
-        throws InvalidSettingsException {
+    private Class<?> determineReturnType(final String expression) throws InvalidSettingsException {
         if (expression.isEmpty()) {
-            throw new InvalidSettingsException(
-                    "Empty expressions are not supported.");
+            throw new InvalidSettingsException("Empty expressions are not supported.");
         }
         int endIndex = StringUtils.indexOf(expression, '(');
         if (endIndex < 0) {
@@ -353,11 +365,9 @@ public class StringManipulationSettings {
         }
         String function = expression.substring(0, endIndex);
 
-        StringManipulatorProvider provider =
-            StringManipulatorProvider.getDefault();
+        StringManipulatorProvider provider = StringManipulatorProvider.getDefault();
         // Add StringManipulators to the imports
-        Collection<Manipulator> manipulators =
-            provider.getManipulators(ManipulatorProvider.ALL_CATEGORY);
+        Collection<Manipulator> manipulators = provider.getManipulators(ManipulatorProvider.ALL_CATEGORY);
         Class<?> returnType = null;
         for (Manipulator manipulator : manipulators) {
             if (function.equals(manipulator.getName())) {
@@ -372,12 +382,13 @@ public class StringManipulationSettings {
     }
 
     private String getAmbigiousReturnTypeMessage() {
-        return "Ambiguous return type! "
-        + "Use 'string()' or another function from the \"Convert Type\" "
-        + "category to specify the return type.";
+        return "Ambiguous return type! " + "Use 'string()' or another function from the \"Convert Type\" "
+            + "category to specify the return type.";
     }
 
-    /** Discards the compiled expressions (e.g. temporary .java files, closing URL class loaders).
+    /**
+     * Discards the compiled expressions (e.g. temporary .java files, closing URL class loaders).
+     *
      * @since 3.6
      */
     public void discard() {
@@ -388,20 +399,16 @@ public class StringManipulationSettings {
     }
 
     /**
-     * Create settings to be used by {@link ColumnCalculator} in order
-     * to execute the expression.
+     * Create settings to be used by {@link ColumnCalculator} in order to execute the expression.
      *
      * @return settings java scripting settings
      * @throws InvalidSettingsException when settings are not correct
      * @since 3.6
      */
-    public JavaScriptingSettings getJavaScriptingSettings()
-        throws InvalidSettingsException {
+    public JavaScriptingSettings getJavaScriptingSettings() throws InvalidSettingsException {
         if (m_javaScriptingSettings == null) {
             // determine return type
-            m_returnType = null == m_returnType
-                ? determineReturnType(StringUtils.strip(m_expression))
-                : m_returnType;
+            m_returnType = null == m_returnType ? determineReturnType(StringUtils.strip(m_expression)) : m_returnType;
 
             JavaScriptingSettings s = new JavaScriptingSettings(null);
             s.setArrayReturn(false);
@@ -413,39 +420,31 @@ public class StringManipulationSettings {
             Bundle bundle = FrameworkUtil.getBundle(this.getClass());
             try {
                 List<String> includes = new ArrayList<String>();
-                URL snippetIncURL = FileLocator.find(bundle,
-                        new Path("/lib/snippet_inc"), null);
-                File includeDir = new File(
-                        FileLocator.toFileURL(snippetIncURL).getPath());
+                URL snippetIncURL = FileLocator.find(bundle, new Path("/lib/snippet_inc"), null);
+                File includeDir = new File(FileLocator.toFileURL(snippetIncURL).getPath());
                 for (File includeJar : includeDir.listFiles()) {
-                    if (includeJar.isFile()
-                            && includeJar.getName().endsWith(".jar")) {
+                    if (includeJar.isFile() && includeJar.getName().endsWith(".jar")) {
                         includes.add(includeJar.getPath());
-                        LOGGER.debug("Include jar file: "
-                                + includeJar.getPath());
+                        LOGGER.debug("Include jar file: " + includeJar.getPath());
                     }
                 }
-                StringManipulatorProvider provider =
-                    StringManipulatorProvider.getDefault();
+                StringManipulatorProvider provider = StringManipulatorProvider.getDefault();
                 includes.add(provider.getJarFile().getAbsolutePath());
                 includes.add(FileLocator.getBundleFile(FrameworkUtil.getBundle(StringUtils.class)).getAbsolutePath());
                 s.setJarFiles(includes.toArray(new String[includes.size()]));
             } catch (IOException e) {
-                throw new IllegalStateException("Cannot locate necessary libraries due to I/O problem: " + e.getMessage(),
-                    e);
+                throw new IllegalStateException(
+                    "Cannot locate necessary libraries due to I/O problem: " + e.getMessage(), e);
             }
             s.setReplace(this.isReplace());
             s.setReturnType(m_returnType.getName());
-            s.setTestCompilationOnDialogClose(
-                    this.isTestCompilationOnDialogClose());
+            s.setTestCompilationOnDialogClose(this.isTestCompilationOnDialogClose());
             List<String> imports = new ArrayList<String>();
             // Use defaults imports
             imports.addAll(Arrays.asList(Expression.getDefaultImports()));
-            StringManipulatorProvider provider =
-                StringManipulatorProvider.getDefault();
+            StringManipulatorProvider provider = StringManipulatorProvider.getDefault();
             // Add StringManipulators to the imports
-            Collection<Manipulator> manipulators =
-                provider.getManipulators(ManipulatorProvider.ALL_CATEGORY);
+            Collection<Manipulator> manipulators = provider.getManipulators(ManipulatorProvider.ALL_CATEGORY);
             for (Manipulator manipulator : manipulators) {
                 String toImport = manipulator.getClass().getName();
                 imports.add("static " + toImport + ".*");

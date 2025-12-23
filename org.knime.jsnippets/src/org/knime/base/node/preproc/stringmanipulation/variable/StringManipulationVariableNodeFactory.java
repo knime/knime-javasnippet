@@ -49,15 +49,17 @@ package org.knime.base.node.preproc.stringmanipulation.variable;
 
 import org.knime.base.node.preproc.stringmanipulation.StringManipulationNodeDialog;
 import org.knime.core.node.NodeDialogPane;
-import org.knime.core.node.NodeFactory;
 import org.knime.core.node.NodeView;
+import org.knime.core.webui.node.dialog.scripting.AbstractDefaultScriptingNodeDialog;
+import org.knime.core.webui.node.dialog.scripting.AbstractFallbackScriptingNodeFactory;
 
 /**
  * The node factory of the string manipulation (variable) node.
  *
  * @author Simon Schmid
  */
-public class StringManipulationVariableNodeFactory extends NodeFactory<StringManipulationVariableNodeModel> {
+public class StringManipulationVariableNodeFactory
+    extends AbstractFallbackScriptingNodeFactory<StringManipulationVariableNodeModel> {
 
     /**
      * {@inheritDoc}
@@ -86,17 +88,20 @@ public class StringManipulationVariableNodeFactory extends NodeFactory<StringMan
 
     /**
      * {@inheritDoc}
+     * @since 5.10
      */
     @Override
-    protected boolean hasDialog() {
-        return true;
+    public AbstractDefaultScriptingNodeDialog createNodeDialog() {
+        return new StringManipulationVariableScriptingNodeDialog();
     }
 
     /**
      * {@inheritDoc}
+     * @since 5.10
      */
     @Override
-    protected NodeDialogPane createNodeDialogPane() {
+    public NodeDialogPane createLegacyNodeDialogPane() {
+        // TODO Auto-generated method stub
         return new StringManipulationNodeDialog(true);
     }
 

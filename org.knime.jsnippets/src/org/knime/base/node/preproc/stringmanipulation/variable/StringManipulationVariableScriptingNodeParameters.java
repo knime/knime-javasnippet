@@ -44,12 +44,18 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Dec 17, 2025 (Marc Lehner): created
+ *   22.12.2025 (Ali): created
  */
-package org.knime.base.node.preproc.stringmanipulation;
+
+/**
+ * @author Ali Asghar Marvi, KNIME GmbH, Berlin, Germany
+ * @since 5.10
+ */
+package org.knime.base.node.preproc.stringmanipulation.variable;
 
 import java.util.function.Supplier;
 
+import org.knime.base.node.preproc.stringmanipulation.StringManipulationSettings;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
@@ -71,30 +77,18 @@ import org.knime.node.parameters.updates.ValueReference;
 import org.knime.node.parameters.widget.choices.ChoicesProvider;
 import org.knime.node.parameters.widget.choices.Label;
 import org.knime.node.parameters.widget.choices.ValueSwitchWidget;
-import org.knime.node.parameters.widget.choices.util.AllColumnsProvider;
+import org.knime.node.parameters.widget.choices.util.AllFlowVariablesProvider;
 import org.knime.node.parameters.widget.text.TextInputWidget;
 
-/**
- * Configuration parameters in the WebUI dialog for the String Manipulation node
- *
- * @author Marc Lehner, KNIME AG, Zurich, Switzerland
- * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
- * @since 5.10
- */
-class StringManipulationScriptingNodeParameters implements NodeParameters {
-    @Persist(configKey = StringManipulationSettings.CFG_EXPRESSION)
-    String m_expression = "";
+class StringManipulationVariableScriptingNodeParameters implements NodeParameters {
 
-    @Widget(title = "Insert missing as null",
-        description = "If checked, missing values in the input columns will be treated as null in the expression.")
-    @Persist(configKey = StringManipulationSettings.CFG_INSERT_MISSING_AS_NULL)
-    boolean m_insertMissingAsNull;
+    String m_expression = "";
 
     @Persist(configKey = StringManipulationSettings.CFG_TEST_COMPILATION)
     boolean m_syntaxCheckOnClose = true;
 
-    @Widget(title = "Output column",
-        description = "Choose whether to replace an existing column or append a new column to the table.")
+    @Widget(title = "Output variable",
+        description = "Choose whether to replace an existing variable or append a new variable to the table.")
     @ValueSwitchWidget
     @ValueReference(ReplaceOrAppendRef.class)
     @Persistor(ReplaceOrAppendPersistor.class)
@@ -128,36 +122,32 @@ class StringManipulationScriptingNodeParameters implements NodeParameters {
 
     }
 
-    static final class OutputColumnName implements NodeParameters {
-        /* This is a copy used for correct serialization of the output column, but
-         * it always inherits the value from the ValueProvider. A workaround to
-         * make the persistors work correctly, as they share the same config keys.
-         */
+    static class OutputVariableName implements NodeParameters {
         @ValueProvider(ReplaceOrAppendProvider.class)
-        ReplaceOrAppend m_replaceOrAppend;
+        public ReplaceOrAppend m_replaceOrAppend;
 
-        @Widget(title = "New column name", description = "The name of the new column to append.")
+        @Widget(title = "New variable name", description = "The name of the new variable to append.")
         @Effect(predicate = IsReplace.class, type = EffectType.HIDE)
         @TextInputWidget
-        String m_columnNameAppend = "NewColumn";
+        public String m_variableNameAppend = "NewVariable";
 
-        @Widget(title = "Replace column", description = "The name of the column to replace.")
-        @ChoicesProvider(AllColumnsProvider.class)
+        @Widget(title = "Replace variable", description = "The name of the variable to replace.")
+        @ChoicesProvider(AllFlowVariablesProvider.class)
         @Effect(predicate = IsReplace.class, type = EffectType.SHOW)
-        String m_columnNameReplace;
+        public String m_variableNameReplace;
     }
 
-    @Persistor(OutputColumnNamePersistor.class)
-    OutputColumnName m_outputColumn = new OutputColumnName();
+    @Persistor(OutputVariableNamePersistor.class)
+    OutputVariableName m_outputVariable = new OutputVariableName();
 
     enum ReplaceOrAppend {
-            @Label(value = "Append", description = "Append a new column to the table")
+            @Label(value = "Append", description = "Append a new variable to the table")
             APPEND, //
-            @Label(value = "Replace", description = "Replace an existing column")
+            @Label(value = "Replace", description = "Replace an existing variable")
             REPLACE;
     }
 
-    static final class ReplaceOrAppendPersistor implements NodeParametersPersistor<ReplaceOrAppend> {
+    static class ReplaceOrAppendPersistor implements NodeParametersPersistor<ReplaceOrAppend> {
 
         @Override
         public ReplaceOrAppend load(final NodeSettingsRO settings) throws InvalidSettingsException {
@@ -176,31 +166,31 @@ class StringManipulationScriptingNodeParameters implements NodeParameters {
         }
     }
 
-    static final class OutputColumnNamePersistor implements NodeParametersPersistor<OutputColumnName> {
+    static class OutputVariableNamePersistor implements NodeParametersPersistor<OutputVariableName> {
 
         @Override
-        public OutputColumnName load(final NodeSettingsRO settings) throws InvalidSettingsException {
-            var output = new OutputColumnName();
+        public OutputVariableName load(final NodeSettingsRO settings) throws InvalidSettingsException {
+            var output = new OutputVariableName();
             boolean isReplace = settings.getBoolean(StringManipulationSettings.CFG_IS_REPLACE);
             output.m_replaceOrAppend = isReplace ? ReplaceOrAppend.REPLACE : ReplaceOrAppend.APPEND;
 
             String columnName = settings.getString(StringManipulationSettings.CFG_COLUMN_NAME);
             if (isReplace) {
-                output.m_columnNameReplace = columnName;
+                output.m_variableNameReplace = columnName;
             } else {
-                output.m_columnNameAppend = columnName;
+                output.m_variableNameAppend = columnName;
             }
 
             return output;
         }
 
         @Override
-        public void save(final OutputColumnName param, final NodeSettingsWO settings) {
+        public void save(final OutputVariableName param, final NodeSettingsWO settings) {
             boolean isReplace = param.m_replaceOrAppend == ReplaceOrAppend.REPLACE;
 
-            // Only save the column name if APPEND, otherwise save the replace column name
-            String columnName = isReplace ? param.m_columnNameReplace : param.m_columnNameAppend;
-            settings.addString(StringManipulationSettings.CFG_COLUMN_NAME, columnName);
+            // Only save the variable name if APPEND, otherwise save the replace variable name
+            String variableName = isReplace ? param.m_variableNameReplace : param.m_variableNameAppend;
+            settings.addString(StringManipulationSettings.CFG_COLUMN_NAME, variableName);
         }
 
         @Override
@@ -209,32 +199,4 @@ class StringManipulationScriptingNodeParameters implements NodeParameters {
         }
     }
 
-    static final class ReturnTypePersistor implements NodeParametersPersistor<Class<?>> {
-
-        @Override
-        public Class<?> load(final NodeSettingsRO settings) throws InvalidSettingsException {
-            String returnType = settings.getString(StringManipulationSettings.CFG_RETURN_TYPE, null);
-
-            if (returnType == null) {
-                return null;
-            } else {
-                return StringManipulationSettings.getClassForReturnType(returnType);
-            }
-
-        }
-
-        @Override
-        public void save(final Class<?> param, final NodeSettingsWO settings) {
-            String returnTypeStr = param != null ? param.getName() : null;
-            settings.addString(StringManipulationSettings.CFG_RETURN_TYPE, returnTypeStr);
-        }
-
-        @Override
-        public String[][] getConfigPaths() {
-            return new String[][]{{StringManipulationSettings.CFG_RETURN_TYPE}};
-        }
-    }
-
-    @Persistor(ReturnTypePersistor.class)
-    Class<?> m_returnType;
 }
