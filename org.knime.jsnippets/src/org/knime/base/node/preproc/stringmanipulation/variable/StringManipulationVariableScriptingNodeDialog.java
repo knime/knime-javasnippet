@@ -46,37 +46,29 @@
  * History
  *   Dec 17, 2025 (Marc Lehner): created
  */
-package org.knime.base.node.preproc.stringmanipulation;
+package org.knime.base.node.preproc.stringmanipulation.variable;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Optional;
 
+import org.knime.base.node.preproc.stringmanipulation.StringManipulatorProvider;
 import org.knime.base.node.util.WebUIDialogUtils;
-import org.knime.core.data.DataTableSpec;
-import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.webui.node.dialog.scripting.AbstractDefaultScriptingNodeDialog;
 import org.knime.core.webui.node.dialog.scripting.GenericInitialDataBuilder;
-import org.knime.core.webui.node.dialog.scripting.InputOutputModel;
 import org.knime.core.webui.node.dialog.scripting.WorkflowControl;
 
 /**
- * WebUI dialog for the String Manipulation node, defining autocompletion items and drag and drop insertion from the
- * side panel.
  *
  * @author Marc Lehner, KNIME AG, Zurich, Switzerland
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
+ * @author Ali Asghar Marvi, KNIME GmbH, Berlin, Germany
  * @since 5.10
  */
 @SuppressWarnings("restriction")
-class StringManipulationScriptingNodeDialog extends AbstractDefaultScriptingNodeDialog {
+class StringManipulationVariableScriptingNodeDialog extends AbstractDefaultScriptingNodeDialog {
 
-    /**
-     * @param modelSettings
-     */
-    protected StringManipulationScriptingNodeDialog() {
-        super(StringManipulationScriptingNodeParameters.class);
+    public StringManipulationVariableScriptingNodeDialog() {
+        super(StringManipulationVariableScriptingNodeParameters.class);
     }
 
     /**
@@ -86,32 +78,14 @@ class StringManipulationScriptingNodeDialog extends AbstractDefaultScriptingNode
     protected GenericInitialDataBuilder getInitialData(final NodeContext context) {
         var workflowControl = new WorkflowControl(context.getNodeContainer());
         return GenericInitialDataBuilder.createDefaultInitialDataBuilder(NodeContext.getContext()) //
-            .addDataSupplier("inputObjects", () -> {
-                var inputSpecs = Optional.ofNullable(workflowControl.getInputSpec()) //
-                    .orElse(new PortObjectSpec[0]);
-
-                var inputObjects = new ArrayList<InputOutputModel>();
-
-                // Check if we have at least one input and it's a DataTableSpec
-                if (inputSpecs.length > 0 && inputSpecs[0] instanceof DataTableSpec tableSpec) {
-                    // Create a single InputOutputModel representing the table with all its columns
-                    var inputModel = InputOutputModel.table() //
-                        .name("Input Table") //
-                        .subItemCodeAliasTemplate(WebUIDialogUtils.COLUMN_ALIAS_TEMPLATE) //
-                        .subItems(tableSpec, dataType -> dataType.getName()) //
-                        .build();
-                    inputObjects.add(inputModel);
-                }
-
-                return inputObjects;
-            }) //
+            .addDataSupplier("inputObjects", Collections::emptyList)
             .addDataSupplier("flowVariables", () -> WebUIDialogUtils.getFlowVariablesInputOutputModel(workflowControl)) //
             .addDataSupplier("outputObjects", Collections::emptyList) //
             .addDataSupplier("language", () -> "plaintext") //
             .addDataSupplier("fileName", () -> "script.txt") //
             .addDataSupplier("mainScriptConfigKey", () -> "expression") //
             .addDataSupplier("staticCompletionItems", () -> WebUIDialogUtils.getCompletionItems(workflowControl,
-                StringManipulatorProvider.getDefault(), true));
+                StringManipulatorProvider.getDefault(), false));
     }
 
 }
