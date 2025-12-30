@@ -66,19 +66,21 @@ import org.knime.core.webui.node.dialog.scripting.InputOutputModel;
 import org.knime.core.webui.node.dialog.scripting.WorkflowControl;
 
 /**
+ * WebUI dialog for the String Manipulation node, defining autocompletion items and
+ * drag and drop insertion from the side panel.
  *
  * @author Marc Lehner, KNIME AG, Zurich, Switzerland
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
- * @since 5.9
+ * @since 5.10
  */
 @SuppressWarnings("restriction")
-public class StringManipulationScriptingNodeDialog extends AbstractDefaultScriptingNodeDialog {
+class StringManipulationScriptingNodeDialog extends AbstractDefaultScriptingNodeDialog {
 
     /**
      * @param modelSettings
      */
     protected StringManipulationScriptingNodeDialog() {
-        super(StringManipulationScriptingNodeSettings.class);
+        super(StringManipulationScriptingNodeParameters.class);
     }
 
     private static final String COLUMN_ALIAS_TEMPLATE = """
@@ -100,11 +102,8 @@ public class StringManipulationScriptingNodeDialog extends AbstractDefaultScript
               $${S {{~{subItems.[0].name}~}} }$$
             {{~/when}}""";
 
-    private static final Set<VariableType<?>> SUPPORTED_VARIABLE_TYPES = Set.of(
-        VariableType.StringType.INSTANCE,
-        VariableType.IntType.INSTANCE,
-        VariableType.DoubleType.INSTANCE
-    );
+    private static final Set<VariableType<?>> SUPPORTED_VARIABLE_TYPES =
+        Set.of(VariableType.StringType.INSTANCE, VariableType.IntType.INSTANCE, VariableType.DoubleType.INSTANCE);
 
     /**
      * {@inheritDoc}

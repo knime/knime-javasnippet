@@ -57,8 +57,7 @@ import org.knime.core.webui.node.dialog.scripting.AbstractFallbackScriptingNodeF
  *
  * @author Heiko Hofer
  */
-public class StringManipulationNodeFactory
-    extends AbstractFallbackScriptingNodeFactory<StringManipulationNodeModel> {
+public class StringManipulationNodeFactory extends AbstractFallbackScriptingNodeFactory<StringManipulationNodeModel> {
 
     /**
      * {@inheritDoc}
@@ -80,16 +79,15 @@ public class StringManipulationNodeFactory
      * {@inheritDoc}
      */
     @Override
-    public NodeView<StringManipulationNodeModel> createNodeView(
-            final int viewIndex,
-            final StringManipulationNodeModel nodeModel) {
+    public NodeView<StringManipulationNodeModel> createNodeView(final int viewIndex,
+        final StringManipulationNodeModel nodeModel) {
         throw new IndexOutOfBoundsException();
     }
 
-
     /**
      * {@inheritDoc}
-     * @since 5.9
+     *
+     * @since 5.10
      */
     @Override
     public AbstractDefaultScriptingNodeDialog createNodeDialog() {
@@ -98,7 +96,8 @@ public class StringManipulationNodeFactory
 
     /**
      * {@inheritDoc}
-     * @since 5.9
+     *
+     * @since 5.10
      */
     @Override
     public NodeDialogPane createLegacyNodeDialogPane() {
