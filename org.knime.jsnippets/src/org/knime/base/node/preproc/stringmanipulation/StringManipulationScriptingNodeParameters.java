@@ -75,32 +75,35 @@ import org.knime.node.parameters.widget.choices.util.AllColumnsProvider;
 import org.knime.node.parameters.widget.text.TextInputWidget;
 
 /**
+ * Configuration parameters in the WebUI dialog for the String Manipulation node
  *
- * @author Marc Lehner
- * @since 5.9
+ * @author Marc Lehner, KNIME AG, Zurich, Switzerland
+ * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
+ * @since 5.10
  */
-class StringManipulationScriptingNodeSettings implements NodeParameters {
+class StringManipulationScriptingNodeParameters implements NodeParameters {
     @Persist(configKey = StringManipulationSettings.CFG_EXPRESSION)
     String m_expression = "";
 
     @Widget(title = "Insert missing as null",
-            description = "If checked, missing values in the input columns will be treated as null in the expression.")
+        description = "If checked, missing values in the input columns will be treated as null in the expression.")
     @Persist(configKey = StringManipulationSettings.CFG_INSERT_MISSING_AS_NULL)
-        boolean m_insertMissingAsNull;
+    boolean m_insertMissingAsNull;
 
     @Widget(title = "Syntax check on close",
-            description = "If checked, the syntax of the expression will be checked when the dialog is closed.")
+        description = "If checked, the syntax of the expression will be checked when the dialog is closed.")
     @Persist(configKey = StringManipulationSettings.CFG_TEST_COMPILATION)
-        boolean m_syntaxCheckOnClose = true;
+    boolean m_syntaxCheckOnClose = true;
 
     @Widget(title = "Output column",
-            description = "Choose whether to replace an existing column or append a new column to the table.")
+        description = "Choose whether to replace an existing column or append a new column to the table.")
     @ValueSwitchWidget
     @ValueReference(ReplaceOrAppendRef.class)
     @Persistor(ReplaceOrAppendPersistor.class)
     ReplaceOrAppend m_replaceOrAppend = ReplaceOrAppend.APPEND;
 
-    class ReplaceOrAppendRef implements ParameterReference<ReplaceOrAppend> {}
+    class ReplaceOrAppendRef implements ParameterReference<ReplaceOrAppend> {
+    }
 
     static final class IsReplace implements EffectPredicateProvider {
         @Override
@@ -128,17 +131,19 @@ class StringManipulationScriptingNodeSettings implements NodeParameters {
     }
 
     static final class OutputColumnName implements NodeParameters {
+        /* This is a copy used for correct serialization of the output column, but
+         * it always inherits the value from the ValueProvider. A workaround to
+         * make the persistors work correctly, as they share the same config keys.
+         */
         @ValueProvider(ReplaceOrAppendProvider.class)
         ReplaceOrAppend m_replaceOrAppend;
 
-        @Widget(title = "New column name",
-                description = "The name of the new column to append.")
+        @Widget(title = "New column name", description = "The name of the new column to append.")
         @Effect(predicate = IsReplace.class, type = EffectType.HIDE)
         @TextInputWidget
         String m_columnNameAppend = "NewColumn";
 
-        @Widget(title = "Replace column",
-                description = "The name of the column to replace.")
+        @Widget(title = "Replace column", description = "The name of the column to replace.")
         @ChoicesProvider(AllColumnsProvider.class)
         @Effect(predicate = IsReplace.class, type = EffectType.SHOW)
         String m_columnNameReplace;
@@ -148,10 +153,10 @@ class StringManipulationScriptingNodeSettings implements NodeParameters {
     OutputColumnName m_outputColumn = new OutputColumnName();
 
     enum ReplaceOrAppend {
-        @Label(value = "Append", description = "Append a new column to the table")
-        APPEND, //
-        @Label(value = "Replace", description = "Replace an existing column")
-        REPLACE;
+            @Label(value = "Append", description = "Append a new column to the table")
+            APPEND, //
+            @Label(value = "Replace", description = "Replace an existing column")
+            REPLACE;
     }
 
     static final class ReplaceOrAppendPersistor implements NodeParametersPersistor<ReplaceOrAppend> {
@@ -202,11 +207,7 @@ class StringManipulationScriptingNodeSettings implements NodeParameters {
 
         @Override
         public String[][] getConfigPaths() {
-            return new String[][]{
-                {StringManipulationSettings.CFG_COLUMN_NAME}
-            };
+            return new String[][]{{StringManipulationSettings.CFG_COLUMN_NAME}};
         }
     }
 }
-
-
