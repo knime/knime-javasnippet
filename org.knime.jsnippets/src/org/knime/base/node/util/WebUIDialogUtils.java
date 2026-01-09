@@ -143,6 +143,28 @@ public final class WebUIDialogUtils {
     }
 
     /**
+     * Creates a list of {@link InputOutputModel} for input table columns.
+     *
+     * @param workflowControl the workflow control to get input specs of Table
+     * @return a list containing the input table model, or empty list if no table input
+     */
+    public static List<InputOutputModel> getInputTableModel(final WorkflowControl workflowControl) {
+        var inputSpecs = Optional.ofNullable(workflowControl.getInputSpec()) //
+            .orElse(new PortObjectSpec[0]);
+
+        if (inputSpecs.length > 0 && inputSpecs[0] instanceof DataTableSpec tableSpec) {
+            var inputModel = InputOutputModel.table() //
+                .name("Input Table") //
+                .subItemCodeAliasTemplate(COLUMN_ALIAS_TEMPLATE) //
+                .subItems(tableSpec, dataType -> dataType.getName()) //
+                .build();
+            return List.of(inputModel);
+        }
+
+        return List.of();
+    }
+
+    /**
      * Extracts arguments from a manipulator's display name. Handles both function-style display names (e.g.,
      * "functionName(arg1, arg2)") and operator-style display names (e.g., "? AND ?", "NOT ?").
      *

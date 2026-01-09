@@ -44,12 +44,13 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Dec 17, 2025 (Marc Lehner): created
+ *   5 Jan 2026 (Ali Asghar Marvi): created
  */
-package org.knime.base.node.preproc.stringmanipulation;
+package org.knime.base.node.rules.engine;
 
 import java.util.Collections;
 
+import org.knime.base.node.rules.engine.manipulator.RuleManipulatorProvider;
 import org.knime.base.node.util.WebUIDialogUtils;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.webui.node.dialog.scripting.AbstractDefaultScriptingNodeDialog;
@@ -57,21 +58,15 @@ import org.knime.core.webui.node.dialog.scripting.GenericInitialDataBuilder;
 import org.knime.core.webui.node.dialog.scripting.WorkflowControl;
 
 /**
- * WebUI dialog for the String Manipulation node, defining autocompletion items and drag and drop insertion from the
- * side panel.
  *
- * @author Marc Lehner, KNIME AG, Zurich, Switzerland
- * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
+ * @author Ali Asghar Marvi, KNIME GmbH, Berlin, Germany
  * @since 5.10
  */
 @SuppressWarnings("restriction")
-class StringManipulationScriptingNodeDialog extends AbstractDefaultScriptingNodeDialog {
+public class RuleEngineScriptingNodeDialog extends AbstractDefaultScriptingNodeDialog {
 
-    /**
-     * @param modelSettings
-     */
-    protected StringManipulationScriptingNodeDialog() {
-        super(StringManipulationScriptingNodeParameters.class);
+    RuleEngineScriptingNodeDialog() {
+        super(RuleEngineScriptingNodeParameters.class);
     }
 
     /**
@@ -86,9 +81,9 @@ class StringManipulationScriptingNodeDialog extends AbstractDefaultScriptingNode
             .addDataSupplier("outputObjects", Collections::emptyList) //
             .addDataSupplier("language", () -> "plaintext") //
             .addDataSupplier("fileName", () -> "script.txt") //
-            .addDataSupplier("mainScriptConfigKey", () -> "expression") //
+            .addDataSupplier("mainScriptConfigKey", () -> "rules") //
             .addDataSupplier("staticCompletionItems", () -> WebUIDialogUtils.getCompletionItems(workflowControl,
-                StringManipulatorProvider.getDefault(), true));
+                RuleManipulatorProvider.getProvider(), true));
     }
 
 }
