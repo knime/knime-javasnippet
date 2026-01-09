@@ -61,11 +61,13 @@ import org.knime.core.node.NodeSettingsWO;
  * @since 2.8
  */
 public class RuleEngineSettings {
-    private static final String APPEND_COLUMN = "append-column";
+    static final String APPEND_COLUMN = "append-column";
 
-    private static final String REPLACE_COLUMN_NAME = "replace-column-name";
+    static final String REPLACE_COLUMN_NAME = "replace-column-name";
 
-    private final List<String> m_rules = new ArrayList<String>();
+    static final String NEW_COLUMN_NAME = "new-column-name";
+
+    final List<String> m_rules = new ArrayList<String>();
 
     private String m_newColName = RuleEngineNodeDialog.NEW_COL_NAME;
     private String m_replaceColumn = "";
@@ -169,7 +171,7 @@ public class RuleEngineSettings {
             m_rules.add(r);
         }
 
-        m_newColName = settings.getString("new-column-name");
+        m_newColName = settings.getString(NEW_COLUMN_NAME);
         m_replaceColumn = settings.getString(REPLACE_COLUMN_NAME, "");
         m_appendColumn = settings.getBoolean(APPEND_COLUMN, true);
         // added in 3.2
@@ -189,7 +191,7 @@ public class RuleEngineSettings {
         for (String r : rules) {
             m_rules.add(r);
         }
-        m_newColName = settings.getString("new-column-name", RuleEngineNodeDialog.NEW_COL_NAME);
+        m_newColName = settings.getString(NEW_COLUMN_NAME, RuleEngineNodeDialog.NEW_COL_NAME);
         m_replaceColumn = settings.getString(REPLACE_COLUMN_NAME, "");
         m_appendColumn = settings.getBoolean(APPEND_COLUMN, true);
         m_disallowLongOutputForCompatibility = settings.getBoolean("disallowLongOutputForCompatibility", false);
@@ -202,7 +204,7 @@ public class RuleEngineSettings {
      */
     public void saveSettings(final NodeSettingsWO settings) {
         settings.addStringArray("rules", m_rules.toArray(new String[m_rules.size()]));
-        settings.addString("new-column-name", m_newColName);
+        settings.addString(NEW_COLUMN_NAME, m_newColName);
         settings.addString(REPLACE_COLUMN_NAME, m_replaceColumn);
         settings.addBoolean(APPEND_COLUMN, m_appendColumn);
         settings.addBoolean("disallowLongOutputForCompatibility", m_disallowLongOutputForCompatibility);

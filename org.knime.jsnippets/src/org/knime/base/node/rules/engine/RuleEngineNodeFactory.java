@@ -48,8 +48,10 @@
 package org.knime.base.node.rules.engine;
 
 import org.knime.core.node.NodeDialogPane;
-import org.knime.core.node.NodeFactory;
 import org.knime.core.node.NodeView;
+import org.knime.core.webui.node.dialog.scripting.AbstractDefaultScriptingNodeDialog;
+import org.knime.core.webui.node.dialog.scripting.AbstractFallbackScriptingNodeFactory;
+
 
 /**
  * This factory creates all necessary object for the business rule node.
@@ -57,12 +59,12 @@ import org.knime.core.node.NodeView;
  * @author Thorsten Meinl, University of Konstanz
  * @since 2.8
  */
-public class RuleEngineNodeFactory extends NodeFactory<RuleEngineNodeModel> {
+public class RuleEngineNodeFactory extends AbstractFallbackScriptingNodeFactory<RuleEngineNodeModel> {
     /**
      * {@inheritDoc}
      */
     @Override
-    protected NodeDialogPane createNodeDialogPane() {
+    public NodeDialogPane createLegacyNodeDialogPane() {
         return new RuleEngineNodeDialog(RuleNodeSettings.RuleEngine);
     }
 
@@ -93,9 +95,14 @@ public class RuleEngineNodeFactory extends NodeFactory<RuleEngineNodeModel> {
 
     /**
      * {@inheritDoc}
+     *
+     * @since 5.10
      */
     @Override
-    protected boolean hasDialog() {
-        return true;
+    public AbstractDefaultScriptingNodeDialog createNodeDialog() {
+        return new RuleEngineScriptingNodeDialog();
     }
+
+
+
 }
