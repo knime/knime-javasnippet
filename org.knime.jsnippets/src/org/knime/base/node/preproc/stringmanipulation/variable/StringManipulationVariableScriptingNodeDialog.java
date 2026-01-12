@@ -49,14 +49,11 @@
 package org.knime.base.node.preproc.stringmanipulation.variable;
 
 import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
 
-import org.knime.base.node.util.StringManipulationScriptingDialogUtil;
+import org.knime.base.node.util.WebUIDialogUtils;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.webui.node.dialog.scripting.AbstractDefaultScriptingNodeDialog;
 import org.knime.core.webui.node.dialog.scripting.GenericInitialDataBuilder;
-import org.knime.core.webui.node.dialog.scripting.InputOutputModel;
 import org.knime.core.webui.node.dialog.scripting.WorkflowControl;
 
 /**
@@ -80,26 +77,14 @@ class StringManipulationVariableScriptingNodeDialog extends AbstractDefaultScrip
     protected GenericInitialDataBuilder getInitialData(final NodeContext context) {
         var workflowControl = new WorkflowControl(context.getNodeContainer());
         return GenericInitialDataBuilder.createDefaultInitialDataBuilder(NodeContext.getContext()) //
-                .addDataSupplier("inputObjects", Collections::emptyList)
-            .addDataSupplier("flowVariables", () -> {
-                var flowVariables = Optional.ofNullable(workflowControl.getFlowObjectStack()) //
-                    .map(stack -> stack.getAllAvailableFlowVariables().values()) //
-                    .orElseGet(List::of) //
-                    .stream() //
-                    .filter(fv -> StringManipulationScriptingDialogUtil.getSupportedVariableTypes().contains(fv.getVariableType())) //
-                    .toList();
-
-                return InputOutputModel.flowVariables() //
-                    .subItems(flowVariables, varType -> true) //
-                    .subItemCodeAliasTemplate(StringManipulationScriptingDialogUtil.FLOWVAR_ALIAS_TEMPLATE) //
-                    .build();
-            }) //
+            .addDataSupplier("inputObjects", Collections::emptyList)
+            .addDataSupplier("flowVariables", () -> WebUIDialogUtils.getFlowVariablesInputOutputModel(workflowControl)) //
             .addDataSupplier("outputObjects", Collections::emptyList) //
             .addDataSupplier("language", () -> "plaintext") //
             .addDataSupplier("fileName", () -> "script.txt") //
             .addDataSupplier("mainScriptConfigKey", () -> "expression") //
             .addDataSupplier("staticCompletionItems",
-                () -> StringManipulationScriptingDialogUtil.getCompletionItems(workflowControl, false));
+                () -> WebUIDialogUtils.getCompletionItems(workflowControl, false));
     }
 
 }

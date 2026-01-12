@@ -50,6 +50,7 @@ package org.knime.base.node.preproc.stringmanipulation;
 
 import java.util.function.Supplier;
 
+import org.knime.base.node.util.WebUIDialogUtils;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
@@ -209,32 +210,6 @@ class StringManipulationScriptingNodeParameters implements NodeParameters {
         }
     }
 
-    static final class ReturnTypePersistor implements NodeParametersPersistor<Class<?>> {
-
-        @Override
-        public Class<?> load(final NodeSettingsRO settings) throws InvalidSettingsException {
-            String returnType = settings.getString(StringManipulationSettings.CFG_RETURN_TYPE, null);
-
-            if (returnType == null) {
-                return null;
-            } else {
-                return StringManipulationSettings.getClassForReturnType(returnType);
-            }
-
-        }
-
-        @Override
-        public void save(final Class<?> param, final NodeSettingsWO settings) {
-            String returnTypeStr = param != null ? param.getName() : null;
-            settings.addString(StringManipulationSettings.CFG_RETURN_TYPE, returnTypeStr);
-        }
-
-        @Override
-        public String[][] getConfigPaths() {
-            return new String[][]{{StringManipulationSettings.CFG_RETURN_TYPE}};
-        }
-    }
-
-    @Persistor(ReturnTypePersistor.class)
+    @Persistor(WebUIDialogUtils.ReturnTypePersistor.class)
     Class<?> m_returnType;
 }

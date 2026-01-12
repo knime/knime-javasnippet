@@ -44,7 +44,7 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Jan 7, 2026 (GitHub Copilot): created
+ *   Jan 7, 2026 (Ali Asghar Marvi): created
  */
 package org.knime.base.node.util;
 
@@ -53,24 +53,37 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import org.knime.base.node.preproc.stringmanipulation.StringManipulationSettings;
 import org.knime.base.node.preproc.stringmanipulation.StringManipulatorProvider;
 import org.knime.core.data.DataTableSpec;
+import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeSettingsRO;
+import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.webui.node.dialog.scripting.AbstractDefaultScriptingNodeDialog.StaticCompletionItem;
+import org.knime.core.webui.node.dialog.scripting.InputOutputModel;
 import org.knime.core.webui.node.dialog.scripting.WorkflowControl;
+import org.knime.node.parameters.persistence.NodeParametersPersistor;
 
 /**
  * @author Ali Asghar Marvi, KNIME GmbH, Berlin, Germany
  * @since 5.10
  */
 @SuppressWarnings("restriction")
-public final class StringManipulationScriptingDialogUtil {
+public final class WebUIDialogUtils {
 
-    private static final Set<VariableType<?>> SUPPORTED_VARIABLE_TYPES =
+    private WebUIDialogUtils() {
+    }
+
+    public static final Set<VariableType<?>> SUPPORTED_VARIABLE_TYPES =
         Set.of(VariableType.StringType.INSTANCE, VariableType.IntType.INSTANCE, VariableType.DoubleType.INSTANCE);
 
+    /**
+     * Column aliasing template for column names when they are inserted or dragged from the side panel onto the
+     * scripting editor.
+     */
     public static final String COLUMN_ALIAS_TEMPLATE = """
             {{~#if subItems.[0].insertionText~}}
                 {{ subItems.[0].insertionText }}
@@ -79,6 +92,10 @@ public final class StringManipulationScriptingDialogUtil {
             {{~/if~}}
             """;
 
+    /**
+     * Flow variable aliasing template for flow variables when they are inserted or dragged from the side panel onto the
+     * scripting editor.
+     */
     public static final String FLOWVAR_ALIAS_TEMPLATE = """
             {{#when subItems.[0].type.id 'eq' 'INTEGER'~}}
               $${I {{~{ subItems.[0].name }~}} }$$
@@ -90,6 +107,12 @@ public final class StringManipulationScriptingDialogUtil {
               $${S {{~{subItems.[0].name}~}} }$$
             {{~/when}}""";
 
+    /**
+     * This function returns the type prefix character for a given flow variable data type.
+     *
+     * @param variable the flow variable holding the variable
+     * @return the type prefix character
+     */
     public static char getFlowVariableTypePrefix(final FlowVariable variable) {
         if (variable.getVariableType().getSimpleType() == Double.class) {
             return 'D';
@@ -102,11 +125,33 @@ public final class StringManipulationScriptingDialogUtil {
             "Flow Variable is of unsupported type: " + variable.getVariableType().getIdentifier());
     }
 
-    public static Set<VariableType<?>> getSupportedVariableTypes() {
-        return SUPPORTED_VARIABLE_TYPES;
+    /**
+     * Creates an {@link InputOutputModel} for flow variables supported by string manipulation.
+     *
+     * @param workflowControl the workflow control to get flow variables from
+     * @return the flow variables input/output model
+     */
+    public static InputOutputModel getFlowVariablesInputOutputModel(final WorkflowControl workflowControl) {
+        var flowVariables = Optional.ofNullable(workflowControl.getFlowObjectStack()) //
+            .map(stack -> stack.getAllAvailableFlowVariables().values()) //
+            .orElseGet(List::of) //
+            .stream() //
+            .filter(fv -> SUPPORTED_VARIABLE_TYPES.contains(fv.getVariableType())) //
+            .toList();
+
+        return InputOutputModel.flowVariables() //
+            .subItems(flowVariables, SUPPORTED_VARIABLE_TYPES::contains) //
+            .subItemCodeAliasTemplate(FLOWVAR_ALIAS_TEMPLATE) //
+            .build();
     }
 
-
+    /**
+     * Get auto completion items for string manipulator nodes.
+     *
+     * @param workflowControl a utility class to access workflow controls
+     * @param includeColumns a boolean flag to add columns names for auto-completion.
+     * @return
+     */
     public static StaticCompletionItem[] getCompletionItems(final WorkflowControl workflowControl,
         final boolean includeColumns) {
         Set<StaticCompletionItem> items = new HashSet<>();
@@ -152,4 +197,29 @@ public final class StringManipulationScriptingDialogUtil {
         return items.toArray(StaticCompletionItem[]::new);
     }
 
+    public static final class ReturnTypePersistor implements NodeParametersPersistor<Class<?>> {
+
+        @Override
+        public Class<?> load(final NodeSettingsRO settings) throws InvalidSettingsException {
+            String returnType = settings.getString(StringManipulationSettings.CFG_RETURN_TYPE, null);
+
+            if (returnType == null) {
+                return null;
+            } else {
+                return StringManipulationSettings.getClassForReturnType(returnType);
+            }
+
+        }
+
+        @Override
+        public void save(final Class<?> param, final NodeSettingsWO settings) {
+            String returnTypeStr = param != null ? param.getName() : null;
+            settings.addString(StringManipulationSettings.CFG_RETURN_TYPE, returnTypeStr);
+        }
+
+        @Override
+        public String[][] getConfigPaths() {
+            return new String[][]{{StringManipulationSettings.CFG_RETURN_TYPE}};
+        }
+    }
 }

@@ -88,6 +88,7 @@ public class StringManipulationVariableNodeFactory
 
     /**
      * {@inheritDoc}
+     *
      * @since 5.10
      */
     @Override
@@ -97,11 +98,11 @@ public class StringManipulationVariableNodeFactory
 
     /**
      * {@inheritDoc}
+     *
      * @since 5.10
      */
     @Override
     public NodeDialogPane createLegacyNodeDialogPane() {
-        // TODO Auto-generated method stub
         return new StringManipulationNodeDialog(true);
     }
 

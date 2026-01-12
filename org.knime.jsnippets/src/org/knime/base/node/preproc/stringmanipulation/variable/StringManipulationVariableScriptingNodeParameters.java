@@ -44,7 +44,7 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   22.12.2025 (Ali): created
+ *   22.12.2025 (Ali Asghar Marvi): created
  */
 
 /**
@@ -56,6 +56,7 @@ package org.knime.base.node.preproc.stringmanipulation.variable;
 import java.util.function.Supplier;
 
 import org.knime.base.node.preproc.stringmanipulation.StringManipulationSettings;
+import org.knime.base.node.util.WebUIDialogUtils;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
@@ -174,11 +175,11 @@ class StringManipulationVariableScriptingNodeParameters implements NodeParameter
             boolean isReplace = settings.getBoolean(StringManipulationSettings.CFG_IS_REPLACE);
             output.m_replaceOrAppend = isReplace ? ReplaceOrAppend.REPLACE : ReplaceOrAppend.APPEND;
 
-            String columnName = settings.getString(StringManipulationSettings.CFG_COLUMN_NAME);
+            String variableName = settings.getString(StringManipulationSettings.CFG_COLUMN_NAME);
             if (isReplace) {
-                output.m_variableNameReplace = columnName;
+                output.m_variableNameReplace = variableName;
             } else {
-                output.m_variableNameAppend = columnName;
+                output.m_variableNameAppend = variableName;
             }
 
             return output;
@@ -198,5 +199,8 @@ class StringManipulationVariableScriptingNodeParameters implements NodeParameter
             return new String[][]{{StringManipulationSettings.CFG_COLUMN_NAME}};
         }
     }
+
+    @Persistor(WebUIDialogUtils.ReturnTypePersistor.class)
+    Class<?> m_returnType;
 
 }

@@ -57,8 +57,7 @@ import org.knime.core.webui.node.dialog.scripting.AbstractFallbackScriptingNodeF
  *
  * @author Heiko Hofer
  */
-public class StringManipulationNodeFactory extends AbstractFallbackScriptingNodeFactory
-    <StringManipulationNodeModel> {
+public class StringManipulationNodeFactory extends AbstractFallbackScriptingNodeFactory<StringManipulationNodeModel> {
 
     /**
      * {@inheritDoc}

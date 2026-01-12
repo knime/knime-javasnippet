@@ -105,8 +105,12 @@ public class StringManipulationSettings {
      */
     public static final String CFG_IS_REPLACE = "append_column";
 
-    /** NodeSettings key for the return type of the expression. */
-    static final String CFG_RETURN_TYPE = "return_type";
+    /**
+     * NodeSettings key for the return type of the expression.
+     *
+     * @since 5.10
+     */
+    public static final String CFG_RETURN_TYPE = "return_type";
 
     /**
      * NodeSettings key whether to check for compilation problems when dialog closes (not used in the nodemodel,
@@ -336,8 +340,9 @@ public class StringManipulationSettings {
      * @param returnType <code>Double.class.getName()</code>
      * @return the associated class
      * @throws InvalidSettingsException if the argument is invalid
+     * @since 5.10
      */
-    static Class<?> getClassForReturnType(final String returnType) throws InvalidSettingsException {
+    public static Class<?> getClassForReturnType(final String returnType) throws InvalidSettingsException {
         if (Integer.class.getName().equals(returnType)) {
             return Integer.class;
         } else if (Boolean.class.getName().equals(returnType)) {

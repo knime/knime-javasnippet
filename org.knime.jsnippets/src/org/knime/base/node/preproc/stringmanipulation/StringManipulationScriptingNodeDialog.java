@@ -50,10 +50,9 @@ package org.knime.base.node.preproc.stringmanipulation;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 
-import org.knime.base.node.util.StringManipulationScriptingDialogUtil;
+import org.knime.base.node.util.WebUIDialogUtils;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.workflow.NodeContext;
@@ -63,8 +62,8 @@ import org.knime.core.webui.node.dialog.scripting.InputOutputModel;
 import org.knime.core.webui.node.dialog.scripting.WorkflowControl;
 
 /**
- * WebUI dialog for the String Manipulation node, defining autocompletion items and
- * drag and drop insertion from the side panel.
+ * WebUI dialog for the String Manipulation node, defining autocompletion items and drag and drop insertion from the
+ * side panel.
  *
  * @author Marc Lehner, KNIME AG, Zurich, Switzerland
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
@@ -98,7 +97,7 @@ class StringManipulationScriptingNodeDialog extends AbstractDefaultScriptingNode
                     // Create a single InputOutputModel representing the table with all its columns
                     var inputModel = InputOutputModel.table() //
                         .name("Input Table") //
-                        .subItemCodeAliasTemplate(StringManipulationScriptingDialogUtil.COLUMN_ALIAS_TEMPLATE) //
+                        .subItemCodeAliasTemplate(WebUIDialogUtils.COLUMN_ALIAS_TEMPLATE) //
                         .subItems(tableSpec, dataType -> dataType.getName()) //
                         .build();
                     inputObjects.add(inputModel);
@@ -106,25 +105,12 @@ class StringManipulationScriptingNodeDialog extends AbstractDefaultScriptingNode
 
                 return inputObjects;
             }) //
-            .addDataSupplier("flowVariables", () -> {
-                var flowVariables = Optional.ofNullable(workflowControl.getFlowObjectStack()) //
-                    .map(stack -> stack.getAllAvailableFlowVariables().values()) //
-                    .orElseGet(List::of) //
-                    .stream() //
-                    .filter(fv -> StringManipulationScriptingDialogUtil.getSupportedVariableTypes().contains(fv.getVariableType())) //
-                    .toList();
-
-                return InputOutputModel.flowVariables() //
-                    .subItems(flowVariables, varType -> true) //
-                    .subItemCodeAliasTemplate(StringManipulationScriptingDialogUtil.FLOWVAR_ALIAS_TEMPLATE) //
-                    .build();
-            }) //
+            .addDataSupplier("flowVariables", () -> WebUIDialogUtils.getFlowVariablesInputOutputModel(workflowControl)) //
             .addDataSupplier("outputObjects", Collections::emptyList) //
             .addDataSupplier("language", () -> "plaintext") //
             .addDataSupplier("fileName", () -> "script.txt") //
             .addDataSupplier("mainScriptConfigKey", () -> "expression") //
-            .addDataSupplier("staticCompletionItems",
-                () -> StringManipulationScriptingDialogUtil.getCompletionItems(workflowControl, true));
+            .addDataSupplier("staticCompletionItems", () -> WebUIDialogUtils.getCompletionItems(workflowControl, true));
     }
 
 }
