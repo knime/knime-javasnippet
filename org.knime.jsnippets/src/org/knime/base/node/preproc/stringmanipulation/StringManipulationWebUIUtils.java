@@ -59,7 +59,7 @@ import org.knime.node.parameters.persistence.NodeParametersPersistor;
  * @author Ali Asghar Marvi, KNIME GmbH, Berlin, Germany
  * @since 5.10
  */
-final class StringManipulationWebUIUtils {
+public final class StringManipulationWebUIUtils {
 
     private StringManipulationWebUIUtils() {
         // Utility class, do not instantiate
@@ -71,7 +71,7 @@ final class StringManipulationWebUIUtils {
      * null handling for the {@code return_type} config key, as previously done in {@link StringManipulationSettings}.
      *
      */
-    static final class ReturnTypePersistor implements NodeParametersPersistor<Class<?>> {
+    public static final class ReturnTypePersistor implements NodeParametersPersistor<Class<?>> {
 
         @Override
         public Class<?> load(final NodeSettingsRO settings) throws InvalidSettingsException {
