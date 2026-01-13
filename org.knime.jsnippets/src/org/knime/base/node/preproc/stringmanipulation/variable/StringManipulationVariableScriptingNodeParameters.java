@@ -46,17 +46,12 @@
  * History
  *   22.12.2025 (Ali Asghar Marvi): created
  */
-
-/**
- * @author Ali Asghar Marvi, KNIME GmbH, Berlin, Germany
- * @since 5.10
- */
 package org.knime.base.node.preproc.stringmanipulation.variable;
 
 import java.util.function.Supplier;
 
 import org.knime.base.node.preproc.stringmanipulation.StringManipulationSettings;
-import org.knime.base.node.util.WebUIDialogUtils;
+import org.knime.base.node.preproc.stringmanipulation.StringManipulationWebUIUtils;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
@@ -81,6 +76,11 @@ import org.knime.node.parameters.widget.choices.ValueSwitchWidget;
 import org.knime.node.parameters.widget.choices.util.AllFlowVariablesProvider;
 import org.knime.node.parameters.widget.text.TextInputWidget;
 
+/**
+ * @author Ali Asghar Marvi, KNIME GmbH, Berlin, Germany
+ * @since 5.10
+ */
+
 class StringManipulationVariableScriptingNodeParameters implements NodeParameters {
 
     String m_expression = "";
@@ -89,7 +89,7 @@ class StringManipulationVariableScriptingNodeParameters implements NodeParameter
     boolean m_syntaxCheckOnClose = true;
 
     @Widget(title = "Output variable",
-        description = "Choose whether to replace an existing variable or append a new variable to the table.")
+        description = "Choose whether to replace an existing or append a new flow variable.")
     @ValueSwitchWidget
     @ValueReference(ReplaceOrAppendRef.class)
     @Persistor(ReplaceOrAppendPersistor.class)
@@ -127,12 +127,12 @@ class StringManipulationVariableScriptingNodeParameters implements NodeParameter
         @ValueProvider(ReplaceOrAppendProvider.class)
         public ReplaceOrAppend m_replaceOrAppend;
 
-        @Widget(title = "New variable name", description = "The name of the new variable to append.")
+        @Widget(title = "New variable name", description = "The name of the new flow variable to append.")
         @Effect(predicate = IsReplace.class, type = EffectType.HIDE)
         @TextInputWidget
         public String m_variableNameAppend = "NewVariable";
 
-        @Widget(title = "Replace variable", description = "The name of the variable to replace.")
+        @Widget(title = "Replace variable", description = "The name of the flow variable to replace.")
         @ChoicesProvider(AllFlowVariablesProvider.class)
         @Effect(predicate = IsReplace.class, type = EffectType.SHOW)
         public String m_variableNameReplace;
@@ -144,7 +144,7 @@ class StringManipulationVariableScriptingNodeParameters implements NodeParameter
     enum ReplaceOrAppend {
             @Label(value = "Append", description = "Append a new flow variable")
             APPEND, //
-            @Label(value = "Replace", description = "Replace an existing variable")
+            @Label(value = "Replace", description = "Replace an existing flow variable")
             REPLACE;
     }
 
@@ -200,7 +200,7 @@ class StringManipulationVariableScriptingNodeParameters implements NodeParameter
         }
     }
 
-    @Persistor(WebUIDialogUtils.ReturnTypePersistor.class)
+    @Persistor(StringManipulationWebUIUtils.ReturnTypePersistor.class)
     Class<?> m_returnType;
 
 }

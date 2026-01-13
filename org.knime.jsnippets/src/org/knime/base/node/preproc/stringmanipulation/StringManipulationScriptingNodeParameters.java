@@ -50,7 +50,6 @@ package org.knime.base.node.preproc.stringmanipulation;
 
 import java.util.function.Supplier;
 
-import org.knime.base.node.util.WebUIDialogUtils;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
@@ -210,6 +209,6 @@ class StringManipulationScriptingNodeParameters implements NodeParameters {
         }
     }
 
-    @Persistor(WebUIDialogUtils.ReturnTypePersistor.class)
+    @Persistor(StringManipulationWebUIUtils.ReturnTypePersistor.class)
     Class<?> m_returnType;
 }

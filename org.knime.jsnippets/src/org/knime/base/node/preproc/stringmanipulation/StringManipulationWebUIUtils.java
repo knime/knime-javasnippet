@@ -44,48 +44,51 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Dec 17, 2025 (Marc Lehner): created
+ *   13 Jan 2026 (Ali Asghar Marvi): created
  */
-package org.knime.base.node.preproc.stringmanipulation.variable;
+package org.knime.base.node.preproc.stringmanipulation;
 
-import java.util.Collections;
-
-import org.knime.base.node.preproc.stringmanipulation.StringManipulatorProvider;
-import org.knime.base.node.util.WebUIDialogUtils;
-import org.knime.core.node.workflow.NodeContext;
-import org.knime.core.webui.node.dialog.scripting.AbstractDefaultScriptingNodeDialog;
-import org.knime.core.webui.node.dialog.scripting.GenericInitialDataBuilder;
-import org.knime.core.webui.node.dialog.scripting.WorkflowControl;
+import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeSettingsRO;
+import org.knime.core.node.NodeSettingsWO;
+import org.knime.node.parameters.persistence.NodeParametersPersistor;
 
 /**
  *
- * @author Marc Lehner, KNIME AG, Zurich, Switzerland
- * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  * @author Ali Asghar Marvi, KNIME GmbH, Berlin, Germany
  * @since 5.10
  */
-@SuppressWarnings("restriction")
-class StringManipulationVariableScriptingNodeDialog extends AbstractDefaultScriptingNodeDialog {
-
-    public StringManipulationVariableScriptingNodeDialog() {
-        super(StringManipulationVariableScriptingNodeParameters.class);
-    }
+public class StringManipulationWebUIUtils {
 
     /**
-     * {@inheritDoc}
+     * This custom persistor is used to persist the return type class name in the String Manipulation and String
+     * Manipulation (Variable) nodes. This is to ensure that null handling is same as done in the
+     * StringManipulationSettings node.
+     *
      */
-    @Override
-    protected GenericInitialDataBuilder getInitialData(final NodeContext context) {
-        var workflowControl = new WorkflowControl(context.getNodeContainer());
-        return GenericInitialDataBuilder.createDefaultInitialDataBuilder(NodeContext.getContext()) //
-            .addDataSupplier("inputObjects", Collections::emptyList)
-            .addDataSupplier("flowVariables", () -> WebUIDialogUtils.getFlowVariablesInputOutputModel(workflowControl)) //
-            .addDataSupplier("outputObjects", Collections::emptyList) //
-            .addDataSupplier("language", () -> "plaintext") //
-            .addDataSupplier("fileName", () -> "script.txt") //
-            .addDataSupplier("mainScriptConfigKey", () -> "expression") //
-            .addDataSupplier("staticCompletionItems", () -> WebUIDialogUtils.getCompletionItems(workflowControl,
-                StringManipulatorProvider.getDefault(), false));
-    }
+    public static final class ReturnTypePersistor implements NodeParametersPersistor<Class<?>> {
 
+        @Override
+        public Class<?> load(final NodeSettingsRO settings) throws InvalidSettingsException {
+            String returnType = settings.getString(StringManipulationSettings.CFG_RETURN_TYPE, null);
+
+            if (returnType == null) {
+                return null;
+            } else {
+                return StringManipulationSettings.getClassForReturnType(returnType);
+            }
+
+        }
+
+        @Override
+        public void save(final Class<?> param, final NodeSettingsWO settings) {
+            String returnTypeStr = param != null ? param.getName() : null;
+            settings.addString(StringManipulationSettings.CFG_RETURN_TYPE, returnTypeStr);
+        }
+
+        @Override
+        public String[][] getConfigPaths() {
+            return new String[][]{{StringManipulationSettings.CFG_RETURN_TYPE}};
+        }
+    }
 }

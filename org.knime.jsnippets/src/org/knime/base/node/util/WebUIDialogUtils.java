@@ -53,19 +53,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import org.knime.base.node.preproc.stringmanipulation.StringManipulationSettings;
-import org.knime.base.node.preproc.stringmanipulation.StringManipulatorProvider;
 import org.knime.core.data.DataTableSpec;
-import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.NodeSettingsRO;
-import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.webui.node.dialog.scripting.AbstractDefaultScriptingNodeDialog.StaticCompletionItem;
 import org.knime.core.webui.node.dialog.scripting.InputOutputModel;
 import org.knime.core.webui.node.dialog.scripting.WorkflowControl;
-import org.knime.node.parameters.persistence.NodeParametersPersistor;
 
 /**
  * @author Ali Asghar Marvi, KNIME GmbH, Berlin, Germany
@@ -77,6 +71,9 @@ public final class WebUIDialogUtils {
     private WebUIDialogUtils() {
     }
 
+    /**
+     * Supported flow variable data types in scripting nodes.
+     */
     public static final Set<VariableType<?>> SUPPORTED_VARIABLE_TYPES =
         Set.of(VariableType.StringType.INSTANCE, VariableType.IntType.INSTANCE, VariableType.DoubleType.INSTANCE);
 
@@ -101,10 +98,10 @@ public final class WebUIDialogUtils {
               $${I {{~{ subItems.[0].name }~}} }$$
             {{~/when~}}
             {{~#when subItems.[0].type.id 'eq' 'DOUBLE'~}}
-              $${D {{~{subItems.[0].name}~}} }$$
+              $${D {{~{ subItems.[0].name }~}} }$$
             {{~/when~}}
             {{~#when subItems.[0].type.id 'eq' 'STRING'~}}
-              $${S {{~{subItems.[0].name}~}} }$$
+              $${S {{~{ subItems.[0].name }~}} }$$
             {{~/when}}""";
 
     /**
@@ -146,25 +143,49 @@ public final class WebUIDialogUtils {
     }
 
     /**
-     * Get auto completion items for string manipulator nodes.
+     * Extracts arguments from a manipulator's display name. Handles both function-style display names (e.g.,
+     * "functionName(arg1, arg2)") and operator-style display names (e.g., "? AND ?", "NOT ?").
+     *
+     * @param displayName the display name of a manipulator
+     * @return the arguments string if the display name follows function pattern, null otherwise
+     */
+    private static String extractArguments(final String displayName) {
+        int openParen = displayName.indexOf('(');
+        int closeParen = displayName.lastIndexOf(')');
+
+        // Only extract arguments if display name has parentheses
+        if (openParen >= 0 && closeParen > openParen) {
+            return displayName.substring(openParen + 1, closeParen);
+        }
+
+        // For operators and other non-function style manipulators, return null
+        return null;
+    }
+
+    /**
+     * Get auto completion items for manipulator provider implementations.
      *
      * @param workflowControl a utility class to access workflow controls
+     * @param manipulatorProvider a {@link ManipulatorProvider} implementation providing manipulator functions, or null
+     *            to skip adding manipulator functions
      * @param includeColumns a boolean flag to add columns names for auto-completion.
-     * @return an array of {@link StaticCompletionItem} objects containing string manipulator functions,
-     *         flow variables, and optionally column names
+     * @return an array of {@link StaticCompletionItem} objects containing manipulator functions, flow variables, and
+     *         optionally column names
      */
     public static StaticCompletionItem[] getCompletionItems(final WorkflowControl workflowControl,
-        final boolean includeColumns) {
+        final ManipulatorProvider manipulatorProvider, final boolean includeColumns) {
         Set<StaticCompletionItem> items = new HashSet<>();
 
-        // Add string manipulator functions
-        StringManipulatorProvider.getDefault().getCategories().stream()
-            .forEach(c -> StringManipulatorProvider.getDefault().getManipulators(c).forEach(m -> {
-                var displayName = m.getDisplayName();
-                var arguments = displayName.substring(displayName.indexOf('(') + 1, displayName.lastIndexOf(')'));
-                items.add(new StaticCompletionItem(m.getName(), arguments, m.getDescription(),
-                    m.getReturnType().getSimpleName()));
-            }));
+        // Add manipulator functions from the provided provider if not null
+        if (manipulatorProvider != null) {
+            manipulatorProvider.getCategories().stream()
+                .forEach(c -> manipulatorProvider.getManipulators(c).forEach(m -> {
+                    var displayName = m.getDisplayName();
+                    var arguments = extractArguments(displayName);
+                    items.add(new StaticCompletionItem(m.getName(), arguments, m.getDescription(),
+                        m.getReturnType().getSimpleName()));
+                }));
+        }
 
         // Add flow variables
         Optional.ofNullable(workflowControl.getFlowObjectStack()) //
@@ -198,29 +219,4 @@ public final class WebUIDialogUtils {
         return items.toArray(StaticCompletionItem[]::new);
     }
 
-    public static final class ReturnTypePersistor implements NodeParametersPersistor<Class<?>> {
-
-        @Override
-        public Class<?> load(final NodeSettingsRO settings) throws InvalidSettingsException {
-            String returnType = settings.getString(StringManipulationSettings.CFG_RETURN_TYPE, null);
-
-            if (returnType == null) {
-                return null;
-            } else {
-                return StringManipulationSettings.getClassForReturnType(returnType);
-            }
-
-        }
-
-        @Override
-        public void save(final Class<?> param, final NodeSettingsWO settings) {
-            String returnTypeStr = param != null ? param.getName() : null;
-            settings.addString(StringManipulationSettings.CFG_RETURN_TYPE, returnTypeStr);
-        }
-
-        @Override
-        public String[][] getConfigPaths() {
-            return new String[][]{{StringManipulationSettings.CFG_RETURN_TYPE}};
-        }
-    }
 }

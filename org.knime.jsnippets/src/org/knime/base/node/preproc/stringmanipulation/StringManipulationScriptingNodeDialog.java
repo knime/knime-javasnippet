@@ -110,7 +110,8 @@ class StringManipulationScriptingNodeDialog extends AbstractDefaultScriptingNode
             .addDataSupplier("language", () -> "plaintext") //
             .addDataSupplier("fileName", () -> "script.txt") //
             .addDataSupplier("mainScriptConfigKey", () -> "expression") //
-            .addDataSupplier("staticCompletionItems", () -> WebUIDialogUtils.getCompletionItems(workflowControl, true));
+            .addDataSupplier("staticCompletionItems", () -> WebUIDialogUtils.getCompletionItems(workflowControl,
+                StringManipulatorProvider.getDefault(), true));
     }
 
 }
