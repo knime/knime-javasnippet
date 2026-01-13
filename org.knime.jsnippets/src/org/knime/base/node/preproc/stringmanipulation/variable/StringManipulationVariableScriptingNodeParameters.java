@@ -142,7 +142,7 @@ class StringManipulationVariableScriptingNodeParameters implements NodeParameter
     OutputVariableName m_outputVariable = new OutputVariableName();
 
     enum ReplaceOrAppend {
-            @Label(value = "Append", description = "Append a new variable to the table")
+            @Label(value = "Append", description = "Append a new flow variable")
             APPEND, //
             @Label(value = "Replace", description = "Replace an existing variable")
             REPLACE;
