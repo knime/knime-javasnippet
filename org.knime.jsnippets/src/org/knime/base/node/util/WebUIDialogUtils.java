@@ -150,7 +150,8 @@ public final class WebUIDialogUtils {
      *
      * @param workflowControl a utility class to access workflow controls
      * @param includeColumns a boolean flag to add columns names for auto-completion.
-     * @return
+     * @return an array of {@link StaticCompletionItem} objects containing string manipulator functions,
+     *         flow variables, and optionally column names
      */
     public static StaticCompletionItem[] getCompletionItems(final WorkflowControl workflowControl,
         final boolean includeColumns) {
