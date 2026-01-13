@@ -54,19 +54,24 @@ import org.knime.core.node.NodeSettingsWO;
 import org.knime.node.parameters.persistence.NodeParametersPersistor;
 
 /**
+ * Utility class for String Manipulation WebUI components.
  *
  * @author Ali Asghar Marvi, KNIME GmbH, Berlin, Germany
  * @since 5.10
  */
-public class StringManipulationWebUIUtils {
+final class StringManipulationWebUIUtils {
+
+    private StringManipulationWebUIUtils() {
+        // Utility class, do not instantiate
+    }
 
     /**
      * This custom persistor is used to persist the return type class name in the String Manipulation and String
-     * Manipulation (Variable) nodes. This is to ensure that null handling is same as done in the
-     * StringManipulationSettings node.
+     * Manipulation (Variable) nodes. This is needed for backward compatibility with old settings which expect specific
+     * null handling for the {@code return_type} config key, as previously done in {@link StringManipulationSettings}.
      *
      */
-    public static final class ReturnTypePersistor implements NodeParametersPersistor<Class<?>> {
+    static final class ReturnTypePersistor implements NodeParametersPersistor<Class<?>> {
 
         @Override
         public Class<?> load(final NodeSettingsRO settings) throws InvalidSettingsException {
