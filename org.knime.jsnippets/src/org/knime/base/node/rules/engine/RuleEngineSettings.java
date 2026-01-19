@@ -67,7 +67,7 @@ public class RuleEngineSettings {
 
     static final String NEW_COLUMN_NAME = "new-column-name";
 
-    final List<String> m_rules = new ArrayList<String>();
+    private final List<String> m_rules = new ArrayList<String>();
 
     private String m_newColName = RuleEngineNodeDialog.NEW_COL_NAME;
     private String m_replaceColumn = "";
