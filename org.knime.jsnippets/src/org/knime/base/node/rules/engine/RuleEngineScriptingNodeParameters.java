@@ -161,11 +161,10 @@ final class RuleEngineScriptingNodeParameters implements NodeParameters {
     }
 
     static final class RulesPersistor implements NodeParametersPersistor<String> {
-        private static final String CFG_RULES = "rules";
 
         @Override
         public String load(final NodeSettingsRO settings) throws InvalidSettingsException {
-            String[] rulesArray = settings.getStringArray(CFG_RULES, new String[0]);
+            String[] rulesArray = settings.getStringArray(RuleEngineSettings.RULES, new String[0]);
             // Convert array of rules back to a single string with newlines
             return String.join("\n", rulesArray);
         }
@@ -176,12 +175,12 @@ final class RuleEngineScriptingNodeParameters implements NodeParameters {
             // The scripting editor returns a String object that contains all the contents of the scripting editor,
             // hence this split is needed, so that each line can be stored separately (compatible with NodeModel).
             String[] rulesArray = param.isEmpty() ? new String[0] : param.split("\n");
-            settings.addStringArray(CFG_RULES, rulesArray);
+            settings.addStringArray(RuleEngineSettings.RULES, rulesArray);
         }
 
         @Override
         public String[][] getConfigPaths() {
-            return new String[][]{{CFG_RULES}};
+            return new String[][]{{RuleEngineSettings.RULES}};
         }
     }
 

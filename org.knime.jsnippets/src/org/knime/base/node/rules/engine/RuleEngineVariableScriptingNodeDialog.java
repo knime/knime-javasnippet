@@ -58,16 +58,16 @@ import org.knime.core.webui.node.dialog.scripting.GenericInitialDataBuilder;
 import org.knime.core.webui.node.dialog.scripting.WorkflowControl;
 
 /**
- * This class implements the configuration dialog and the fallback scripting editor for the Rule Engine node.
+ * This class implements the configuration dialog and the fallback scripting editor for the Rule Engine Variable node.
  *
  * @author Ali Asghar Marvi, KNIME GmbH, Berlin, Germany
  * @since 5.10
  */
 @SuppressWarnings("restriction")
-public class RuleEngineScriptingNodeDialog extends AbstractDefaultScriptingNodeDialog {
+public class RuleEngineVariableScriptingNodeDialog extends AbstractDefaultScriptingNodeDialog {
 
-    RuleEngineScriptingNodeDialog() {
-        super(RuleEngineScriptingNodeParameters.class);
+    RuleEngineVariableScriptingNodeDialog() {
+        super(RuleEngineVariableScriptingNodeParameters.class);
     }
 
     /**
@@ -77,14 +77,14 @@ public class RuleEngineScriptingNodeDialog extends AbstractDefaultScriptingNodeD
     protected GenericInitialDataBuilder getInitialData(final NodeContext context) {
         var workflowControl = new WorkflowControl(context.getNodeContainer());
         return GenericInitialDataBuilder.createDefaultInitialDataBuilder(NodeContext.getContext()) //
-            .addDataSupplier("inputObjects", () -> WebUIDialogUtils.getFirstInputTableModel(workflowControl)) //
+            .addDataSupplier("inputObjects", Collections::emptyList) //
             .addDataSupplier("flowVariables", () -> WebUIDialogUtils.getFlowVariablesInputOutputModel(workflowControl)) //
             .addDataSupplier("outputObjects", Collections::emptyList) //
             .addDataSupplier("language", () -> "plaintext") //
             .addDataSupplier("fileName", () -> "script.txt") //
             .addDataSupplier("mainScriptConfigKey", () -> RuleEngineSettings.RULES) //
             .addDataSupplier("staticCompletionItems", () -> WebUIDialogUtils.getCompletionItems(workflowControl,
-                RuleManipulatorProvider.getProvider(), true));
+                RuleManipulatorProvider.getProvider(), false));
     }
 
 }
