@@ -48,43 +48,54 @@
  */
 package org.knime.base.node.rules.engine;
 
-import java.util.Collections;
-
-import org.knime.base.node.rules.engine.manipulator.RuleManipulatorProvider;
-import org.knime.base.node.util.WebUIDialogUtils;
-import org.knime.core.node.workflow.NodeContext;
-import org.knime.core.webui.node.dialog.scripting.AbstractDefaultScriptingNodeDialog;
-import org.knime.core.webui.node.dialog.scripting.GenericInitialDataBuilder;
-import org.knime.core.webui.node.dialog.scripting.WorkflowControl;
+import org.knime.node.parameters.NodeParameters;
+import org.knime.node.parameters.Widget;
+import org.knime.node.parameters.migration.Migration;
+import org.knime.node.parameters.persistence.Persist;
+import org.knime.node.parameters.persistence.Persistor;
+import org.knime.node.parameters.persistence.legacy.EnumBooleanPersistor;
+import org.knime.node.parameters.widget.choices.ChoicesProvider;
+import org.knime.node.parameters.widget.choices.util.AllFlowVariablesProvider;
 
 /**
- * This class implements the configuration dialog and the fallback scripting editor for the Rule Engine node.
+ * This class registers and handles the generic configuration options for the Rule Engine Variable node in modern UI.
  *
  * @author Ali Asghar Marvi, KNIME GmbH, Berlin, Germany
  * @since 5.10
  */
-@SuppressWarnings("restriction")
-public class RuleEngineScriptingNodeDialog extends AbstractDefaultScriptingNodeDialog {
+final class RuleEngineVariableScriptingNodeParameters implements NodeParameters {
 
-    RuleEngineScriptingNodeDialog() {
-        super(RuleEngineScriptingNodeParameters.class);
+    @Persistor(RuleEngineScriptingNodeParameters.RulesPersistor.class)
+    String m_rules = "";
+
+    // using the persistor from this Java file since the enum is different than defined in RuleEngineScriptingNodeParameters
+    @Persistor(ReplaceOrAppendPersistor.class)
+    ReplaceOrAppend m_replaceOrAppend = ReplaceOrAppend.APPEND;
+
+    @Widget(title = "New flow variable name", description = "The name of the new flow variable.")
+    @Persist(configKey = RuleEngineSettings.NEW_COLUMN_NAME)
+    String m_newVarName = "prediction";
+
+    @ChoicesProvider(AllFlowVariablesProvider.class)
+    @Persist(configKey = RuleEngineSettings.REPLACE_COLUMN_NAME)
+    String m_replaceColumn = "";
+
+    enum ReplaceOrAppend {
+            APPEND, //
+            REPLACE;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected GenericInitialDataBuilder getInitialData(final NodeContext context) {
-        var workflowControl = new WorkflowControl(context.getNodeContainer());
-        return GenericInitialDataBuilder.createDefaultInitialDataBuilder(NodeContext.getContext()) //
-            .addDataSupplier("inputObjects", () -> WebUIDialogUtils.getFirstInputTableModel(workflowControl)) //
-            .addDataSupplier("flowVariables", () -> WebUIDialogUtils.getFlowVariablesInputOutputModel(workflowControl)) //
-            .addDataSupplier("outputObjects", Collections::emptyList) //
-            .addDataSupplier("language", () -> "plaintext") //
-            .addDataSupplier("fileName", () -> "script.txt") //
-            .addDataSupplier("mainScriptConfigKey", () -> RuleEngineSettings.RULES) //
-            .addDataSupplier("staticCompletionItems", () -> WebUIDialogUtils.getCompletionItems(workflowControl,
-                RuleManipulatorProvider.getProvider(), true));
+    // need to keep it for flow variable settings
+    static final class ReplaceOrAppendPersistor extends EnumBooleanPersistor<ReplaceOrAppend> {
+        ReplaceOrAppendPersistor() {
+            super(RuleEngineSettings.APPEND_COLUMN, ReplaceOrAppend.class, ReplaceOrAppend.APPEND);
+        }
     }
+
+    // migration added to be backwards compatible for any
+    // KNIME workflow that uses a pre-3.2 version of this node.
+    // Since this setting was introduced in KAP 3.2.
+    @Migration(RuleEngineScriptingNodeParameters.LoadTrueForOldNodes.class)
+    boolean m_disallowLongOutputForCompatibility = false;
 
 }

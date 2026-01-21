@@ -67,6 +67,8 @@ public class RuleEngineSettings {
 
     static final String NEW_COLUMN_NAME = "new-column-name";
 
+    static final String RULES = "rules";
+
     private final List<String> m_rules = new ArrayList<String>();
 
     private String m_newColName = RuleEngineNodeDialog.NEW_COL_NAME;
@@ -164,7 +166,7 @@ public class RuleEngineSettings {
      * @throws InvalidSettingsException if some settings are missing
      */
     public void loadSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
-        String[] rules = settings.getStringArray("rules");
+        String[] rules = settings.getStringArray(RULES);
 
         m_rules.clear();
         for (String r : rules) {
@@ -185,7 +187,7 @@ public class RuleEngineSettings {
      * @param settings a node settings object
      */
     public void loadSettingsForDialog(final NodeSettingsRO settings) {
-        String[] rules = settings.getStringArray("rules", new String[0]);
+        String[] rules = settings.getStringArray(RULES, new String[0]);
 
         m_rules.clear();
         for (String r : rules) {
@@ -203,7 +205,7 @@ public class RuleEngineSettings {
      * @param settings a node settings object
      */
     public void saveSettings(final NodeSettingsWO settings) {
-        settings.addStringArray("rules", m_rules.toArray(new String[m_rules.size()]));
+        settings.addStringArray(RULES, m_rules.toArray(new String[m_rules.size()]));
         settings.addString(NEW_COLUMN_NAME, m_newColName);
         settings.addString(REPLACE_COLUMN_NAME, m_replaceColumn);
         settings.addBoolean(APPEND_COLUMN, m_appendColumn);

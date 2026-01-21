@@ -48,8 +48,9 @@
 package org.knime.base.node.rules.engine;
 
 import org.knime.core.node.NodeDialogPane;
-import org.knime.core.node.NodeFactory;
 import org.knime.core.node.NodeView;
+import org.knime.core.webui.node.dialog.scripting.AbstractDefaultScriptingNodeDialog;
+import org.knime.core.webui.node.dialog.scripting.AbstractFallbackScriptingNodeFactory;
 
 /**
  * This factory creates all necessary object for the business rule node for variables.
@@ -58,12 +59,12 @@ import org.knime.core.node.NodeView;
  * @author Gabor Bakos
  * @since 2.8
  */
-public class RuleEngineVariableNodeFactory extends NodeFactory<RuleEngineVariableNodeModel> {
+public class RuleEngineVariableNodeFactory extends AbstractFallbackScriptingNodeFactory<RuleEngineVariableNodeModel> {
     /**
      * {@inheritDoc}
      */
     @Override
-    protected NodeDialogPane createNodeDialogPane() {
+    public NodeDialogPane createLegacyNodeDialogPane() {
         return new RuleEngineVariableNodeDialog();
     }
 
@@ -81,7 +82,7 @@ public class RuleEngineVariableNodeFactory extends NodeFactory<RuleEngineVariabl
     @Override
     public NodeView<RuleEngineVariableNodeModel> createNodeView(final int index,
             final RuleEngineVariableNodeModel model) {
-        return null;
+        throw new IndexOutOfBoundsException();
     }
 
     /**
@@ -94,9 +95,11 @@ public class RuleEngineVariableNodeFactory extends NodeFactory<RuleEngineVariabl
 
     /**
      * {@inheritDoc}
+     *
+     * @since 5.10
      */
     @Override
-    protected boolean hasDialog() {
-        return true;
+    public AbstractDefaultScriptingNodeDialog createNodeDialog() {
+        return new RuleEngineVariableScriptingNodeDialog();
     }
 }
