@@ -48,14 +48,14 @@
  */
 package org.knime.base.node.rules.engine;
 
+import org.knime.base.node.util.WebUIDialogUtils;
 import org.knime.node.parameters.NodeParameters;
 import org.knime.node.parameters.Widget;
 import org.knime.node.parameters.migration.Migration;
 import org.knime.node.parameters.persistence.Persist;
 import org.knime.node.parameters.persistence.Persistor;
 import org.knime.node.parameters.persistence.legacy.EnumBooleanPersistor;
-import org.knime.node.parameters.widget.choices.ChoicesProvider;
-import org.knime.node.parameters.widget.choices.util.AllFlowVariablesProvider;
+import org.knime.node.parameters.widget.message.TextMessage;
 
 /**
  * This class registers and handles the generic configuration options for the Rule Engine Variable node in modern UI.
@@ -68,7 +68,11 @@ final class RuleEngineVariableScriptingNodeParameters implements NodeParameters 
     @Persistor(RuleEngineScriptingNodeParameters.RulesPersistor.class)
     String m_rules = "";
 
-    // using the persistor from this Java file since the enum is different than defined in RuleEngineScriptingNodeParameters
+    @TextMessage(WebUIDialogUtils.RuleEngineEditorAutoCompletionShortcutInfoMessageProvider.class)
+    Void m_textMessage;
+
+    // using the persistor from this Java file since the enum is different than defined in RuleEngineScriptingNodeParameters.
+    // Only append option is present.
     @Persistor(ReplaceOrAppendPersistor.class)
     ReplaceOrAppend m_replaceOrAppend = ReplaceOrAppend.APPEND;
 
@@ -76,10 +80,15 @@ final class RuleEngineVariableScriptingNodeParameters implements NodeParameters 
     @Persist(configKey = RuleEngineSettings.NEW_COLUMN_NAME)
     String m_newVarName = "prediction";
 
-    @ChoicesProvider(AllFlowVariablesProvider.class)
+    // The old dialog only has the append variable option; however, the flow variable tab has all
+    // the flow variables that are there in the rule engine node.
+    // This is left here without widget, in case this field is configured by a flow variable.
+    // Something to consider when redesigning the node dialog.
     @Persist(configKey = RuleEngineSettings.REPLACE_COLUMN_NAME)
     String m_replaceColumn = "";
 
+    // Labels of the Enums are not needed here since those are not available in old dialog.
+    // Only the append option is available.
     enum ReplaceOrAppend {
             APPEND, //
             REPLACE;
