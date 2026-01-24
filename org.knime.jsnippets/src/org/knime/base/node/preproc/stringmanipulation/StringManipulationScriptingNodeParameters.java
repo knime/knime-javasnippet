@@ -91,6 +91,7 @@ import org.knime.node.parameters.widget.message.TextMessage;
  */
 @SuppressWarnings("restriction")
 class StringManipulationScriptingNodeParameters implements NodeParameters {
+
     @Persist(configKey = StringManipulationSettings.CFG_EXPRESSION)
     String m_expression = "";
 
@@ -244,4 +245,5 @@ class StringManipulationScriptingNodeParameters implements NodeParameters {
 
     @Persistor(StringManipulationWebUIUtils.ReturnTypePersistor.class)
     Class<?> m_returnType;
+
 }
