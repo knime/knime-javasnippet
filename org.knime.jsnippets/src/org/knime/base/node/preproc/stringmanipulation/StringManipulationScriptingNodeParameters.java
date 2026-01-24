@@ -48,8 +48,14 @@
  */
 package org.knime.base.node.preproc.stringmanipulation;
 
+import java.util.Optional;
 import java.util.function.Supplier;
 
+import org.knime.base.node.util.WebUIDialogUtils;
+import org.knime.core.data.DataColumnSpec;
+import org.knime.core.data.DoubleValue;
+import org.knime.core.data.IntValue;
+import org.knime.core.data.StringValue;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
@@ -68,11 +74,13 @@ import org.knime.node.parameters.updates.ParameterReference;
 import org.knime.node.parameters.updates.StateProvider;
 import org.knime.node.parameters.updates.ValueProvider;
 import org.knime.node.parameters.updates.ValueReference;
+import org.knime.node.parameters.updates.legacy.ColumnNameAutoGuessValueProvider;
 import org.knime.node.parameters.widget.choices.ChoicesProvider;
 import org.knime.node.parameters.widget.choices.Label;
 import org.knime.node.parameters.widget.choices.ValueSwitchWidget;
 import org.knime.node.parameters.widget.choices.util.AllColumnsProvider;
-import org.knime.node.parameters.widget.text.TextInputWidget;
+import org.knime.node.parameters.widget.choices.util.ColumnSelectionUtil;
+import org.knime.node.parameters.widget.message.TextMessage;
 
 /**
  * Configuration parameters in the WebUI dialog for the String Manipulation node
@@ -81,9 +89,13 @@ import org.knime.node.parameters.widget.text.TextInputWidget;
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  * @since 5.10
  */
+@SuppressWarnings("restriction")
 class StringManipulationScriptingNodeParameters implements NodeParameters {
     @Persist(configKey = StringManipulationSettings.CFG_EXPRESSION)
     String m_expression = "";
+
+    @TextMessage(WebUIDialogUtils.FunctionAutoCompletionShortcutInfoMessageProvider.class)
+    Void m_textMessage;
 
     @Widget(title = "Insert missing as null",
         description = "If checked, missing values in the input columns will be treated as null in the expression.")
@@ -119,11 +131,30 @@ class StringManipulationScriptingNodeParameters implements NodeParameters {
             m_valueSupplier = initializer.getValueSupplier(ReplaceOrAppendRef.class);
         }
 
-        @SuppressWarnings("restriction")
         @Override
         public ReplaceOrAppend computeState(final NodeParametersInput parametersInput)
             throws StateComputationFailureException {
             return m_valueSupplier.get();
+        }
+
+    }
+
+    static final class ColumnNameRef implements ParameterReference<String> {
+    }
+
+    static final class ColumnNameProvider extends ColumnNameAutoGuessValueProvider {
+
+        protected ColumnNameProvider() {
+            super(ColumnNameRef.class);
+        }
+
+        @Override
+        protected Optional<DataColumnSpec> autoGuessColumn(final NodeParametersInput parametersInput) {
+            // select last default column as in old dialog
+            final var compatibleColumns = ColumnSelectionUtil.getCompatibleColumnsOfFirstPort(parametersInput,
+                StringValue.class, DoubleValue.class, IntValue.class);
+            return compatibleColumns.isEmpty() ? Optional.empty()
+                : Optional.of(compatibleColumns.get(compatibleColumns.size() - 1));
         }
 
     }
@@ -138,13 +169,14 @@ class StringManipulationScriptingNodeParameters implements NodeParameters {
 
         @Widget(title = "New column name", description = "The name of the new column to append.")
         @Effect(predicate = IsReplace.class, type = EffectType.HIDE)
-        @TextInputWidget
-        String m_columnNameAppend = "NewColumn";
+        String m_columnNameAppend = "";
 
         @Widget(title = "Replace column", description = "The name of the column to replace.")
         @ChoicesProvider(AllColumnsProvider.class)
         @Effect(predicate = IsReplace.class, type = EffectType.SHOW)
-        String m_columnNameReplace;
+        @ValueReference(ColumnNameRef.class)
+        @ValueProvider(ColumnNameProvider.class)
+        String m_columnNameReplace = "";
     }
 
     @Persistor(OutputColumnNamePersistor.class)
@@ -188,7 +220,8 @@ class StringManipulationScriptingNodeParameters implements NodeParameters {
             if (isReplace) {
                 output.m_columnNameReplace = columnName;
             } else {
-                output.m_columnNameAppend = columnName;
+                // For legacy settings, use the dialog's default name when a value is not present in settings.xml
+                output.m_columnNameAppend = columnName == null || columnName.isEmpty() ? "new column" : columnName;
             }
 
             return output;
