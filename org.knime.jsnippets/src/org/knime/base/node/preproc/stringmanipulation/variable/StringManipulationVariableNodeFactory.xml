@@ -112,8 +112,8 @@
 		</link>
 	</fullDescription>
 	<ports>
-		<inPort name="Input variables (optional)" index="0">Input
-			variables (optional).
+		<inPort name="Input variables (optional)" index="0">Optional input port for flow
+            variables.
 		</inPort>
 		<outPort name="Appended variables" index="0">Input variables with
 			an additional calculated variable

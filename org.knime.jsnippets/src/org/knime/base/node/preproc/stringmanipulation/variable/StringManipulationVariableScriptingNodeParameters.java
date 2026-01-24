@@ -48,13 +48,19 @@
  */
 package org.knime.base.node.preproc.stringmanipulation.variable;
 
+import java.util.List;
 import java.util.function.Supplier;
 
 import org.knime.base.node.preproc.stringmanipulation.StringManipulationSettings;
 import org.knime.base.node.preproc.stringmanipulation.StringManipulationWebUIUtils;
+import org.knime.base.node.util.WebUIDialogUtils;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
+import org.knime.core.node.workflow.FlowVariable;
+import org.knime.core.node.workflow.VariableType.DoubleType;
+import org.knime.core.node.workflow.VariableType.IntType;
+import org.knime.core.node.workflow.VariableType.StringType;
 import org.knime.core.webui.node.dialog.defaultdialog.util.updates.StateComputationFailureException;
 import org.knime.node.parameters.NodeParameters;
 import org.knime.node.parameters.NodeParametersInput;
@@ -70,10 +76,12 @@ import org.knime.node.parameters.updates.ParameterReference;
 import org.knime.node.parameters.updates.StateProvider;
 import org.knime.node.parameters.updates.ValueProvider;
 import org.knime.node.parameters.updates.ValueReference;
+import org.knime.node.parameters.updates.legacy.AutoGuessValueProvider;
 import org.knime.node.parameters.widget.choices.ChoicesProvider;
+import org.knime.node.parameters.widget.choices.FlowVariableChoicesProvider;
 import org.knime.node.parameters.widget.choices.Label;
 import org.knime.node.parameters.widget.choices.ValueSwitchWidget;
-import org.knime.node.parameters.widget.choices.util.AllFlowVariablesProvider;
+import org.knime.node.parameters.widget.message.TextMessage;
 import org.knime.node.parameters.widget.text.TextInputWidget;
 
 /**
@@ -84,6 +92,9 @@ import org.knime.node.parameters.widget.text.TextInputWidget;
 class StringManipulationVariableScriptingNodeParameters implements NodeParameters {
 
     String m_expression = "";
+
+    @TextMessage(WebUIDialogUtils.FunctionAutoCompletionShortcutInfoMessageProvider.class)
+    Void m_textMessage;
 
     @Persist(configKey = StringManipulationSettings.CFG_TEST_COMPILATION)
     boolean m_syntaxCheckOnClose = true;
@@ -123,6 +134,41 @@ class StringManipulationVariableScriptingNodeParameters implements NodeParameter
 
     }
 
+    static final class FlowVariableNameRef implements ParameterReference<String> {
+    }
+
+    // auto guess provider for auto-selecting the first flow variable name of type String, Double, or Int
+    static final class FlowVariableNameProvider extends AutoGuessValueProvider<String> {
+
+        protected FlowVariableNameProvider() {
+            super(FlowVariableNameRef.class);
+        }
+
+        @Override
+        protected boolean isEmpty(final String value) {
+            return value == null || value.isEmpty();
+        }
+
+        @Override
+        protected String autoGuessValue(final NodeParametersInput parametersInput)
+            throws StateComputationFailureException {
+            return parametersInput
+                .getAvailableInputFlowVariables(StringType.INSTANCE, DoubleType.INSTANCE, IntType.INSTANCE).values()
+                .stream().map(FlowVariable::getName).findFirst().orElse(null);
+        }
+
+    }
+
+    // a more sensible approach to use as the choices provider for flow variables
+    // since the node only accepts String, Double, and Int types.
+    static final class FlowVariableNameChoicesProvider implements FlowVariableChoicesProvider {
+        @Override
+        public List<FlowVariable> flowVariableChoices(final NodeParametersInput input) {
+            return input.getAvailableInputFlowVariables(StringType.INSTANCE, DoubleType.INSTANCE, IntType.INSTANCE)
+                .values().stream().toList();
+        }
+    }
+
     static class OutputVariableName implements NodeParameters {
         @ValueProvider(ReplaceOrAppendProvider.class)
         public ReplaceOrAppend m_replaceOrAppend;
@@ -130,11 +176,13 @@ class StringManipulationVariableScriptingNodeParameters implements NodeParameter
         @Widget(title = "New variable name", description = "The name of the new flow variable to append.")
         @Effect(predicate = IsReplace.class, type = EffectType.HIDE)
         @TextInputWidget
-        public String m_variableNameAppend = "NewVariable";
+        public String m_variableNameAppend = "new variable";
 
         @Widget(title = "Replace variable", description = "The name of the flow variable to replace.")
-        @ChoicesProvider(AllFlowVariablesProvider.class)
+        @ChoicesProvider(FlowVariableNameChoicesProvider.class)
         @Effect(predicate = IsReplace.class, type = EffectType.SHOW)
+        @ValueReference(FlowVariableNameRef.class)
+        @ValueProvider(value = FlowVariableNameProvider.class)
         public String m_variableNameReplace;
     }
 
@@ -179,7 +227,8 @@ class StringManipulationVariableScriptingNodeParameters implements NodeParameter
             if (isReplace) {
                 output.m_variableNameReplace = variableName;
             } else {
-                output.m_variableNameAppend = variableName;
+                output.m_variableNameAppend =
+                    variableName == null || variableName.isEmpty() ? "new variable" : variableName;
             }
 
             return output;
@@ -202,5 +251,6 @@ class StringManipulationVariableScriptingNodeParameters implements NodeParameter
 
     @Persistor(StringManipulationWebUIUtils.ReturnTypePersistor.class)
     Class<?> m_returnType;
+
 
 }
