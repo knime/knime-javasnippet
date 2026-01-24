@@ -48,8 +48,12 @@
  */
 package org.knime.base.node.rules.engine;
 
+import java.util.Optional;
+
+import org.knime.base.node.util.WebUIDialogUtils;
 import org.knime.core.data.DataColumnSpec;
-import org.knime.core.data.DataTableSpec;
+import org.knime.core.data.DoubleValue;
+import org.knime.core.data.IntValue;
 import org.knime.core.data.StringValue;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
@@ -68,11 +72,15 @@ import org.knime.node.parameters.updates.Effect.EffectType;
 import org.knime.node.parameters.updates.EffectPredicate;
 import org.knime.node.parameters.updates.EffectPredicateProvider;
 import org.knime.node.parameters.updates.ParameterReference;
+import org.knime.node.parameters.updates.ValueProvider;
 import org.knime.node.parameters.updates.ValueReference;
+import org.knime.node.parameters.updates.legacy.ColumnNameAutoGuessValueProvider;
 import org.knime.node.parameters.widget.choices.ChoicesProvider;
 import org.knime.node.parameters.widget.choices.Label;
 import org.knime.node.parameters.widget.choices.ValueSwitchWidget;
 import org.knime.node.parameters.widget.choices.util.AllColumnsProvider;
+import org.knime.node.parameters.widget.choices.util.ColumnSelectionUtil;
+import org.knime.node.parameters.widget.message.TextMessage;
 
 /**
  * This class registers and handles the generic configuration options for the Rule Engine node in modern UI.
@@ -80,20 +88,11 @@ import org.knime.node.parameters.widget.choices.util.AllColumnsProvider;
  * @author Ali Asghar Marvi, KNIME GmbH, Berlin, Germany
  * @since 5.10
  */
+
 final class RuleEngineScriptingNodeParameters implements NodeParameters {
 
-    RuleEngineScriptingNodeParameters() {
-        m_replaceColumn = "";
-    }
-
-    RuleEngineScriptingNodeParameters(final NodeParametersInput input) {
-        // Add a sensible default to replace column selection. Although it is optional for now,
-        // but if we change the node model to use defaults from NodeParameters class
-        // in future and deprecate this node, then this will be needed.
-        m_replaceColumn = input.getInTableSpec(0).stream().flatMap(DataTableSpec::stream)
-            .filter(cSpec -> cSpec.getType().isCompatible(StringValue.class)).findAny().map(DataColumnSpec::getName)
-            .orElse("");
-    }
+    @TextMessage(WebUIDialogUtils.RuleEngineEditorAutoCompletionShortcutInfoMessageProvider.class)
+    Void m_textMessage;
 
     @Persistor(RulesPersistor.class)
     String m_rules = "";
@@ -120,16 +119,38 @@ final class RuleEngineScriptingNodeParameters implements NodeParameters {
     @Persist(configKey = RuleEngineSettings.NEW_COLUMN_NAME)
     String m_newColName = "prediction";
 
+    static final class ColumnNameRef implements ParameterReference<String> {
+    }
+
+    static final class ColumnNameProvider extends ColumnNameAutoGuessValueProvider {
+
+        protected ColumnNameProvider() {
+            super(ColumnNameRef.class);
+        }
+
+        @Override
+        protected Optional<DataColumnSpec> autoGuessColumn(final NodeParametersInput parametersInput) {
+            // select last default column as it was in old dialog
+            final var compatibleColumns = ColumnSelectionUtil.getCompatibleColumnsOfFirstPort(parametersInput,
+                StringValue.class, DoubleValue.class, IntValue.class);
+            return compatibleColumns.isEmpty() ? Optional.empty()
+                : Optional.of(compatibleColumns.get(compatibleColumns.size() - 1));
+        }
+
+    }
+
     @Widget(title = "Replace column", description = "The name of the column to replace.")
     @ChoicesProvider(AllColumnsProvider.class)
+    @ValueReference(ColumnNameRef.class)
+    @ValueProvider(ColumnNameProvider.class)
     @Effect(predicate = IsReplace.class, type = EffectType.SHOW)
     @Persist(configKey = RuleEngineSettings.REPLACE_COLUMN_NAME)
     String m_replaceColumn = "";
 
     enum ReplaceOrAppend {
-            @Label(value = "Append column", description = "Append a new column to the table")
+            @Label(value = "Append", description = "Append a new column to the table")
             APPEND, //
-            @Label(value = "Replace column", description = "Replace an existing column")
+            @Label(value = "Replace", description = "Replace an existing column")
             REPLACE;
     }
 
@@ -176,4 +197,5 @@ final class RuleEngineScriptingNodeParameters implements NodeParameters {
             return true;
         }
     }
+
 }
