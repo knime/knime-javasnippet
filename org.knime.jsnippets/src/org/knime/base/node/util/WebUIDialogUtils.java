@@ -60,6 +60,9 @@ import org.knime.core.node.workflow.VariableType;
 import org.knime.core.webui.node.dialog.scripting.AbstractDefaultScriptingNodeDialog.StaticCompletionItem;
 import org.knime.core.webui.node.dialog.scripting.InputOutputModel;
 import org.knime.core.webui.node.dialog.scripting.WorkflowControl;
+import org.knime.node.parameters.NodeParametersInput;
+import org.knime.node.parameters.widget.message.TextMessage;
+import org.knime.node.parameters.widget.message.TextMessage.MessageType;
 
 /**
  * @author Ali Asghar Marvi, KNIME GmbH, Berlin, Germany
@@ -239,6 +242,71 @@ public final class WebUIDialogUtils {
         }
 
         return items.toArray(StaticCompletionItem[]::new);
+    }
+
+    private static final boolean IS_MAC = System.getProperty("os.name").toLowerCase().contains("mac");
+
+    private static final String MAC_SHORTCUT = "Cmd+I";
+
+    private static final String WIN_LINUX_SHORTCUT = "Ctrl+Space";
+
+    /**
+     * Abstract base class for providing info messages about keyboard shortcuts in scripting editors. Subclasses should
+     * specify the terminology to use (e.g., "rules" vs "functions").
+     */
+    abstract static class AbstractAutoCompleteShortcutInfoMessageProvider implements TextMessage.SimpleTextMessageProvider {
+
+        /**
+         * Returns the term to use for each text info provider (e.g., "rules", "functions").
+         *
+         * @return the terminology string
+         */
+        protected abstract String getTerminology();
+
+        @Override
+        public boolean showMessage(final NodeParametersInput context) {
+            return true;
+        }
+
+        @Override
+        public String title() {
+            return "Access to Available " + getTerminology().toLowerCase();
+        }
+
+        @Override
+        public String description() {
+            String shortcut = IS_MAC ? MAC_SHORTCUT : WIN_LINUX_SHORTCUT;
+
+            return "While working in the code editor, press " + shortcut + " to see a list of all available "
+                + getTerminology() + ". " + "Press the shortcut again to show the description of each item. "
+                + "Press Enter to insert the selected item.";
+        }
+
+        @Override
+        public MessageType type() {
+            return MessageType.INFO;
+        }
+
+    }
+
+    /**
+     * Text info message provider for Rule Engine nodes.
+     */
+    public static final class RuleEngineEditorAutoCompletionShortcutInfoMessageProvider extends AbstractAutoCompleteShortcutInfoMessageProvider {
+        @Override
+        protected String getTerminology() {
+            return "rules";
+        }
+    }
+
+    /**
+     * Text info message provider for String Manipulation nodes.
+     */
+    public static final class FunctionAutoCompletionShortcutInfoMessageProvider extends AbstractAutoCompleteShortcutInfoMessageProvider {
+        @Override
+        protected String getTerminology() {
+            return "functions";
+        }
     }
 
 }
