@@ -74,6 +74,8 @@ import org.knime.ext.sun.nodes.script.expression.Expression;
  */
 class MultiColumnStringManipulationSettings {
 
+    final static String m_EXPRESSION = "EXPRESSION";
+
     /** Signifies that calculated columns should be appended to the input data table to create the output table. */
     final static String APPEND_ACTION = "APPEND_COLUMNS";
 
@@ -99,7 +101,7 @@ class MultiColumnStringManipulationSettings {
      * The expression to be evaluated, e.g., "toInt($$CURRENTCOLUMN$$)" entered via {@link JSnippetPanel} and passed for
      * compilation to {@link Expression}.
      */
-    private final SettingsModelString m_expression = new SettingsModelString("EXPRESSION", getCurrentColumnReference());
+    private final SettingsModelString m_expression = new SettingsModelString(m_EXPRESSION, getCurrentColumnReference());
 
     /** This is a string because the button group dialog component uses action strings to represent selection. */
     private final SettingsModelString m_appendOrReplace = new SettingsModelString("APPEND_OR_REPLACE", APPEND_ACTION);
