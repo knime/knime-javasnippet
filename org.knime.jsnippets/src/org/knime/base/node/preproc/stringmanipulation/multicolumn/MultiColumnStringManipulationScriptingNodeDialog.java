@@ -1,5 +1,6 @@
 /*
  * ------------------------------------------------------------------------
+ *
  *  Copyright by KNIME AG, Zurich, Switzerland
  *  Website: http://www.knime.com; Email: contact@knime.com
  *
@@ -40,58 +41,48 @@
  *  propagated with or for interoperation with KNIME.  The owner of a Node
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
- * -------------------------------------------------------------------
+ * ---------------------------------------------------------------------
  *
+ * History
+ *   30 Jan 2026 (Ali Asghar Marvi): created
  */
 package org.knime.base.node.preproc.stringmanipulation.multicolumn;
 
-import org.knime.core.node.NodeDialogPane;
-import org.knime.core.node.NodeView;
+
+import java.util.Collections;
+
+import org.knime.base.node.preproc.stringmanipulation.StringManipulatorProvider;
+import org.knime.base.node.util.WebUIDialogUtils;
+import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.webui.node.dialog.scripting.AbstractDefaultScriptingNodeDialog;
-import org.knime.core.webui.node.dialog.scripting.AbstractFallbackScriptingNodeFactory;
-
+import org.knime.core.webui.node.dialog.scripting.GenericInitialDataBuilder;
+import org.knime.core.webui.node.dialog.scripting.WorkflowControl;
 /**
- * Standard factory functionality.
  *
- * @author Carl Witt, KNIME AG, Zurich, Switzerland
+ * @author Ali Asghar Marvi, KNIME GmbH, Berlin, Germany
  */
-public class MultiColumnStringManipulationNodeFactory extends AbstractFallbackScriptingNodeFactory<MultiColumnStringManipulationNodeModel> {
+@SuppressWarnings("restriction")
+class MultiColumnStringManipulationScriptingNodeDialog extends AbstractDefaultScriptingNodeDialog{
 
-    @Override
-    public MultiColumnStringManipulationNodeModel createNodeModel() {
-        return new MultiColumnStringManipulationNodeModel();
-    }
-
-    @Override
-    public int getNrNodeViews() {
-        // The number of views the node should have, in this cases there is none.
-        return 0;
-    }
-
-    @Override
-    public NodeView<MultiColumnStringManipulationNodeModel> createNodeView(final int viewIndex,
-        final MultiColumnStringManipulationNodeModel nodeModel) {
-        throw new IllegalStateException("No view available");
+    public MultiColumnStringManipulationScriptingNodeDialog() {
+        super(MultiColumnStringManipulationScriptingNodeParameters.class);
     }
 
     /**
      * {@inheritDoc}
-     *
-     * @since 5.11
      */
     @Override
-    public AbstractDefaultScriptingNodeDialog createNodeDialog() {
-        return new MultiColumnStringManipulationScriptingNodeDialog();
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @since 5.11
-     */
-    @Override
-    public NodeDialogPane createLegacyNodeDialogPane() {
-        return new MultiColumnStringManipulationNodeDialog();
+    protected GenericInitialDataBuilder getInitialData(final NodeContext context) {
+        var workflowControl = new WorkflowControl(context.getNodeContainer());
+        return GenericInitialDataBuilder.createDefaultInitialDataBuilder(NodeContext.getContext()) //
+            .addDataSupplier("inputObjects", () -> WebUIDialogUtils.getFirstInputTableModel(workflowControl))
+            .addDataSupplier("flowVariables", () -> WebUIDialogUtils.getFlowVariablesInputOutputModel(workflowControl)) //
+            .addDataSupplier("outputObjects", Collections::emptyList) //
+            .addDataSupplier("language", () -> "plaintext") //
+            .addDataSupplier("fileName", () -> "script.txt") //
+            .addDataSupplier("mainScriptConfigKey", () -> MultiColumnStringManipulationSettings.m_EXPRESSION) //
+            .addDataSupplier("staticCompletionItems", () -> WebUIDialogUtils.getCompletionItems(workflowControl,
+                StringManipulatorProvider.getDefault(), true));
     }
 
 }
