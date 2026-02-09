@@ -58,11 +58,12 @@ import org.knime.core.webui.node.dialog.scripting.AbstractDefaultScriptingNodeDi
 import org.knime.core.webui.node.dialog.scripting.GenericInitialDataBuilder;
 import org.knime.core.webui.node.dialog.scripting.WorkflowControl;
 /**
+ * WebUI dialog for the Multi Column String Manipulation node.
  *
  * @author Ali Asghar Marvi, KNIME GmbH, Berlin, Germany
  */
 @SuppressWarnings("restriction")
-class MultiColumnStringManipulationScriptingNodeDialog extends AbstractDefaultScriptingNodeDialog{
+class MultiColumnStringManipulationScriptingNodeDialog extends AbstractDefaultScriptingNodeDialog {
 
     public MultiColumnStringManipulationScriptingNodeDialog() {
         super(MultiColumnStringManipulationScriptingNodeParameters.class);
@@ -80,7 +81,7 @@ class MultiColumnStringManipulationScriptingNodeDialog extends AbstractDefaultSc
             .addDataSupplier("outputObjects", Collections::emptyList) //
             .addDataSupplier("language", () -> "plaintext") //
             .addDataSupplier("fileName", () -> "script.txt") //
-            .addDataSupplier("mainScriptConfigKey", () -> MultiColumnStringManipulationSettings.m_EXPRESSION) //
+            .addDataSupplier("mainScriptConfigKey", () -> MultiColumnStringManipulationSettings.EXPRESSION) //
             .addDataSupplier("staticCompletionItems", () -> WebUIDialogUtils.getCompletionItems(workflowControl,
                 StringManipulatorProvider.getDefault(), true));
     }
