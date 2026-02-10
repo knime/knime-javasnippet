@@ -1,5 +1,6 @@
 /*
  * ------------------------------------------------------------------------
+ *
  *  Copyright by KNIME AG, Zurich, Switzerland
  *  Website: http://www.knime.com; Email: contact@knime.com
  *
@@ -42,64 +43,52 @@
  *  when such Node is propagated with or for interoperation with KNIME.
  * ---------------------------------------------------------------------
  *
- * Created on 2013.08.11. by Gabor Bakos
+ * History
+ *   10 Feb 2026 (Ali Asghar Marvi): created
  */
 package org.knime.base.node.rules.engine.pmml;
 
-import org.knime.core.node.NodeDialogPane;
-import org.knime.core.node.NodeView;
+import java.util.Collections;
+
+import org.knime.base.node.preproc.stringmanipulation.StringManipulatorProvider;
+import org.knime.base.node.rules.engine.RuleEngineSettings;
+import org.knime.base.node.util.WebUIDialogUtils;
+import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.webui.node.dialog.scripting.AbstractDefaultScriptingNodeDialog;
-import org.knime.core.webui.node.dialog.scripting.AbstractFallbackScriptingNodeFactory;
+import org.knime.core.webui.node.dialog.scripting.GenericInitialDataBuilder;
+import org.knime.core.webui.node.dialog.scripting.WorkflowControl;
 
 /**
- * <code>NodeFactory</code> for the "PMML41RuleEditor" Node. Edits PMML RuleSets.
+ * WebUI dialog for the PMML Rule Editor node, defining autocompletion items and drag and drop insertion from the
+ * available input columns and PMML functions.
  *
- * @author Gabor Bakos
+ * @author Ali Asghar Marvi, KNIME GmbH, Berlin, Germany
  */
-public class PMMLRuleEditorNodeFactory extends AbstractFallbackScriptingNodeFactory<PMMLRuleEditorNodeModel> {
+@SuppressWarnings("restriction")
+class PMMLRuleEditorScriptingNodeDialog extends AbstractDefaultScriptingNodeDialog {
 
     /**
-     * {@inheritDoc}
+     * Constructor for the PMML Rule Editor WebUI dialog.
      */
-    @Override
-    public PMMLRuleEditorNodeModel createNodeModel() {
-        return new PMMLRuleEditorNodeModel();
+    protected PMMLRuleEditorScriptingNodeDialog() {
+        super(PMMLRuleEditorScriptingNodeParameters.class);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public int getNrNodeViews() {
-        return 0;
+    protected GenericInitialDataBuilder getInitialData(final NodeContext context) {
+        var workflowControl = new WorkflowControl(context.getNodeContainer());
+        return GenericInitialDataBuilder.createDefaultInitialDataBuilder(NodeContext.getContext()) //
+            .addDataSupplier("inputObjects", () -> WebUIDialogUtils.getFirstInputTableModel(workflowControl)) //
+            .addDataSupplier("flowVariables", () -> WebUIDialogUtils.getFlowVariablesInputOutputModel(workflowControl)) //
+            .addDataSupplier("outputObjects", Collections::emptyList) //
+            .addDataSupplier("language", () -> "plaintext") //
+            .addDataSupplier("fileName", () -> "script.txt") //
+            .addDataSupplier("mainScriptConfigKey", () -> RuleEngineSettings.RULES) //
+            .addDataSupplier("staticCompletionItems", () -> WebUIDialogUtils.getCompletionItems(workflowControl,
+                StringManipulatorProvider.getDefault(), true));
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public NodeView<PMMLRuleEditorNodeModel> createNodeView(final int viewIndex,
-        final PMMLRuleEditorNodeModel nodeModel) {
-        throw new IndexOutOfBoundsException("No views: " + viewIndex);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @since 5.11
-     */
-    @Override
-    public NodeDialogPane createLegacyNodeDialogPane() {
-        return new PMMLRuleEditorNodeDialog();
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @since 5.11
-     */
-    @Override
-    public AbstractDefaultScriptingNodeDialog createNodeDialog() {
-        return new PMMLRuleEditorScriptingNodeDialog();
-    }
 }
