@@ -63,11 +63,11 @@ import org.knime.core.node.NodeSettingsWO;
 public class RuleEngineSettings {
     static final String APPEND_COLUMN = "append-column";
 
-    static final String REPLACE_COLUMN_NAME = "replace-column-name";
+    public static final String REPLACE_COLUMN_NAME = "replace-column-name";
 
-    static final String NEW_COLUMN_NAME = "new-column-name";
+    public static final String NEW_COLUMN_NAME = "new-column-name";
 
-    static final String RULES = "rules";
+    public static final String RULES = "rules";
 
     private final List<String> m_rules = new ArrayList<String>();
 

@@ -47,15 +47,16 @@
 package org.knime.base.node.rules.engine.pmml;
 
 import org.knime.core.node.NodeDialogPane;
-import org.knime.core.node.NodeFactory;
 import org.knime.core.node.NodeView;
+import org.knime.core.webui.node.dialog.scripting.AbstractDefaultScriptingNodeDialog;
+import org.knime.core.webui.node.dialog.scripting.AbstractFallbackScriptingNodeFactory;
 
 /**
  * <code>NodeFactory</code> for the "PMML41RuleEditor" Node. Edits PMML RuleSets.
  *
  * @author Gabor Bakos
  */
-public class PMMLRuleEditorNodeFactory extends NodeFactory<PMMLRuleEditorNodeModel> {
+public class PMMLRuleEditorNodeFactory extends AbstractFallbackScriptingNodeFactory<PMMLRuleEditorNodeModel> {
 
     /**
      * {@inheritDoc}
@@ -77,24 +78,28 @@ public class PMMLRuleEditorNodeFactory extends NodeFactory<PMMLRuleEditorNodeMod
      * {@inheritDoc}
      */
     @Override
-    public NodeView<PMMLRuleEditorNodeModel>
-        createNodeView(final int viewIndex, final PMMLRuleEditorNodeModel nodeModel) {
+    public NodeView<PMMLRuleEditorNodeModel> createNodeView(final int viewIndex,
+        final PMMLRuleEditorNodeModel nodeModel) {
         throw new IndexOutOfBoundsException("No views: " + viewIndex);
     }
 
     /**
      * {@inheritDoc}
+     *
+     * @since 5.11
      */
     @Override
-    public boolean hasDialog() {
-        return true;
+    public NodeDialogPane createLegacyNodeDialogPane() {
+        return new PMMLRuleEditorNodeDialog();
     }
 
     /**
      * {@inheritDoc}
+     *
+     * @since 5.11
      */
     @Override
-    public NodeDialogPane createNodeDialogPane() {
-        return new PMMLRuleEditorNodeDialog();
+    public AbstractDefaultScriptingNodeDialog createNodeDialog() {
+        return new PMMLRuleEditorScriptingNodeDialog();
     }
 }
