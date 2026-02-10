@@ -89,7 +89,7 @@ import org.knime.node.parameters.widget.message.TextMessage;
  * @since 5.10
  */
 
-final class RuleEngineScriptingNodeParameters implements NodeParameters {
+public final class RuleEngineScriptingNodeParameters implements NodeParameters {
 
     @TextMessage(WebUIDialogUtils.RuleEngineEditorAutoCompletionShortcutInfoMessageProvider.class)
     Void m_textMessage;
@@ -104,10 +104,16 @@ final class RuleEngineScriptingNodeParameters implements NodeParameters {
     @Persistor(ReplaceOrAppendPersistor.class)
     ReplaceOrAppend m_replaceOrAppend = ReplaceOrAppend.APPEND;
 
-    class ReplaceOrAppendRef implements ParameterReference<ReplaceOrAppend> {
+    /**
+     * Parameter reference for the ReplaceOrAppend enum parameter in order to enable effects.
+     */
+    public static final class ReplaceOrAppendRef implements ParameterReference<ReplaceOrAppend> {
     }
 
-    static final class IsReplace implements EffectPredicateProvider {
+    /**
+     * Initialize a predicate that checks if the ReplaceOrAppend parameter is set to REPLACE.
+     */
+    public static final class IsReplace implements EffectPredicateProvider {
         @Override
         public EffectPredicate init(final PredicateInitializer i) {
             return i.getEnum(ReplaceOrAppendRef.class).isOneOf(ReplaceOrAppend.REPLACE);
@@ -119,12 +125,18 @@ final class RuleEngineScriptingNodeParameters implements NodeParameters {
     @Persist(configKey = RuleEngineSettings.NEW_COLUMN_NAME)
     String m_newColName = "prediction";
 
-    static final class ColumnNameRef implements ParameterReference<String> {
+    /**
+     * Parameter reference for the column name to register a selection of compatible columns.
+     */
+    public static final class ColumnNameRef implements ParameterReference<String> {
     }
 
-    static final class ColumnNameProvider extends ColumnNameAutoGuessValueProvider {
+    /**
+     * ValueProvider to auto-guess column selection if the node is not configured by the user.
+     */
+    public static final class ColumnNameProvider extends ColumnNameAutoGuessValueProvider {
 
-        protected ColumnNameProvider() {
+        public ColumnNameProvider() {
             super(ColumnNameRef.class);
         }
 
@@ -147,20 +159,30 @@ final class RuleEngineScriptingNodeParameters implements NodeParameters {
     @Persist(configKey = RuleEngineSettings.REPLACE_COLUMN_NAME)
     String m_replaceColumn = "";
 
-    enum ReplaceOrAppend {
+    /**
+     * Enum to handle the user selection of whether to append a new column or replace an existing column in the node.
+     */
+    public enum ReplaceOrAppend {
             @Label(value = "Append", description = "Append a new column to the table")
             APPEND, //
+
             @Label(value = "Replace", description = "Replace an existing column")
             REPLACE;
     }
 
-    static final class ReplaceOrAppendPersistor extends EnumBooleanPersistor<ReplaceOrAppend> {
-        ReplaceOrAppendPersistor() {
+    /**
+     * Persistor for Enum of Replacing a column or appending a column.
+     */
+    public static final class ReplaceOrAppendPersistor extends EnumBooleanPersistor<ReplaceOrAppend> {
+        public ReplaceOrAppendPersistor() {
             super(RuleEngineSettings.APPEND_COLUMN, ReplaceOrAppend.class, ReplaceOrAppend.APPEND);
         }
     }
 
-    static final class RulesPersistor implements NodeParametersPersistor<String> {
+    /**
+     * Custom Persistor for the rules, in order to persist rules as an array of strings.
+     */
+    public static final class RulesPersistor implements NodeParametersPersistor<String> {
 
         @Override
         public String load(final NodeSettingsRO settings) throws InvalidSettingsException {
@@ -190,7 +212,10 @@ final class RuleEngineScriptingNodeParameters implements NodeParameters {
     @Migration(LoadTrueForOldNodes.class)
     boolean m_disallowLongOutputForCompatibility = false;
 
-    static class LoadTrueForOldNodes implements DefaultProvider<Boolean> {
+    /**
+     * Migration logic to support config keys that were introduced after a certain KNIME version.
+     */
+    public static class LoadTrueForOldNodes implements DefaultProvider<Boolean> {
         @Override
         public Boolean getDefault() {
             return true;

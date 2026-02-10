@@ -50,6 +50,7 @@ package org.knime.base.node.preproc.stringmanipulation.variable;
 
 import java.util.Collections;
 
+import org.knime.base.node.preproc.stringmanipulation.StringManipulationSettings;
 import org.knime.base.node.preproc.stringmanipulation.StringManipulatorProvider;
 import org.knime.base.node.util.WebUIDialogUtils;
 import org.knime.core.node.workflow.NodeContext;
@@ -78,13 +79,13 @@ class StringManipulationVariableScriptingNodeDialog extends AbstractDefaultScrip
     protected GenericInitialDataBuilder getInitialData(final NodeContext context) {
         var workflowControl = new WorkflowControl(context.getNodeContainer());
         return GenericInitialDataBuilder.createDefaultInitialDataBuilder(NodeContext.getContext()) //
-            .addDataSupplier("inputObjects", Collections::emptyList)
-            .addDataSupplier("flowVariables", () -> WebUIDialogUtils.getFlowVariablesInputOutputModel(workflowControl)) //
-            .addDataSupplier("outputObjects", Collections::emptyList) //
-            .addDataSupplier("language", () -> "plaintext") //
-            .addDataSupplier("fileName", () -> "script.txt") //
-            .addDataSupplier("mainScriptConfigKey", () -> "expression") //
-            .addDataSupplier("staticCompletionItems", () -> WebUIDialogUtils.getCompletionItems(workflowControl,
+            .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_INPUT_OBJECTS, Collections::emptyList)
+            .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_FLOW_VARIABLES, () -> WebUIDialogUtils.getFlowVariablesInputOutputModel(workflowControl)) //
+            .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_OUTPUT_OBJECTS, Collections::emptyList) //
+            .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_LANGUAGE, () -> WebUIDialogUtils.DEFAULT_SCRIPT_LANGUAGE) //
+            .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_FILE_NAME, () -> WebUIDialogUtils.DEFAULT_SCRIPT_FILE_NAME) //
+            .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_MAIN_SCRIPT_CONFIG_KEY, () -> StringManipulationSettings.CFG_EXPRESSION) //
+            .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_STATIC_COMPLETION_ITEMS, () -> WebUIDialogUtils.getCompletionItems(workflowControl,
                 StringManipulatorProvider.getDefault(), false));
     }
 

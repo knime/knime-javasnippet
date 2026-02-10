@@ -44,29 +44,34 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   30 Jan 2026 (Ali Asghar Marvi): created
+ *   10 Feb 2026 (Ali Asghar Marvi): created
  */
-package org.knime.base.node.preproc.stringmanipulation.multicolumn;
-
+package org.knime.base.node.rules.engine.pmml;
 
 import java.util.Collections;
 
-import org.knime.base.node.preproc.stringmanipulation.StringManipulatorProvider;
+import org.knime.base.node.rules.engine.RuleEngineSettings;
+import org.knime.base.node.rules.engine.manipulator.RuleManipulatorProvider;
 import org.knime.base.node.util.WebUIDialogUtils;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.webui.node.dialog.scripting.AbstractDefaultScriptingNodeDialog;
 import org.knime.core.webui.node.dialog.scripting.GenericInitialDataBuilder;
 import org.knime.core.webui.node.dialog.scripting.WorkflowControl;
+
 /**
- * WebUI dialog for the Multi Column String Manipulation node.
+ * WebUI dialog for the PMML Rule Editor node, defining autocompletion items and drag and drop insertion from the
+ * available input columns and PMML functions.
  *
  * @author Ali Asghar Marvi, KNIME GmbH, Berlin, Germany
  */
 @SuppressWarnings("restriction")
-class MultiColumnStringManipulationScriptingNodeDialog extends AbstractDefaultScriptingNodeDialog {
+class PMMLRuleEditorScriptingNodeDialog extends AbstractDefaultScriptingNodeDialog {
 
-    public MultiColumnStringManipulationScriptingNodeDialog() {
-        super(MultiColumnStringManipulationScriptingNodeParameters.class);
+    /**
+     * Constructor for the PMML Rule Editor WebUI dialog.
+     */
+    protected PMMLRuleEditorScriptingNodeDialog() {
+        super(PMMLRuleEditorScriptingNodeParameters.class);
     }
 
     /**
@@ -76,14 +81,14 @@ class MultiColumnStringManipulationScriptingNodeDialog extends AbstractDefaultSc
     protected GenericInitialDataBuilder getInitialData(final NodeContext context) {
         var workflowControl = new WorkflowControl(context.getNodeContainer());
         return GenericInitialDataBuilder.createDefaultInitialDataBuilder(NodeContext.getContext()) //
-            .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_INPUT_OBJECTS, () -> WebUIDialogUtils.getFirstInputTableModel(workflowControl))
+            .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_INPUT_OBJECTS, () -> WebUIDialogUtils.getFirstInputTableModel(workflowControl)) //
             .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_FLOW_VARIABLES, () -> WebUIDialogUtils.getFlowVariablesInputOutputModel(workflowControl)) //
             .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_OUTPUT_OBJECTS, Collections::emptyList) //
             .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_LANGUAGE, () -> WebUIDialogUtils.DEFAULT_SCRIPT_LANGUAGE) //
             .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_FILE_NAME, () -> WebUIDialogUtils.DEFAULT_SCRIPT_FILE_NAME) //
-            .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_MAIN_SCRIPT_CONFIG_KEY, () -> MultiColumnStringManipulationSettings.EXPRESSION) //
+            .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_MAIN_SCRIPT_CONFIG_KEY, () -> RuleEngineSettings.RULES) //
             .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_STATIC_COMPLETION_ITEMS, () -> WebUIDialogUtils.getCompletionItems(workflowControl,
-                StringManipulatorProvider.getDefault(), true));
+                RuleManipulatorProvider.getProvider(), true));
     }
 
 }
