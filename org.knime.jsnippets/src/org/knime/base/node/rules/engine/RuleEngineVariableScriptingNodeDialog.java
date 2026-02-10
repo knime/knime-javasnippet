@@ -80,8 +80,8 @@ public class RuleEngineVariableScriptingNodeDialog extends AbstractDefaultScript
             .addDataSupplier("inputObjects", Collections::emptyList) //
             .addDataSupplier("flowVariables", () -> WebUIDialogUtils.getFlowVariablesInputOutputModel(workflowControl)) //
             .addDataSupplier("outputObjects", Collections::emptyList) //
-            .addDataSupplier("language", () -> "plaintext") //
-            .addDataSupplier("fileName", () -> "script.txt") //
+            .addDataSupplier("language", () -> WebUIDialogUtils.DEFAULT_SCRIPT_LANGUAGE) //
+            .addDataSupplier("fileName", () -> WebUIDialogUtils.DEFAULT_SCRIPT_FILE_NAME) //
             .addDataSupplier("mainScriptConfigKey", () -> RuleEngineSettings.RULES) //
             .addDataSupplier("staticCompletionItems", () -> WebUIDialogUtils.getCompletionItems(workflowControl,
                 RuleManipulatorProvider.getProvider(), false));

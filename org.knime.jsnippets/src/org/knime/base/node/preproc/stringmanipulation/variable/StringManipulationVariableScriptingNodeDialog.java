@@ -81,8 +81,8 @@ class StringManipulationVariableScriptingNodeDialog extends AbstractDefaultScrip
             .addDataSupplier("inputObjects", Collections::emptyList)
             .addDataSupplier("flowVariables", () -> WebUIDialogUtils.getFlowVariablesInputOutputModel(workflowControl)) //
             .addDataSupplier("outputObjects", Collections::emptyList) //
-            .addDataSupplier("language", () -> "plaintext") //
-            .addDataSupplier("fileName", () -> "script.txt") //
+            .addDataSupplier("language", () -> WebUIDialogUtils.DEFAULT_SCRIPT_LANGUAGE) //
+            .addDataSupplier("fileName", () -> WebUIDialogUtils.DEFAULT_SCRIPT_FILE_NAME) //
             .addDataSupplier("mainScriptConfigKey", () -> "expression") //
             .addDataSupplier("staticCompletionItems", () -> WebUIDialogUtils.getCompletionItems(workflowControl,
                 StringManipulatorProvider.getDefault(), false));

@@ -81,6 +81,16 @@ public final class WebUIDialogUtils {
         Set.of(VariableType.StringType.INSTANCE, VariableType.IntType.INSTANCE, VariableType.DoubleType.INSTANCE);
 
     /**
+     * Default language identifier for scripting editor syntax highlighting.
+     */
+    public static final String DEFAULT_SCRIPT_LANGUAGE = "plaintext";
+
+    /**
+     * Default file name for script files.
+     */
+    public static final String DEFAULT_SCRIPT_FILE_NAME = "script.txt";
+
+    /**
      * Column aliasing template for column names when they are inserted or dragged from the side panel onto the
      * scripting editor.
      */

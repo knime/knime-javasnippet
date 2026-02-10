@@ -79,8 +79,8 @@ class MultiColumnStringManipulationScriptingNodeDialog extends AbstractDefaultSc
             .addDataSupplier("inputObjects", () -> WebUIDialogUtils.getFirstInputTableModel(workflowControl))
             .addDataSupplier("flowVariables", () -> WebUIDialogUtils.getFlowVariablesInputOutputModel(workflowControl)) //
             .addDataSupplier("outputObjects", Collections::emptyList) //
-            .addDataSupplier("language", () -> "plaintext") //
-            .addDataSupplier("fileName", () -> "script.txt") //
+            .addDataSupplier("language", () -> WebUIDialogUtils.DEFAULT_SCRIPT_LANGUAGE) //
+            .addDataSupplier("fileName", () -> WebUIDialogUtils.DEFAULT_SCRIPT_FILE_NAME) //
             .addDataSupplier("mainScriptConfigKey", () -> MultiColumnStringManipulationSettings.EXPRESSION) //
             .addDataSupplier("staticCompletionItems", () -> WebUIDialogUtils.getCompletionItems(workflowControl,
                 StringManipulatorProvider.getDefault(), true));
