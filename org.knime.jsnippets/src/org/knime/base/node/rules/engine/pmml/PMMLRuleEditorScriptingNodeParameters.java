@@ -99,7 +99,7 @@ class PMMLRuleEditorScriptingNodeParameters implements NodeParameters {
     @Persist(configKey = RuleEngineSettings.REPLACE_COLUMN_NAME)
     String m_replaceColumn = "";
 
-    // migration added to be backwards compatible for any
+    // migration added to be backward compatible with any
     // KNIME workflow that uses a pre-3.2 version of this node.
     // Since this setting was introduced in KAP 3.2.
     @Migration(RuleEngineScriptingNodeParameters.LoadTrueForOldNodes.class)
