@@ -136,7 +136,7 @@ public final class RuleEngineScriptingNodeParameters implements NodeParameters {
      */
     public static final class ColumnNameProvider extends ColumnNameAutoGuessValueProvider {
 
-        protected ColumnNameProvider() {
+        public ColumnNameProvider() {
             super(ColumnNameRef.class);
         }
 
