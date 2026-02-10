@@ -86,7 +86,7 @@ class StringManipulationScriptingNodeDialog extends AbstractDefaultScriptingNode
             .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_OUTPUT_OBJECTS, Collections::emptyList) //
             .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_LANGUAGE, () -> WebUIDialogUtils.DEFAULT_SCRIPT_LANGUAGE) //
             .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_FILE_NAME, () -> WebUIDialogUtils.DEFAULT_SCRIPT_FILE_NAME) //
-            .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_MAIN_SCRIPT_CONFIG_KEY, () -> "expression") //
+            .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_MAIN_SCRIPT_CONFIG_KEY, () -> StringManipulationSettings.CFG_EXPRESSION) //
             .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_STATIC_COMPLETION_ITEMS, () -> WebUIDialogUtils.getCompletionItems(workflowControl,
                 StringManipulatorProvider.getDefault(), true));
     }
