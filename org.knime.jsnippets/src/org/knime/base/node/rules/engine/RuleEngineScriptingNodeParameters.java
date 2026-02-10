@@ -160,11 +160,9 @@ public final class RuleEngineScriptingNodeParameters implements NodeParameters {
     String m_replaceColumn = "";
 
     /**
-     *
      * Enum to handle the user selection of whether to append a new column or replace an existing column in the node.
      */
     public enum ReplaceOrAppend {
-
             @Label(value = "Append", description = "Append a new column to the table")
             APPEND, //
 
