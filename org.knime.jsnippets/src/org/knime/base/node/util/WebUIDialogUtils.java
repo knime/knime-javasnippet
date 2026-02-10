@@ -91,6 +91,41 @@ public final class WebUIDialogUtils {
     public static final String DEFAULT_SCRIPT_FILE_NAME = "script.txt";
 
     /**
+     * Data supplier key for input objects (tables/columns).
+     */
+    public static final String DATA_SUPPLIER_KEY_INPUT_OBJECTS = "inputObjects";
+
+    /**
+     * Data supplier key for flow variables.
+     */
+    public static final String DATA_SUPPLIER_KEY_FLOW_VARIABLES = "flowVariables";
+
+    /**
+     * Data supplier key for output objects.
+     */
+    public static final String DATA_SUPPLIER_KEY_OUTPUT_OBJECTS = "outputObjects";
+
+    /**
+     * Data supplier key for script language.
+     */
+    public static final String DATA_SUPPLIER_KEY_LANGUAGE = "language";
+
+    /**
+     * Data supplier key for script file name.
+     */
+    public static final String DATA_SUPPLIER_KEY_FILE_NAME = "fileName";
+
+    /**
+     * Data supplier key for main script configuration key.
+     */
+    public static final String DATA_SUPPLIER_KEY_MAIN_SCRIPT_CONFIG_KEY = "mainScriptConfigKey";
+
+    /**
+     * Data supplier key for static completion items.
+     */
+    public static final String DATA_SUPPLIER_KEY_STATIC_COMPLETION_ITEMS = "staticCompletionItems";
+
+    /**
      * Column aliasing template for column names when they are inserted or dragged from the side panel onto the
      * scripting editor.
      */

@@ -76,13 +76,13 @@ class MultiColumnStringManipulationScriptingNodeDialog extends AbstractDefaultSc
     protected GenericInitialDataBuilder getInitialData(final NodeContext context) {
         var workflowControl = new WorkflowControl(context.getNodeContainer());
         return GenericInitialDataBuilder.createDefaultInitialDataBuilder(NodeContext.getContext()) //
-            .addDataSupplier("inputObjects", () -> WebUIDialogUtils.getFirstInputTableModel(workflowControl))
-            .addDataSupplier("flowVariables", () -> WebUIDialogUtils.getFlowVariablesInputOutputModel(workflowControl)) //
-            .addDataSupplier("outputObjects", Collections::emptyList) //
-            .addDataSupplier("language", () -> WebUIDialogUtils.DEFAULT_SCRIPT_LANGUAGE) //
-            .addDataSupplier("fileName", () -> WebUIDialogUtils.DEFAULT_SCRIPT_FILE_NAME) //
-            .addDataSupplier("mainScriptConfigKey", () -> MultiColumnStringManipulationSettings.EXPRESSION) //
-            .addDataSupplier("staticCompletionItems", () -> WebUIDialogUtils.getCompletionItems(workflowControl,
+            .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_INPUT_OBJECTS, () -> WebUIDialogUtils.getFirstInputTableModel(workflowControl))
+            .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_FLOW_VARIABLES, () -> WebUIDialogUtils.getFlowVariablesInputOutputModel(workflowControl)) //
+            .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_OUTPUT_OBJECTS, Collections::emptyList) //
+            .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_LANGUAGE, () -> WebUIDialogUtils.DEFAULT_SCRIPT_LANGUAGE) //
+            .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_FILE_NAME, () -> WebUIDialogUtils.DEFAULT_SCRIPT_FILE_NAME) //
+            .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_MAIN_SCRIPT_CONFIG_KEY, () -> MultiColumnStringManipulationSettings.EXPRESSION) //
+            .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_STATIC_COMPLETION_ITEMS, () -> WebUIDialogUtils.getCompletionItems(workflowControl,
                 StringManipulatorProvider.getDefault(), true));
     }
 
