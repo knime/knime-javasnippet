@@ -219,7 +219,7 @@ public final class WebUIDialogUtils {
      * @param displayName the display name of a manipulator
      * @return the arguments string if the display name follows function pattern, null otherwise
      */
-    private static String extractArguments(final String displayName) {
+    public static String extractArguments(final String displayName) {
         int openParen = displayName.indexOf('(');
         int closeParen = displayName.lastIndexOf(')');
 
@@ -299,7 +299,8 @@ public final class WebUIDialogUtils {
      * Abstract base class for providing info messages about keyboard shortcuts in scripting editors. Subclasses should
      * specify the terminology to use (e.g., "rules" vs "functions").
      */
-    abstract static class AbstractAutoCompleteShortcutInfoMessageProvider implements TextMessage.SimpleTextMessageProvider {
+    abstract static class AbstractAutoCompleteShortcutInfoMessageProvider
+        implements TextMessage.SimpleTextMessageProvider {
 
         /**
          * Returns the term to use for each text info provider (e.g., "rules", "functions").
@@ -337,7 +338,8 @@ public final class WebUIDialogUtils {
     /**
      * Text info message provider for Rule Engine nodes.
      */
-    public static final class RuleEngineEditorAutoCompletionShortcutInfoMessageProvider extends AbstractAutoCompleteShortcutInfoMessageProvider {
+    public static final class RuleEngineEditorAutoCompletionShortcutInfoMessageProvider
+        extends AbstractAutoCompleteShortcutInfoMessageProvider {
         @Override
         protected String getTerminology() {
             return "rules";
@@ -347,7 +349,8 @@ public final class WebUIDialogUtils {
     /**
      * Text info message provider for String Manipulation nodes.
      */
-    public static final class FunctionAutoCompletionShortcutInfoMessageProvider extends AbstractAutoCompleteShortcutInfoMessageProvider {
+    public static final class FunctionAutoCompletionShortcutInfoMessageProvider
+        extends AbstractAutoCompleteShortcutInfoMessageProvider {
         @Override
         protected String getTerminology() {
             return "functions";
