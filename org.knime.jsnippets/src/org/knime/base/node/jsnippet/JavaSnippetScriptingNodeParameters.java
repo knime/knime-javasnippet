@@ -270,6 +270,146 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     // =================================================================================
 
     /**
+     * Persistor for input flow variables (InVarList <-> InputFlowVariableField[]).
+     */
+    public static final class InVarListPersistor implements ArrayPersistor<InputFlowVariableField> {
+        private static final String CONFIG_KEY = "inVars";
+
+        @Override
+        public List<InputFlowVariableField> load(final NodeSettingsRO settings) throws InvalidSettingsException {
+            var legacy = new JavaFieldList.InVarList();
+            if (settings.containsKey(CONFIG_KEY)) {
+                legacy.loadSettings(settings.getConfig(CONFIG_KEY));
+            }
+            
+            List<InputFlowVariableField> result = new ArrayList<>();
+            for (InVar inVar : legacy) {
+                var field = new InputFlowVariableField();
+                field.m_variableName = inVar.getKnimeName();
+                field.m_javaFieldName = inVar.getJavaName();
+                field.m_javaType = inVar.getJavaType() != null ? inVar.getJavaType().getName() : "";
+                result.add(field);
+            }
+            return result;
+        }
+
+        @Override
+        public void save(final List<InputFlowVariableField> param, final NodeSettingsWO settings) {
+            var legacy = new JavaFieldList.InVarList();
+            if (param != null) {
+                for (InputFlowVariableField field : param) {
+                    var inVar = new InVar();
+                    inVar.setKnimeName(field.m_variableName);
+                    inVar.setJavaName(field.m_javaFieldName);
+                    // TODO: Set java type and flow var type
+                    legacy.add(inVar);
+                }
+            }
+            legacy.saveSettings(settings.addConfig(CONFIG_KEY));
+        }
+
+        @Override
+        public String[][] getConfigPaths() {
+            return new String[][]{{CONFIG_KEY}};
+        }
+    }
+
+    /**
+     * Persistor for output columns (OutColList <-> OutputColumnField[]).
+     */
+    public static final class OutColListPersistor implements ArrayPersistor<OutputColumnField> {
+        private static final String CONFIG_KEY = "outCols";
+
+        @Override
+        public List<OutputColumnField> load(final NodeSettingsRO settings) throws InvalidSettingsException {
+            var legacy = new JavaFieldList.OutColList();
+            if (settings.containsKey(CONFIG_KEY)) {
+                legacy.loadSettings(settings.getConfig(CONFIG_KEY));
+            }
+            
+            List<OutputColumnField> result = new ArrayList<>();
+            for (OutCol outCol : legacy) {
+                var field = new OutputColumnField();
+                field.m_columnName = outCol.getKnimeName();
+                field.m_javaFieldName = outCol.getJavaName();
+                field.m_javaType = outCol.getJavaType() != null ? outCol.getJavaType().getName() : "";
+                field.m_replaceExisting = outCol.getReplaceExisting();
+                // Check if the data type is a collection type
+                field.m_isArray = outCol.getDataType() != null && outCol.getDataType().isCollectionType();
+                result.add(field);
+            }
+            return result;
+        }
+
+        @Override
+        public void save(final List<OutputColumnField> param, final NodeSettingsWO settings) {
+            var legacy = new JavaFieldList.OutColList();
+            if (param != null) {
+                for (OutputColumnField field : param) {
+                    var outCol = new OutCol();
+                    outCol.setKnimeName(field.m_columnName);
+                    outCol.setJavaName(field.m_javaFieldName);
+                    outCol.setReplaceExisting(field.m_replaceExisting);
+                    // TODO: Set java type, data type, and converter factory
+                    // TODO: Handle m_isArray by wrapping datatype in ListCell if needed
+                    legacy.add(outCol);
+                }
+            }
+            legacy.saveSettings(settings.addConfig(CONFIG_KEY));
+        }
+
+        @Override
+        public String[][] getConfigPaths() {
+            return new String[][]{{CONFIG_KEY}};
+        }
+    }
+
+    /**
+     * Persistor for output flow variables (OutVarList <-> OutputFlowVariableField[]).
+     */
+    public static final class OutVarListPersistor implements ArrayPersistor<OutputFlowVariableField> {
+        private static final String CONFIG_KEY = "outVars";
+
+        @Override
+        public List<OutputFlowVariableField> load(final NodeSettingsRO settings) throws InvalidSettingsException {
+            var legacy = new JavaFieldList.OutVarList();
+            if (settings.containsKey(CONFIG_KEY)) {
+                legacy.loadSettings(settings.getConfig(CONFIG_KEY));
+            }
+            
+            List<OutputFlowVariableField> result = new ArrayList<>();
+            for (OutVar outVar : legacy) {
+                var field = new OutputFlowVariableField();
+                field.m_variableName = outVar.getKnimeName();
+                field.m_javaFieldName = outVar.getJavaName();
+                field.m_javaType = outVar.getJavaType() != null ? outVar.getJavaType().getName() : "";
+                result.add(field);
+            }
+            return result;
+        }
+
+        @Override
+        public void save(final List<OutputFlowVariableField> param, final NodeSettingsWO settings) {
+            var legacy = new JavaFieldList.OutVarList();
+            if (param != null) {
+                for (OutputFlowVariableField field : param) {
+                    var outVar = new OutVar();
+                    outVar.setKnimeName(field.m_variableName);
+                    outVar.setJavaName(field.m_javaFieldName);
+                    // TODO: Set java type and flow var type
+                    legacy.add(outVar);
+                }
+            }
+            legacy.saveSettings(settings.addConfig(CONFIG_KEY));
+        }
+
+        @Override
+        public String[][] getConfigPaths() {
+            return new String[][]{{CONFIG_KEY}};
+        }
+    }
+
+    /**
      * Persistor for input columns (InColList <-> InputColumnField[]).
      */
     public static final class InColListPersistor implements ArrayPersistor<InputColumnField> {
@@ -394,20 +534,35 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         @Persistor(InColListPersistor.class)
         InputColumnField[] getInputColumns();
 
-        // TODO: Add input flow variables
-        // @Widget(title = "Input Flow Variables",
-        //         description = "Define which flow variables to use and their Java field names")
-        // @ArrayWidget(element = InputFlowVariableField.class)
-        // @Persistor(InVarListPersistor.class)
-        // InputFlowVariableField[] getInputFlowVariables();
+        @Widget(title = "Input Flow Variables",
+                description = "Define which flow variables to use and their Java field names")
+        @ArrayWidget(element = InputFlowVariableField.class)
+        @Persistor(InVarListPersistor.class)
+        InputFlowVariableField[] getInputFlowVariables();
     }
 
     // =================================================================================
-    // Output Fields Section (Placeholder)
+    // Output Fields Section
     // =================================================================================
 
-    // TODO: Add Output Fields section similar to Input Fields
-    // TODO: Add Libraries & Bundles side drawer section
+    @Section(title = "Output Fields")
+    interface OutputFieldsSection {
+        @Widget(title = "Output Columns",
+                description = "Define output columns and their Java source fields")
+        @ArrayWidget(element = OutputColumnField.class)
+        @Persistor(OutColListPersistor.class)
+        OutputColumnField[] getOutputColumns();
+
+        @Widget(title = "Output Flow Variables",
+                description = "Define output flow variables and their Java source fields")
+        @ArrayWidget(element = OutputFlowVariableField.class)
+        @Persistor(OutVarListPersistor.class)
+        OutputFlowVariableField[] getOutputFlowVariables();
+    }
+
+    // =================================================================================
+    // Libraries & Bundles Section (Placeholder)
+    // =================================================================================
 
     @Section(title = "Libraries & Bundles", sideDrawer = true)
     @Advanced
