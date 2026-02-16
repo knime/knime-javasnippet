@@ -82,46 +82,55 @@ public final class WebUIDialogUtils {
 
     /**
      * Default language identifier for scripting editor syntax highlighting.
+     * @since 5.11
      */
     public static final String DEFAULT_SCRIPT_LANGUAGE = "plaintext";
 
     /**
      * Default file name for script files.
+     * @since 5.11
      */
     public static final String DEFAULT_SCRIPT_FILE_NAME = "script.txt";
 
     /**
      * Data supplier key for input objects (tables/columns).
+     * @since 5.11
      */
     public static final String DATA_SUPPLIER_KEY_INPUT_OBJECTS = "inputObjects";
 
     /**
      * Data supplier key for flow variables.
+     * @since 5.11
      */
     public static final String DATA_SUPPLIER_KEY_FLOW_VARIABLES = "flowVariables";
 
     /**
      * Data supplier key for output objects.
+     * @since 5.11
      */
     public static final String DATA_SUPPLIER_KEY_OUTPUT_OBJECTS = "outputObjects";
 
     /**
      * Data supplier key for script language.
+     * @since 5.11
      */
     public static final String DATA_SUPPLIER_KEY_LANGUAGE = "language";
 
     /**
      * Data supplier key for script file name.
+     * @since 5.11
      */
     public static final String DATA_SUPPLIER_KEY_FILE_NAME = "fileName";
 
     /**
      * Data supplier key for main script configuration key.
+     * @since 5.11
      */
     public static final String DATA_SUPPLIER_KEY_MAIN_SCRIPT_CONFIG_KEY = "mainScriptConfigKey";
 
     /**
      * Data supplier key for static completion items.
+     * @since 5.11
      */
     public static final String DATA_SUPPLIER_KEY_STATIC_COMPLETION_ITEMS = "staticCompletionItems";
 

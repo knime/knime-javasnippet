@@ -67,18 +67,18 @@ import org.knime.core.node.NodeSettingsWO;
  * @noreference This class is not intended to be referenced by clients.
  */
 public class JavaSnippetSettings {
-    private static final String SCRIPT_IMPORTS = "scriptImports";
-    private static final String SCRIPT_FIELDS = "scriptFields";
-    private static final String SCRIPT_BODY = "scriptBody";
-    private static final String JAR_FILES = "jarFiles";
-    private static final String BUNDLES = "bundles";
-    private static final String OUT_COLS = "outCols";
-    private static final String OUT_VARS = "outVars";
-    private static final String IN_COLS = "inCols";
-    private static final String IN_VARS = "inVars";
-    private static final String TEMPLATE_UUID = "templateUUID";
-    private static final String VERSION = "version";
-    private static final String RUN_ON_EXECUTE = "runOnExecute";
+    public static final String SCRIPT_IMPORTS = "scriptImports";
+    public static final String SCRIPT_FIELDS = "scriptFields";
+    public static final String SCRIPT_BODY = "scriptBody";
+    public static final String JAR_FILES = "jarFiles";
+    public static final String BUNDLES = "bundles";
+    public static final String OUT_COLS = "outCols";
+    public static final String OUT_VARS = "outVars";
+    public static final String IN_COLS = "inCols";
+    public static final String IN_VARS = "inVars";
+    public static final String TEMPLATE_UUID = "templateUUID";
+    public static final String VERSION = "version";
+    public static final String RUN_ON_EXECUTE = "runOnExecute";
 
     /** Custom imports. */
     private String m_scriptImports;

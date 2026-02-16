@@ -102,6 +102,15 @@ public abstract class JavaColumnField extends JavaField {
     }
 
     /**
+     * Set the type of the java field
+     *
+     * @param javaType the javaType to set
+     */
+    public void setJavaType(final Class<?> javaType) {
+        m_javaType = javaType;
+    }
+
+    /**
      * Id of the converter factory used to convert from column to java field type or vice versa. Depending on whether
      * this is an in or out field this refers to:
      * <ul>
