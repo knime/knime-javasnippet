@@ -48,15 +48,18 @@
 package org.knime.base.node.jsnippet;
 
 import org.knime.core.node.NodeDialogPane;
-import org.knime.core.node.NodeFactory;
 import org.knime.core.node.NodeView;
+import org.knime.core.webui.node.dialog.scripting.AbstractDefaultScriptingNodeDialog;
+import org.knime.core.webui.node.dialog.scripting.AbstractFallbackScriptingNodeFactory;
 
 /**
  * The node factory of the java snippet node.
+ * Provides both legacy Swing dialog and Modern UI scripting dialog.
  *
  * @author Heiko Hofer
  */
-public class JavaSnippetNodeFactory extends NodeFactory<JavaSnippetNodeModel> {
+@SuppressWarnings("restriction")
+public class JavaSnippetNodeFactory extends AbstractFallbackScriptingNodeFactory<JavaSnippetNodeModel> {
 
     /**
      * {@inheritDoc}
@@ -84,18 +87,25 @@ public class JavaSnippetNodeFactory extends NodeFactory<JavaSnippetNodeModel> {
     }
 
     /**
-     * {@inheritDoc}
+     * Creates the Modern UI scripting dialog.
+     * 
+     * @return the Modern UI dialog for Java Snippet
+     * @since 5.4
      */
     @Override
-    public boolean hasDialog() {
-        return true;
+    public AbstractDefaultScriptingNodeDialog createNodeDialog() {
+        return new JavaSnippetScriptingNodeDialog();
     }
 
     /**
-     * {@inheritDoc}
+     * Creates the legacy Swing dialog.
+     * This is used when the Modern UI is not activated.
+     * 
+     * @return the legacy dialog pane
+     * @since 5.4
      */
     @Override
-    public NodeDialogPane createNodeDialogPane() {
+    public NodeDialogPane createLegacyNodeDialogPane() {
         return new JavaSnippetNodeDialog(this.getClass());
     }
 }
