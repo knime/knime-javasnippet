@@ -484,29 +484,16 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     static final class OutputColumnJavaTypeChoicesProvider implements StringChoicesProvider {
         @Override
         public List<String> choices(final NodeParametersInput context) {
-            // Return all common Java types that can be converted to data cells
-            // TODO: this list should not be static, but filled from
-            // ConverterUtil.getAllDestinationDataTypes()
-            // and
-            // ConverterUtil.getFactoriesForDestinationType(type).stream()
-            return List.of("String", "Integer", "Double", "Boolean", "Long");
+            List<String> types;
 
-//            if (m_fieldType.getSelectedItem().equals(FieldType.Column)) {
-//                for (final DataType type : ConverterUtil.getAllDestinationDataTypes()) {
-//                    if (ConverterUtil.getFactoriesForDestinationType(type).stream()
-//                            .filter(factory -> JavaSnippet.getBuildPathFromCache(factory.getIdentifier()) != null).findAny()
-//                            .isPresent()) {
-//                        m_knimeType.addItem(type);
-//                    }
-//                }
-//                m_knimeType.setRenderer(new DataTypeListCellRenderer());
-//            } else {
-//                TypeProvider typeProvider = TypeProvider.getDefault();
-//                for (FlowVariable.Type type : typeProvider.getTypes()) {
-//                    m_knimeType.addItem(type);
-//                }
-//                m_knimeType.setRenderer(new TypeListCellRender());
-//            }
+            for (final DataType type : ConverterUtil.getAllDestinationDataTypes()) {
+                if (ConverterUtil.getFactoriesForDestinationType(type).stream()
+                    .filter(factory -> JavaSnippet.getBuildPathFromCache(factory.getIdentifier()) != null).findAny()
+                    .isPresent()) {
+                    types.add(type.getName());
+                }
+            }
+            return types;
         }
     }
 
@@ -887,7 +874,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                         try {
                             // Parse the data type from string
                             DataType dataType = DataType.load(field.m_dataTypeName);
-                            
+
                             // Get the converter factory
                             var factory =
                                 ConverterUtil.getDataCellToJavaConverterFactory(field.m_converterFactoryId);
@@ -896,6 +883,8 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                             }
                         } catch (Exception e) {
                             // Leave unset if data type or factory cannot be loaded
+                        }
+                    }
         @Override
         public int getArrayLength(final NodeSettingsRO settings) throws InvalidSettingsException {
             if (settings.containsKey(CONFIG_KEY)) {
