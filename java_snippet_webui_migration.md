@@ -346,7 +346,7 @@ of UX: how can the user configure this in the modern UI? We need to keep that in
 - [ ] Add input columns and flow variables with type selection
 - [ ] Add output columns with Replace/Collection options; output flow variables work
 - [ ] Common types (String, Integer, Boolean, dates) work correctly
-- [ ] CUSTOM type shows additional fields (Java Class, Converter Factory) when selected
+- [ ] Custom types (e.g. Geo Value, JSON) also work
 
 **4. Side Drawer (Libraries & Bundles)**
 - [ ] Opens with animation, contains JAR files and OSGi bundles sections

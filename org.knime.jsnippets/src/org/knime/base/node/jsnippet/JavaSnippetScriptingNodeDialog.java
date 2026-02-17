@@ -65,7 +65,8 @@ import org.knime.core.webui.node.dialog.scripting.WorkflowControl;
  * fields, and the main method body.
  *
  * @author GitHub Copilot
- * @since 5.4
+ * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
+ * @since 5.11
  */
 @SuppressWarnings("restriction")
 public class JavaSnippetScriptingNodeDialog extends AbstractDefaultScriptingNodeDialog {

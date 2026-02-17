@@ -50,11 +50,14 @@ package org.knime.base.node.jsnippet;
 
 import java.util.List;
 
+import org.knime.base.node.jsnippet.type.ConverterUtil;
 import org.knime.base.node.jsnippet.util.JavaFieldList;
 import org.knime.base.node.jsnippet.util.field.InCol;
 import org.knime.base.node.jsnippet.util.field.InVar;
 import org.knime.base.node.jsnippet.util.field.OutCol;
 import org.knime.base.node.jsnippet.util.field.OutVar;
+import org.knime.core.data.DataType;
+import org.knime.core.data.def.StringCell;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
@@ -64,30 +67,20 @@ import org.knime.core.webui.node.dialog.defaultdialog.internal.persistence.Persi
 import org.knime.core.webui.node.dialog.defaultdialog.internal.persistence.PersistArrayElement;
 import org.knime.node.parameters.Advanced;
 import org.knime.node.parameters.NodeParameters;
+import org.knime.node.parameters.NodeParametersInput;
 import org.knime.node.parameters.Widget;
 import org.knime.node.parameters.array.ArrayWidget;
 import org.knime.node.parameters.layout.After;
 import org.knime.node.parameters.layout.Layout;
 import org.knime.node.parameters.layout.Section;
-import org.knime.base.node.jsnippet.type.ConverterUtil;
-import org.knime.core.data.DataColumnSpec;
-import org.knime.core.data.DataType;
-import org.knime.core.data.convert.datacell.JavaToDataCellConverterFactory;
-import org.knime.core.data.convert.java.DataCellToJavaConverterFactory;
-import org.knime.core.data.def.StringCell;
-import org.knime.core.node.workflow.FlowVariable;
-import org.knime.node.parameters.updates.StateProvider;
-import org.knime.node.parameters.updates.StateProviderInitializer;
 import org.knime.node.parameters.widget.choices.ChoicesProvider;
-import org.knime.node.parameters.widget.choices.StringChoice;
 import org.knime.node.parameters.widget.choices.StringChoicesProvider;
 import org.knime.node.parameters.widget.choices.util.AllColumnsProvider;
 import org.knime.node.parameters.widget.choices.util.AllFlowVariablesProvider;
 
 /**
- * NodeParameters implementation for the Java Snippet node in the Modern UI.
- * This class defines all configuration options except the script sections (imports, fields, body),
- * which are handled by the scripting dialog framework.
+ * NodeParameters implementation for the Java Snippet node in the Modern UI. This class defines all configuration
+ * options except the script sections (imports, fields, body), which are handled by the scripting dialog framework.
  *
  * @author GitHub Copilot
  * @since 5.4
@@ -97,7 +90,9 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
     // Script sections (not displayed as widgets - handled by dialog)
     String m_scriptImports = "";
+
     String m_scriptFields = "";
+
     String m_scriptBody = "";
 
     // =================================================================================
@@ -126,6 +121,10 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         // Hidden field: converter factory ID
         @PersistArrayElement(InputColumnConverterFactoryPersistor.class)
         String m_converterFactoryId = "";
+
+        // Hidden field: data type (KNIME column type)
+        @PersistArrayElement(InputColumnDataTypePersistor.class)
+        String m_dataTypeName = "";
     }
 
     /**
@@ -151,10 +150,11 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         String m_flowVarType = "";
     }
 
-    private static abstract class InVarListElementPersistor implements ElementFieldPersistor<String, Integer, InputFlowVariableField> {
+    private static abstract class InVarListElementPersistor
+        implements ElementFieldPersistor<String, Integer, InputFlowVariableField> {
         private final String m_configKey;
 
-        InVarListElementPersistor(final String configKey){
+        InVarListElementPersistor(final String configKey) {
             m_configKey = configKey;
         }
 
@@ -162,12 +162,12 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
         @Override
         public String load(final NodeSettingsRO settings, final Integer loadContext) throws InvalidSettingsException {
-              var inVarList = new JavaFieldList.InVarList();
-              if (settings.containsKey(m_configKey)) {
-                  inVarList.loadSettings(settings.getConfig(m_configKey));
-                  return loadContext < inVarList.size() ? getFieldFromItem(inVarList.get(loadContext)) : null;
-              }
-              return null;
+            var inVarList = new JavaFieldList.InVarList();
+            if (settings.containsKey(m_configKey)) {
+                inVarList.loadSettings(settings.getConfig(m_configKey));
+                return loadContext < inVarList.size() ? getFieldFromItem(inVarList.get(loadContext)) : null;
+            }
+            return null;
         }
 
         @Override
@@ -177,7 +177,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
         @Override
         public String[][] getConfigPaths() {
-            return new String [][] {{m_configKey}};
+            return new String[][]{{m_configKey}};
         }
 
     }
@@ -231,17 +231,15 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
      */
     static final class FlowVariableJavaTypeChoicesProvider implements StringChoicesProvider {
         @Override
-        public List<StringChoice> choices(final NodeParametersInput context) {
-            return java.util.Arrays.asList(
-                new StringChoice("String", "String"),
-                new StringChoice("Integer", "Integer"),
-                new StringChoice("Double", "Double"),
-                new StringChoice("Boolean", "Boolean")
-            );
+        public List<String> choices(final NodeParametersInput context) {
+            // Return all common Java types that converters might support
+            // In real usage, this would be dynamically determined based on the selected flow variable
+            return List.of("String", "Integer", "Double", "Boolean");
         }
     }
 
-    private static abstract class InColListElementPersistor implements ElementFieldPersistor<String, Integer, InputColumnField> {
+    private static abstract class InColListElementPersistor
+        implements ElementFieldPersistor<String, Integer, InputColumnField> {
         private final String m_configKey;
 
         InColListElementPersistor(final String configKey) {
@@ -315,21 +313,26 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         }
     }
 
+    private static final class InputColumnDataTypePersistor extends InColListElementPersistor {
+        InputColumnDataTypePersistor() {
+            super("inCols");
+        }
+
+        @Override
+        protected String getFieldFromItem(final InCol inCol) {
+            return inCol.getDataType() != null ? inCol.getDataType().toString() : "";
+        }
+    }
+
     /**
      * Provides Java type choices for input columns based on available converters for the selected column's data type.
      */
     static final class InputColumnJavaTypeChoicesProvider implements StringChoicesProvider {
         @Override
-        public List<StringChoice> choices(final NodeParametersInput context) {
+        public List<String> choices(final NodeParametersInput context) {
             // Return all common Java types that converters might support
             // In real usage, this would be dynamically determined based on the selected column
-            return java.util.Arrays.asList(
-                new StringChoice("String", "String"),
-                new StringChoice("Integer", "Integer"),
-                new StringChoice("Double", "Double"),
-                new StringChoice("Boolean", "Boolean"),
-                new StringChoice("Long", "Long")
-            );
+            return List.of("String", "Integer", "Double", "Boolean");
         }
     }
 
@@ -367,7 +370,8 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         String m_dataTypeName = "";
     }
 
-    private static abstract class OutColListElementPersistor<T> implements ElementFieldPersistor<T, Integer, OutputColumnField> {
+    private static abstract class OutColListElementPersistor<T>
+        implements ElementFieldPersistor<T, Integer, OutputColumnField> {
         private final String m_configKey;
 
         OutColListElementPersistor(final String configKey) {
@@ -479,15 +483,30 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
      */
     static final class OutputColumnJavaTypeChoicesProvider implements StringChoicesProvider {
         @Override
-        public List<StringChoice> choices(final NodeParametersInput context) {
+        public List<String> choices(final NodeParametersInput context) {
             // Return all common Java types that can be converted to data cells
-            return java.util.Arrays.asList(
-                new StringChoice("String", "String"),
-                new StringChoice(" Integer", "Integer"),
-                new StringChoice("Double", "Double"),
-                new StringChoice("Boolean", "Boolean"),
-                new StringChoice("Long", "Long")
-            );
+            // TODO: this list should not be static, but filled from
+            // ConverterUtil.getAllDestinationDataTypes()
+            // and
+            // ConverterUtil.getFactoriesForDestinationType(type).stream()
+            return List.of("String", "Integer", "Double", "Boolean", "Long");
+
+//            if (m_fieldType.getSelectedItem().equals(FieldType.Column)) {
+//                for (final DataType type : ConverterUtil.getAllDestinationDataTypes()) {
+//                    if (ConverterUtil.getFactoriesForDestinationType(type).stream()
+//                            .filter(factory -> JavaSnippet.getBuildPathFromCache(factory.getIdentifier()) != null).findAny()
+//                            .isPresent()) {
+//                        m_knimeType.addItem(type);
+//                    }
+//                }
+//                m_knimeType.setRenderer(new DataTypeListCellRenderer());
+//            } else {
+//                TypeProvider typeProvider = TypeProvider.getDefault();
+//                for (FlowVariable.Type type : typeProvider.getTypes()) {
+//                    m_knimeType.addItem(type);
+//                }
+//                m_knimeType.setRenderer(new TypeListCellRender());
+//            }
         }
     }
 
@@ -513,7 +532,8 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         String m_flowVarType = "";
     }
 
-    private static abstract class OutVarListElementPersistor implements ElementFieldPersistor<String, Integer, OutputFlowVariableField> {
+    private static abstract class OutVarListElementPersistor
+        implements ElementFieldPersistor<String, Integer, OutputFlowVariableField> {
         private final String m_configKey;
 
         OutVarListElementPersistor(final String configKey) {
@@ -664,17 +684,18 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                     var inVar = new InVar();
                     inVar.setKnimeName(field.m_variableName);
                     inVar.setJavaName(field.m_javaFieldName);
-                    
+
                     // Set flow var type from string
                     if (field.m_flowVarType != null && !field.m_flowVarType.isEmpty()) {
                         try {
-                            inVar.setFlowVarType(org.knime.core.node.workflow.FlowVariable.Type.valueOf(field.m_flowVarType));
+                            inVar.setFlowVarType(
+                                org.knime.core.node.workflow.FlowVariable.Type.valueOf(field.m_flowVarType));
                         } catch (IllegalArgumentException e) {
                             // Fallback to STRING if parsing fails
                             inVar.setFlowVarType(org.knime.core.node.workflow.FlowVariable.Type.STRING);
                         }
                     }
-                    
+
                     // Set java type from String class name
                     if (field.m_javaType != null && !field.m_javaType.isEmpty()) {
                         try {
@@ -685,7 +706,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                             inVar.setJavaType(String.class);
                         }
                     }
-                    
+
                     inVarList.add(inVar);
                 }
             }
@@ -728,15 +749,16 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                     outCol.setKnimeName(field.m_columnName);
                     outCol.setJavaName(field.m_javaFieldName);
                     outCol.setReplaceExisting(field.m_replaceExisting);
-                    
+
                     // Set java type from String class name
                     if (field.m_javaType != null && !field.m_javaType.isEmpty()) {
                         try {
                             Class<?> javaClass = Class.forName("java.lang." + field.m_javaType);
-                            
+
                             // Try to find a converter factory for this type
                             if (field.m_converterFactoryId != null && !field.m_converterFactoryId.isEmpty()) {
-                                var factory = ConverterUtil.getJavaToDataCellConverterFactory(field.m_converterFactoryId);
+                                var factory =
+                                    ConverterUtil.getJavaToDataCellConverterFactory(field.m_converterFactoryId);
                                 if (factory.isPresent()) {
                                     outCol.setConverterFactory(factory.get());
                                 }
@@ -752,7 +774,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                             // Fallback - leave unset
                         }
                     }
-                    
+
                     outColList.add(outCol);
                 }
             }
@@ -794,17 +816,18 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                     var outVar = new OutVar();
                     outVar.setKnimeName(field.m_variableName);
                     outVar.setJavaName(field.m_javaFieldName);
-                    
+
                     // Set flow var type from string
                     if (field.m_flowVarType != null && !field.m_flowVarType.isEmpty()) {
                         try {
-                            outVar.setFlowVarType(org.knime.core.node.workflow.FlowVariable.Type.valueOf(field.m_flowVarType));
+                            outVar.setFlowVarType(
+                                org.knime.core.node.workflow.FlowVariable.Type.valueOf(field.m_flowVarType));
                         } catch (IllegalArgumentException e) {
                             // Fallback to STRING if parsing fails
                             outVar.setFlowVarType(org.knime.core.node.workflow.FlowVariable.Type.STRING);
                         }
                     }
-                    
+
                     // Set java type from String class name
                     if (field.m_javaType != null && !field.m_javaType.isEmpty()) {
                         try {
@@ -815,7 +838,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                             outVar.setJavaType(String.class);
                         }
                     }
-                    
+
                     outVarList.add(outVar);
                 }
             }
@@ -857,32 +880,22 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                     var inCol = new InCol();
                     inCol.setKnimeName(field.m_columnName);
                     inCol.setJavaName(field.m_javaFieldName);
-                    
-                    // Set java type from String class name
-                    if (field.m_javaType != null && !field.m_javaType.isEmpty()) {
-                        try {
-                            Class<?> javaClass = Class.forName("java.lang." + field.m_javaType);
-                            
-                            // Try to use the stored converter factory ID
-                            if (field.m_converterFactoryId != null && !field.m_converterFactoryId.isEmpty()) {
-                                var factory = ConverterUtil.getDataCellToJavaConverterFactory(field.m_converterFactoryId);
-                                if (factory.isPresent()) {
-                                    // Get data type from factory's source type
-                                    DataType dataType = DataType.getType(factory.get().getSourceType());
-                                    inCol.setConverterFactory(dataType, factory.get());
-                                }
-                            }
-                        } catch (ClassNotFoundException e) {
-                            // Leave unset if class not found
-                        }
-                    }
-                    
-                    inColList.add(inCol);
-                }
-            }
-            inColList.saveSettings(settings.addConfig(CONFIG_KEY));
-        }
 
+                    // Set converter factory if both data type and factory ID are available
+                    if (field.m_dataTypeName != null && !field.m_dataTypeName.isEmpty()
+                            && field.m_converterFactoryId != null && !field.m_converterFactoryId.isEmpty()) {
+                        try {
+                            // Parse the data type from string
+                            DataType dataType = DataType.load(field.m_dataTypeName);
+                            
+                            // Get the converter factory
+                            var factory =
+                                ConverterUtil.getDataCellToJavaConverterFactory(field.m_converterFactoryId);
+                            if (factory.isPresent()) {
+                                inCol.setConverterFactory(dataType, factory.get());
+                            }
+                        } catch (Exception e) {
+                            // Leave unset if data type or factory cannot be loaded
         @Override
         public int getArrayLength(final NodeSettingsRO settings) throws InvalidSettingsException {
             if (settings.containsKey(CONFIG_KEY)) {
@@ -978,17 +991,16 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     interface InputFieldsSection {
     }
 
-    @Widget(title = "Input Columns",
-            description = "Define which input columns to use and their Java field names")
+    @Widget(title = "Input Columns", description = "Define which input columns to use and their Java field names")
     @Layout(InputFieldsSection.class)
-    @ArrayWidget(elementTitle= "Input column", addButtonText="Add input column")
+    @ArrayWidget(elementTitle = "Input column", addButtonText = "Add input column")
     @PersistArray(InColListPersistor.class)
     InputColumnField[] m_inputColumns;
 
     @Widget(title = "Input Flow Variables",
-            description = "Define which flow variables to use and their Java field names")
+        description = "Define which flow variables to use and their Java field names")
     @Layout(InputFieldsSection.class)
-    @ArrayWidget(elementTitle= "Input flow variable", addButtonText="Add input flow variable")
+    @ArrayWidget(elementTitle = "Input flow variable", addButtonText = "Add input flow variable")
     @PersistArray(InVarListPersistor.class)
     InputFlowVariableField[] m_inputFlowVariables;
 
@@ -1000,17 +1012,15 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     interface OutputFieldsSection {
     }
 
-    @Widget(title = "Output Columns",
-            description = "Define output columns and their Java source fields")
+    @Widget(title = "Output Columns", description = "Define output columns and their Java source fields")
     @Layout(OutputFieldsSection.class)
-    @ArrayWidget(elementTitle= "Output column", addButtonText="Add output column")
+    @ArrayWidget(elementTitle = "Output column", addButtonText = "Add output column")
     @PersistArray(OutColListPersistor.class)
     OutputColumnField[] m_outputColumns;
 
-    @Widget(title = "Output Flow Variables",
-            description = "Define output flow variables and their Java source fields")
+    @Widget(title = "Output Flow Variables", description = "Define output flow variables and their Java source fields")
     @Layout(OutputFieldsSection.class)
-    @ArrayWidget(elementTitle = "Output flow variable", addButtonText="Add output flow variable")
+    @ArrayWidget(elementTitle = "Output flow variable", addButtonText = "Add output flow variable")
     @PersistArray(OutVarListPersistor.class)
     OutputFlowVariableField[] m_outputFlowVariables;
 
@@ -1024,17 +1034,15 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     interface LibrariesAndBundlesSection {
     }
 
-    @Widget(title = "JAR Files",
-            description = "External JAR files to include on the classpath")
+    @Widget(title = "JAR Files", description = "External JAR files to include on the classpath")
     @Layout(LibrariesAndBundlesSection.class)
-    @ArrayWidget(elementTitle = "JAR file", addButtonText="Add JAR file")
+    @ArrayWidget(elementTitle = "JAR file", addButtonText = "Add JAR file")
     @PersistArray(JarFilesPersistor.class)
     JarFileEntry[] m_jarFiles;
 
-    @Widget(title = "OSGi Bundles",
-            description = "OSGi bundles to add to the classpath")
+    @Widget(title = "OSGi Bundles", description = "OSGi bundles to add to the classpath")
     @Layout(LibrariesAndBundlesSection.class)
-    @ArrayWidget(elementTitle = "OSGi bundle", addButtonText="Add OSGi bundle")
+    @ArrayWidget(elementTitle = "OSGi bundle", addButtonText = "Add OSGi bundle")
     @PersistArray(BundlesPersistor.class)
     BundleEntry[] m_bundles;
 }
