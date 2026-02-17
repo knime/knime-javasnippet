@@ -49,7 +49,6 @@
 package org.knime.base.node.jsnippet;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.knime.base.node.jsnippet.util.JavaFieldList;
@@ -60,16 +59,16 @@ import org.knime.base.node.jsnippet.util.field.OutVar;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
-import org.knime.core.node.config.Config;
+import org.knime.core.webui.node.dialog.defaultdialog.internal.persistence.ArrayPersistor;
+import org.knime.core.webui.node.dialog.defaultdialog.internal.persistence.ElementFieldPersistor;
+import org.knime.core.webui.node.dialog.defaultdialog.internal.persistence.PersistArrayElement;
+import org.knime.node.parameters.Advanced;
 import org.knime.node.parameters.NodeParameters;
 import org.knime.node.parameters.Widget;
 import org.knime.node.parameters.array.ArrayWidget;
-import org.knime.node.parameters.layout.Advanced;
 import org.knime.node.parameters.layout.Section;
-import org.knime.node.parameters.persistence.NodeParametersPersistor;
 import org.knime.node.parameters.persistence.Persist;
 import org.knime.node.parameters.persistence.Persistor;
-import org.knime.node.parameters.persistence.array.ArrayPersistor;
 
 /**
  * NodeParameters implementation for the Java Snippet node in the Modern UI.
@@ -82,85 +81,9 @@ import org.knime.node.parameters.persistence.array.ArrayPersistor;
 @SuppressWarnings("restriction")
 public final class JavaSnippetScriptingNodeParameters implements NodeParameters {
 
-    // =================================================================================
-    // Script Section Persistors
-    // These handle the three editable script sections (imports, fields, body)
-    // =================================================================================
-
-    /**
-     * Persistor for script imports section.
-     */
-    public static final class ScriptImportsPersistor implements NodeParametersPersistor<String> {
-        private static final String CONFIG_KEY = "scriptImports";
-
-        @Override
-        public String load(final NodeSettingsRO settings) throws InvalidSettingsException {
-            return settings.getString(CONFIG_KEY, "");
-        }
-
-        @Override
-        public void save(final String param, final NodeSettingsWO settings) {
-            settings.addString(CONFIG_KEY, param != null ? param : "");
-        }
-
-        @Override
-        public String[][] getConfigPaths() {
-            return new String[][]{{CONFIG_KEY}};
-        }
-    }
-
-    /**
-     * Persistor for script fields section.
-     */
-    public static final class ScriptFieldsPersistor implements NodeParametersPersistor<String> {
-        private static final String CONFIG_KEY = "scriptFields";
-
-        @Override
-        public String load(final NodeSettingsRO settings) throws InvalidSettingsException {
-            return settings.getString(CONFIG_KEY, "");
-        }
-
-        @Override
-        public void save(final String param, final NodeSettingsWO settings) {
-            settings.addString(CONFIG_KEY, param != null ? param : "");
-        }
-
-        @Override
-        public String[][] getConfigPaths() {
-            return new String[][]{{CONFIG_KEY}};
-        }
-    }
-
-    /**
-     * Persistor for script body section.
-     */
-    public static final class ScriptBodyPersistor implements NodeParametersPersistor<String> {
-        private static final String CONFIG_KEY = "scriptBody";
-
-        @Override
-        public String load(final NodeSettingsRO settings) throws InvalidSettingsException {
-            return settings.getString(CONFIG_KEY, "");
-        }
-
-        @Override
-        public void save(final String param, final NodeSettingsWO settings) {
-            settings.addString(CONFIG_KEY, param != null ? param : "");
-        }
-
-        @Override
-        public String[][] getConfigPaths() {
-            return new String[][]{{CONFIG_KEY}};
-        }
-    }
-
     // Script sections (not displayed as widgets - handled by dialog)
-    @Persistor(ScriptImportsPersistor.class)
     String m_scriptImports = "";
-
-    @Persistor(ScriptFieldsPersistor.class)
     String m_scriptFields = "";
-
-    @Persistor(ScriptBodyPersistor.class)
     String m_scriptBody = "";
 
     // =================================================================================
@@ -173,15 +96,15 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
      */
     public static final class InputColumnField implements NodeParameters {
         @Widget(title = "Column Name", description = "The input column to use")
-        @Persist(configKey = "columnName")
+        @PersistArrayElement(InputColumnNamePersistor.class)
         String m_columnName = "";
 
         @Widget(title = "Java Field Name", description = "Java variable name for this column")
-        @Persist(configKey = "javaFieldName")
+        @PersistArrayElement(InputColumnJavaNamePersistor.class)
         String m_javaFieldName = "";
 
         @Widget(title = "Java Type", description = "Java type for conversion")
-        @Persist(configKey = "javaType")
+        @PersistArrayElement(InputColumnJavaTypePersistor.class)
         String m_javaType = "";
 
         // TODO: Add converter factory ID persistence
@@ -192,16 +115,143 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
      */
     public static final class InputFlowVariableField implements NodeParameters {
         @Widget(title = "Flow Variable", description = "The input flow variable to use")
-        @Persist(configKey = "variableName")
+        @PersistArrayElement(InputFlowVariableNamePersistor.class)
         String m_variableName = "";
 
         @Widget(title = "Java Field Name", description = "Java variable name for this flow variable")
-        @Persist(configKey = "javaFieldName")  
+        @PersistArrayElement(InputFlowVariableJavaNamePersistor.class)
         String m_javaFieldName = "";
 
         @Widget(title = "Java Type", description = "Java type for conversion")
-        @Persist(configKey = "javaType")
+        @PersistArrayElement(InputFlowVariableJavaTypePersistor.class)
         String m_javaType = "";
+    }
+
+    private static abstract class InVarListElementPersistor implements ElementFieldPersistor<String, Integer, InputFlowVariableField> {
+        private final String m_configKey;
+
+        InVarListElementPersistor(final String configKey){
+            m_configKey = configKey;
+        }
+
+        protected abstract String getFieldFromItem(final InVar inVar);
+
+        @Override
+        public String load(final NodeSettingsRO settings, final Integer loadContext) throws InvalidSettingsException {
+              var inVarList = new JavaFieldList.InVarList();
+              if (settings.containsKey(m_configKey)) {
+                  inVarList.loadSettings(settings.getConfig(m_configKey));
+                  return loadContext < inVarList.size() ? getFieldFromItem(inVarList.get(loadContext)) : null;
+              }
+              return null;
+        }
+
+        @Override
+        public void save(final String param, final InputFlowVariableField saveDTO) {
+            saveDTO.m_variableName = param;
+        }
+
+        @Override
+        public String[][] getConfigPaths() {
+            return new String [][] {{m_configKey}};
+        }
+
+    }
+
+    private static final class InputFlowVariableNamePersistor extends InVarListElementPersistor {
+        InputFlowVariableNamePersistor() {
+            super("variableName");
+        }
+
+        @Override
+        protected String getFieldFromItem(final InVar inVar) {
+            return inVar.getKnimeName();
+        }
+    }
+
+    private static final class InputFlowVariableJavaNamePersistor extends InVarListElementPersistor {
+        InputFlowVariableJavaNamePersistor() {
+            super("javaFieldName");
+        }
+
+        @Override
+        protected String getFieldFromItem(final InVar inVar) {
+            return inVar.getJavaName();
+        }
+    }
+
+    private static final class InputFlowVariableJavaTypePersistor extends InVarListElementPersistor {
+        InputFlowVariableJavaTypePersistor() {
+            super("javaType");
+        }
+
+        @Override
+        protected String getFieldFromItem(final InVar inVar) {
+            return inVar.getJavaType() != null ? inVar.getJavaType().getName() : "";
+        }
+    }
+
+    private static abstract class InColListElementPersistor implements ElementFieldPersistor<String, Integer, InputColumnField> {
+        private final String m_configKey;
+
+        InColListElementPersistor(final String configKey) {
+            m_configKey = configKey;
+        }
+
+        protected abstract String getFieldFromItem(final InCol inCol);
+
+        @Override
+        public String load(final NodeSettingsRO settings, final Integer loadContext) throws InvalidSettingsException {
+            var inColList = new JavaFieldList.InColList();
+            if (settings.containsKey(m_configKey)) {
+                inColList.loadSettings(settings.getConfig(m_configKey));
+                return loadContext < inColList.size() ? getFieldFromItem(inColList.get(loadContext)) : null;
+            }
+            return null;
+        }
+
+        @Override
+        public void save(final String param, final InputColumnField saveDTO) {
+            // Field saved by individual persistors
+        }
+
+        @Override
+        public String[][] getConfigPaths() {
+            return new String[][]{{m_configKey}};
+        }
+    }
+
+    private static final class InputColumnNamePersistor extends InColListElementPersistor {
+        InputColumnNamePersistor() {
+            super("inCols");
+        }
+
+        @Override
+        protected String getFieldFromItem(final InCol inCol) {
+            return inCol.getKnimeName();
+        }
+    }
+
+    private static final class InputColumnJavaNamePersistor extends InColListElementPersistor {
+        InputColumnJavaNamePersistor() {
+            super("inCols");
+        }
+
+        @Override
+        protected String getFieldFromItem(final InCol inCol) {
+            return inCol.getJavaName();
+        }
+    }
+
+    private static final class InputColumnJavaTypePersistor extends InColListElementPersistor {
+        InputColumnJavaTypePersistor() {
+            super("inCols");
+        }
+
+        @Override
+        protected String getFieldFromItem(final InCol inCol) {
+            return inCol.getJavaType() != null ? inCol.getJavaType().getName() : "";
+        }
     }
 
     /**
@@ -209,24 +259,109 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
      */
     public static final class OutputColumnField implements NodeParameters {
         @Widget(title = "Column Name", description = "The output column name")
-        @Persist(configKey = "columnName")
+        @PersistArrayElement(OutputColumnNamePersistor.class)
         String m_columnName = "";
 
         @Widget(title = "Java Field", description = "Java field name that provides the value")
-        @Persist(configKey = "javaFieldName")
+        @PersistArrayElement(OutputColumnJavaNamePersistor.class)
         String m_javaFieldName = "";
 
         @Widget(title = "Java Type", description = "Java type to convert from")
-        @Persist(configKey = "javaType")
+        @PersistArrayElement(OutputColumnJavaTypePersistor.class)
         String m_javaType = "";
 
         @Widget(title = "Replace Existing", description = "Replace existing column if present")
-        @Persist(configKey = "replaceExisting")
+        @PersistArrayElement(OutputColumnReplaceExistingPersistor.class)
         boolean m_replaceExisting = false;
 
         @Widget(title = "Is Collection", description = "Output is a collection type")
-        @Persist(configKey = "isArray")
+        @PersistArrayElement(OutputColumnIsArrayPersistor.class)
         boolean m_isArray = false;
+    }
+
+    private static abstract class OutColListElementPersistor<T> implements ElementFieldPersistor<T, Integer, OutputColumnField> {
+        private final String m_configKey;
+
+        OutColListElementPersistor(final String configKey) {
+            m_configKey = configKey;
+        }
+
+        protected abstract T getFieldFromItem(final OutCol outCol);
+
+        @Override
+        public T load(final NodeSettingsRO settings, final Integer loadContext) throws InvalidSettingsException {
+            var outColList = new JavaFieldList.OutColList();
+            if (settings.containsKey(m_configKey)) {
+                outColList.loadSettings(settings.getConfig(m_configKey));
+                return loadContext < outColList.size() ? getFieldFromItem(outColList.get(loadContext)) : null;
+            }
+            return null;
+        }
+
+        @Override
+        public void save(final T param, final OutputColumnField saveDTO) {
+            // Field saved by individual persistors
+        }
+
+        @Override
+        public String[][] getConfigPaths() {
+            return new String[][]{{m_configKey}};
+        }
+    }
+
+    private static final class OutputColumnNamePersistor extends OutColListElementPersistor<String> {
+        OutputColumnNamePersistor() {
+            super("outCols");
+        }
+
+        @Override
+        protected String getFieldFromItem(final OutCol outCol) {
+            return outCol.getKnimeName();
+        }
+    }
+
+    private static final class OutputColumnJavaNamePersistor extends OutColListElementPersistor<String> {
+        OutputColumnJavaNamePersistor() {
+            super("outCols");
+        }
+
+        @Override
+        protected String getFieldFromItem(final OutCol outCol) {
+            return outCol.getJavaName();
+        }
+    }
+
+    private static final class OutputColumnJavaTypePersistor extends OutColListElementPersistor<String> {
+        OutputColumnJavaTypePersistor() {
+            super("outCols");
+        }
+
+        @Override
+        protected String getFieldFromItem(final OutCol outCol) {
+            return outCol.getJavaType() != null ? outCol.getJavaType().getName() : "";
+        }
+    }
+
+    private static final class OutputColumnReplaceExistingPersistor extends OutColListElementPersistor<Boolean> {
+        OutputColumnReplaceExistingPersistor() {
+            super("outCols");
+        }
+
+        @Override
+        protected Boolean getFieldFromItem(final OutCol outCol) {
+            return outCol.getReplaceExisting();
+        }
+    }
+
+    private static final class OutputColumnIsArrayPersistor extends OutColListElementPersistor<Boolean> {
+        OutputColumnIsArrayPersistor() {
+            super("outCols");
+        }
+
+        @Override
+        protected Boolean getFieldFromItem(final OutCol outCol) {
+            return outCol.getDataType() != null && outCol.getDataType().isCollectionType();
+        }
     }
 
     /**
@@ -234,16 +369,79 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
      */
     public static final class OutputFlowVariableField implements NodeParameters {
         @Widget(title = "Flow Variable Name", description = "The output flow variable name")
-        @Persist(configKey = "variableName")
+        @PersistArrayElement(OutputFlowVariableNamePersistor.class)
         String m_variableName = "";
 
         @Widget(title = "Java Field", description = "Java field name that provides the value")
-        @Persist(configKey = "javaFieldName")
+        @PersistArrayElement(OutputFlowVariableJavaNamePersistor.class)
         String m_javaFieldName = "";
 
         @Widget(title = "Java Type", description = "Java type to convert from")
-        @Persist(configKey = "javaType")
+        @PersistArrayElement(OutputFlowVariableJavaTypePersistor.class)
         String m_javaType = "";
+    }
+
+    private static abstract class OutVarListElementPersistor implements ElementFieldPersistor<String, Integer, OutputFlowVariableField> {
+        private final String m_configKey;
+
+        OutVarListElementPersistor(final String configKey) {
+            m_configKey = configKey;
+        }
+
+        protected abstract String getFieldFromItem(final OutVar outVar);
+
+        @Override
+        public String load(final NodeSettingsRO settings, final Integer loadContext) throws InvalidSettingsException {
+            var outVarList = new JavaFieldList.OutVarList();
+            if (settings.containsKey(m_configKey)) {
+                outVarList.loadSettings(settings.getConfig(m_configKey));
+                return loadContext < outVarList.size() ? getFieldFromItem(outVarList.get(loadContext)) : null;
+            }
+            return null;
+        }
+
+        @Override
+        public void save(final String param, final OutputFlowVariableField saveDTO) {
+            // Field saved by individual persistors
+        }
+
+        @Override
+        public String[][] getConfigPaths() {
+            return new String[][]{{m_configKey}};
+        }
+    }
+
+    private static final class OutputFlowVariableNamePersistor extends OutVarListElementPersistor {
+        OutputFlowVariableNamePersistor() {
+            super("outVars");
+        }
+
+        @Override
+        protected String getFieldFromItem(final OutVar outVar) {
+            return outVar.getKnimeName();
+        }
+    }
+
+    private static final class OutputFlowVariableJavaNamePersistor extends OutVarListElementPersistor {
+        OutputFlowVariableJavaNamePersistor() {
+            super("outVars");
+        }
+
+        @Override
+        protected String getFieldFromItem(final OutVar outVar) {
+            return outVar.getJavaName();
+        }
+    }
+
+    private static final class OutputFlowVariableJavaTypePersistor extends OutVarListElementPersistor {
+        OutputFlowVariableJavaTypePersistor() {
+            super("outVars");
+        }
+
+        @Override
+        protected String getFieldFromItem(final OutVar outVar) {
+            return outVar.getJavaType() != null ? outVar.getJavaType().getName() : "";
+        }
     }
 
     /**
@@ -251,8 +449,28 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
      */
     public static final class JarFileEntry implements NodeParameters {
         @Widget(title = "JAR Path/URL", description = "File path or KNIME URL to JAR file")
-        @Persist(configKey = "path")
+        @PersistArrayElement(JarFilePathPersistor.class)
         String m_path = "";
+    }
+
+    private static final class JarFilePathPersistor implements ElementFieldPersistor<String, Integer, JarFileEntry> {
+        private static final String CONFIG_KEY = "jarFiles";
+
+        @Override
+        public String load(final NodeSettingsRO settings, final Integer loadContext) throws InvalidSettingsException {
+            String[] jarFiles = settings.getStringArray(CONFIG_KEY, new String[0]);
+            return loadContext < jarFiles.length ? jarFiles[loadContext] : null;
+        }
+
+        @Override
+        public void save(final String param, final JarFileEntry saveDTO) {
+            saveDTO.m_path = param;
+        }
+
+        @Override
+        public String[][] getConfigPaths() {
+            return new String[][]{{CONFIG_KEY}};
+        }
     }
 
     /**
@@ -260,8 +478,28 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
      */
     public static final class BundleEntry implements NodeParameters {
         @Widget(title = "Bundle", description = "OSGi bundle symbolic name with version")
-        @Persist(configKey = "bundle")
+        @PersistArrayElement(BundleNamePersistor.class)
         String m_bundle = "";
+    }
+
+    private static final class BundleNamePersistor implements ElementFieldPersistor<String, Integer, BundleEntry> {
+        private static final String CONFIG_KEY = "bundles";
+
+        @Override
+        public String load(final NodeSettingsRO settings, final Integer loadContext) throws InvalidSettingsException {
+            String[] bundles = settings.getStringArray(CONFIG_KEY, new String[0]);
+            return loadContext < bundles.length ? bundles[loadContext] : null;
+        }
+
+        @Override
+        public void save(final String param, final BundleEntry saveDTO) {
+            saveDTO.m_bundle = param;
+        }
+
+        @Override
+        public String[][] getConfigPaths() {
+            return new String[][]{{CONFIG_KEY}};
+        }
     }
 
     // =================================================================================
@@ -272,78 +510,55 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     /**
      * Persistor for input flow variables (InVarList <-> InputFlowVariableField[]).
      */
-    public static final class InVarListPersistor implements ArrayPersistor<InputFlowVariableField> {
+    public static final class InVarListPersistor implements ArrayPersistor<Integer, InputFlowVariableField> {
         private static final String CONFIG_KEY = "inVars";
 
         @Override
-        public List<InputFlowVariableField> load(final NodeSettingsRO settings) throws InvalidSettingsException {
-            var legacy = new JavaFieldList.InVarList();
-            if (settings.containsKey(CONFIG_KEY)) {
-                legacy.loadSettings(settings.getConfig(CONFIG_KEY));
-            }
-            
-            List<InputFlowVariableField> result = new ArrayList<>();
-            for (InVar inVar : legacy) {
-                var field = new InputFlowVariableField();
-                field.m_variableName = inVar.getKnimeName();
-                field.m_javaFieldName = inVar.getJavaName();
-                field.m_javaType = inVar.getJavaType() != null ? inVar.getJavaType().getName() : "";
-                result.add(field);
-            }
-            return result;
-        }
-
-        @Override
         public void save(final List<InputFlowVariableField> param, final NodeSettingsWO settings) {
-            var legacy = new JavaFieldList.InVarList();
+            var inVarList = new JavaFieldList.InVarList();
             if (param != null) {
                 for (InputFlowVariableField field : param) {
                     var inVar = new InVar();
                     inVar.setKnimeName(field.m_variableName);
+                    inVar.setFlowVarType(field.m_variableType);
                     inVar.setJavaName(field.m_javaFieldName);
-                    // TODO: Set java type and flow var type
-                    legacy.add(inVar);
+                    inVar.setJavaType(field.m_javaType);
+                    inVarList.add(inVar);
                 }
             }
-            legacy.saveSettings(settings.addConfig(CONFIG_KEY));
+            inVarList.saveSettings(settings.addConfig(CONFIG_KEY));
         }
 
         @Override
-        public String[][] getConfigPaths() {
-            return new String[][]{{CONFIG_KEY}};
+        public int getArrayLength(final NodeSettingsRO settings) throws InvalidSettingsException {
+            if (settings.containsKey(CONFIG_KEY)) {
+                var inVarList = new JavaFieldList.InVarList();
+                inVarList.loadSettings(settings.getConfig(CONFIG_KEY));
+                return inVarList.size();
+            }
+            return 0;
+        }
+
+        @Override
+        public Integer createElementLoadContext(final int index) {
+            return index;
+        }
+
+        @Override
+        public InputFlowVariableField createElementSaveDTO(final int index) {
+            return new InputFlowVariableField();
         }
     }
 
     /**
      * Persistor for output columns (OutColList <-> OutputColumnField[]).
      */
-    public static final class OutColListPersistor implements ArrayPersistor<OutputColumnField> {
+    public static final class OutColListPersistor implements ArrayPersistor<Integer, OutputColumnField> {
         private static final String CONFIG_KEY = "outCols";
 
         @Override
-        public List<OutputColumnField> load(final NodeSettingsRO settings) throws InvalidSettingsException {
-            var legacy = new JavaFieldList.OutColList();
-            if (settings.containsKey(CONFIG_KEY)) {
-                legacy.loadSettings(settings.getConfig(CONFIG_KEY));
-            }
-            
-            List<OutputColumnField> result = new ArrayList<>();
-            for (OutCol outCol : legacy) {
-                var field = new OutputColumnField();
-                field.m_columnName = outCol.getKnimeName();
-                field.m_javaFieldName = outCol.getJavaName();
-                field.m_javaType = outCol.getJavaType() != null ? outCol.getJavaType().getName() : "";
-                field.m_replaceExisting = outCol.getReplaceExisting();
-                // Check if the data type is a collection type
-                field.m_isArray = outCol.getDataType() != null && outCol.getDataType().isCollectionType();
-                result.add(field);
-            }
-            return result;
-        }
-
-        @Override
         public void save(final List<OutputColumnField> param, final NodeSettingsWO settings) {
-            var legacy = new JavaFieldList.OutColList();
+            var outColList = new JavaFieldList.OutColList();
             if (param != null) {
                 for (OutputColumnField field : param) {
                     var outCol = new OutCol();
@@ -352,125 +567,122 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                     outCol.setReplaceExisting(field.m_replaceExisting);
                     // TODO: Set java type, data type, and converter factory
                     // TODO: Handle m_isArray by wrapping datatype in ListCell if needed
-                    legacy.add(outCol);
+                    outColList.add(outCol);
                 }
             }
-            legacy.saveSettings(settings.addConfig(CONFIG_KEY));
+            outColList.saveSettings(settings.addConfig(CONFIG_KEY));
         }
 
         @Override
-        public String[][] getConfigPaths() {
-            return new String[][]{{CONFIG_KEY}};
+        public int getArrayLength(final NodeSettingsRO settings) throws InvalidSettingsException {
+            if (settings.containsKey(CONFIG_KEY)) {
+                var outColList = new JavaFieldList.OutColList();
+                outColList.loadSettings(settings.getConfig(CONFIG_KEY));
+                return outColList.size();
+            }
+            return 0;
+        }
+
+        @Override
+        public Integer createElementLoadContext(final int index) {
+            return index;
+        }
+
+        @Override
+        public OutputColumnField createElementSaveDTO(final int index) {
+            return new OutputColumnField();
         }
     }
 
     /**
      * Persistor for output flow variables (OutVarList <-> OutputFlowVariableField[]).
      */
-    public static final class OutVarListPersistor implements ArrayPersistor<OutputFlowVariableField> {
+    public static final class OutVarListPersistor implements ArrayPersistor<Integer, OutputFlowVariableField> {
         private static final String CONFIG_KEY = "outVars";
 
         @Override
-        public List<OutputFlowVariableField> load(final NodeSettingsRO settings) throws InvalidSettingsException {
-            var legacy = new JavaFieldList.OutVarList();
-            if (settings.containsKey(CONFIG_KEY)) {
-                legacy.loadSettings(settings.getConfig(CONFIG_KEY));
-            }
-            
-            List<OutputFlowVariableField> result = new ArrayList<>();
-            for (OutVar outVar : legacy) {
-                var field = new OutputFlowVariableField();
-                field.m_variableName = outVar.getKnimeName();
-                field.m_javaFieldName = outVar.getJavaName();
-                field.m_javaType = outVar.getJavaType() != null ? outVar.getJavaType().getName() : "";
-                result.add(field);
-            }
-            return result;
-        }
-
-        @Override
         public void save(final List<OutputFlowVariableField> param, final NodeSettingsWO settings) {
-            var legacy = new JavaFieldList.OutVarList();
+            var outVarList = new JavaFieldList.OutVarList();
             if (param != null) {
                 for (OutputFlowVariableField field : param) {
                     var outVar = new OutVar();
                     outVar.setKnimeName(field.m_variableName);
                     outVar.setJavaName(field.m_javaFieldName);
                     // TODO: Set java type and flow var type
-                    legacy.add(outVar);
+                    outVarList.add(outVar);
                 }
             }
-            legacy.saveSettings(settings.addConfig(CONFIG_KEY));
+            outVarList.saveSettings(settings.addConfig(CONFIG_KEY));
         }
 
         @Override
-        public String[][] getConfigPaths() {
-            return new String[][]{{CONFIG_KEY}};
+        public int getArrayLength(final NodeSettingsRO settings) throws InvalidSettingsException {
+            if (settings.containsKey(CONFIG_KEY)) {
+                var outVarList = new JavaFieldList.OutVarList();
+                outVarList.loadSettings(settings.getConfig(CONFIG_KEY));
+                return outVarList.size();
+            }
+            return 0;
+        }
+
+        @Override
+        public Integer createElementLoadContext(final int index) {
+            return index;
+        }
+
+        @Override
+        public OutputFlowVariableField createElementSaveDTO(final int index) {
+            return new OutputFlowVariableField();
         }
     }
 
     /**
      * Persistor for input columns (InColList <-> InputColumnField[]).
      */
-    public static final class InColListPersistor implements ArrayPersistor<InputColumnField> {
+    public static final class InColListPersistor implements ArrayPersistor<Integer, InputColumnField> {
         private static final String CONFIG_KEY = "inCols";
 
         @Override
-        public List<InputColumnField> load(final NodeSettingsRO settings) throws InvalidSettingsException {
-            var legacy = new JavaFieldList.InColList();
-            if (settings.containsKey(CONFIG_KEY)) {
-                legacy.loadSettings(settings.getConfig(CONFIG_KEY));
-            }
-            
-            List<InputColumnField> result = new ArrayList<>();
-            for (InCol inCol : legacy) {
-                var field = new InputColumnField();
-                field.m_columnName = inCol.getKnimeName();
-                field.m_javaFieldName = inCol.getJavaName();
-                field.m_javaType = inCol.getJavaType() != null ? inCol.getJavaType().getName() : "";
-                result.add(field);
-            }
-            return result;
-        }
-
-        @Override
         public void save(final List<InputColumnField> param, final NodeSettingsWO settings) {
-            var legacy = new JavaFieldList.InColList();
+            var inColList = new JavaFieldList.InColList();
             if (param != null) {
                 for (InputColumnField field : param) {
                     var inCol = new InCol();
                     inCol.setKnimeName(field.m_columnName);
                     inCol.setJavaName(field.m_javaFieldName);
                     // TODO: Set java type and converter factory
-                    legacy.add(inCol);
+                    inColList.add(inCol);
                 }
             }
-            legacy.saveSettings(settings.addConfig(CONFIG_KEY));
+            inColList.saveSettings(settings.addConfig(CONFIG_KEY));
         }
 
         @Override
-        public String[][] getConfigPaths() {
-            return new String[][]{{CONFIG_KEY}};
+        public int getArrayLength(final NodeSettingsRO settings) throws InvalidSettingsException {
+            if (settings.containsKey(CONFIG_KEY)) {
+                var inColList = new JavaFieldList.InColList();
+                inColList.loadSettings(settings.getConfig(CONFIG_KEY));
+                return inColList.size();
+            }
+            return 0;
+        }
+
+        @Override
+        public Integer createElementLoadContext(final int index) {
+            return index;
+        }
+
+        @Override
+        public InputColumnField createElementSaveDTO(final int index) {
+            return new InputColumnField();
         }
     }
 
     /**
      * Persistor for JAR files (String[] <-> JarFileEntry[]).
      */
-    public static final class JarFilesPersistor implements ArrayPersistor<JarFileEntry> {
+    public static final class JarFilesPersistor implements ArrayPersistor<Integer, JarFileEntry> {
         private static final String CONFIG_KEY = "jarFiles";
-
-        @Override
-        public List<JarFileEntry> load(final NodeSettingsRO settings) throws InvalidSettingsException {
-            String[] jarFiles = settings.getStringArray(CONFIG_KEY, new String[0]);
-            List<JarFileEntry> result = new ArrayList<>();
-            for (String path : jarFiles) {
-                var entry = new JarFileEntry();
-                entry.m_path = path;
-                result.add(entry);
-            }
-            return result;
-        }
 
         @Override
         public void save(final List<JarFileEntry> param, final NodeSettingsWO settings) {
@@ -483,28 +695,27 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         }
 
         @Override
-        public String[][] getConfigPaths() {
-            return new String[][]{{CONFIG_KEY}};
+        public int getArrayLength(final NodeSettingsRO settings) throws InvalidSettingsException {
+            String[] jarFiles = settings.getStringArray(CONFIG_KEY, new String[0]);
+            return jarFiles.length;
+        }
+
+        @Override
+        public Integer createElementLoadContext(final int index) {
+            return index;
+        }
+
+        @Override
+        public JarFileEntry createElementSaveDTO(final int index) {
+            return new JarFileEntry();
         }
     }
 
     /**
      * Persistor for bundles (String[] <-> BundleEntry[]).
      */
-    public static final class BundlesPersistor implements ArrayPersistor<BundleEntry> {
+    public static final class BundlesPersistor implements ArrayPersistor<Integer, BundleEntry> {
         private static final String CONFIG_KEY = "bundles";
-
-        @Override
-        public List<BundleEntry> load(final NodeSettingsRO settings) throws InvalidSettingsException {
-            String[] bundles = settings.getStringArray(CONFIG_KEY, new String[0]);
-            List<BundleEntry> result = new ArrayList<>();
-            for (String bundle : bundles) {
-                var entry = new BundleEntry();
-                entry.m_bundle = bundle;
-                result.add(entry);
-            }
-            return result;
-        }
 
         @Override
         public void save(final List<BundleEntry> param, final NodeSettingsWO settings) {
@@ -517,8 +728,19 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         }
 
         @Override
-        public String[][] getConfigPaths() {
-            return new String[][]{{CONFIG_KEY}};
+        public int getArrayLength(final NodeSettingsRO settings) throws InvalidSettingsException {
+            String[] bundles = settings.getStringArray(CONFIG_KEY, new String[0]);
+            return bundles.length;
+        }
+
+        @Override
+        public Integer createElementLoadContext(final int index) {
+            return index;
+        }
+
+        @Override
+        public BundleEntry createElementSaveDTO(final int index) {
+            return new BundleEntry();
         }
     }
 
@@ -528,18 +750,19 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
     @Section(title = "Input Fields")
     interface InputFieldsSection {
-        @Widget(title = "Input Columns", 
-                description = "Define which input columns to use and their Java field names")
-        @ArrayWidget(element = InputColumnField.class)
-        @Persistor(InColListPersistor.class)
-        InputColumnField[] getInputColumns();
-
-        @Widget(title = "Input Flow Variables",
-                description = "Define which flow variables to use and their Java field names")
-        @ArrayWidget(element = InputFlowVariableField.class)
-        @Persistor(InVarListPersistor.class)
-        InputFlowVariableField[] getInputFlowVariables();
     }
+
+    @Widget(title = "Input Columns",
+            description = "Define which input columns to use and their Java field names")
+    @ArrayWidget(element = InputColumnField.class)
+    @Persistor(InColListPersistor.class)
+    InputColumnField[] getInputColumns();
+
+    @Widget(title = "Input Flow Variables",
+            description = "Define which flow variables to use and their Java field names")
+    @ArrayWidget(element = InputFlowVariableField.class)
+    @Persistor(InVarListPersistor.class)
+    InputFlowVariableField[] getInputFlowVariables();
 
     // =================================================================================
     // Output Fields Section
@@ -547,18 +770,19 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
     @Section(title = "Output Fields")
     interface OutputFieldsSection {
-        @Widget(title = "Output Columns",
-                description = "Define output columns and their Java source fields")
-        @ArrayWidget(element = OutputColumnField.class)
-        @Persistor(OutColListPersistor.class)
-        OutputColumnField[] getOutputColumns();
-
-        @Widget(title = "Output Flow Variables",
-                description = "Define output flow variables and their Java source fields")
-        @ArrayWidget(element = OutputFlowVariableField.class)
-        @Persistor(OutVarListPersistor.class)
-        OutputFlowVariableField[] getOutputFlowVariables();
     }
+
+    @Widget(title = "Output Columns",
+            description = "Define output columns and their Java source fields")
+    @ArrayWidget(element = OutputColumnField.class)
+    @Persistor(OutColListPersistor.class)
+    OutputColumnField[] getOutputColumns();
+
+    @Widget(title = "Output Flow Variables",
+            description = "Define output flow variables and their Java source fields")
+    @ArrayWidget(element = OutputFlowVariableField.class)
+    @Persistor(OutVarListPersistor.class)
+    OutputFlowVariableField[] getOutputFlowVariables();
 
     // =================================================================================
     // Libraries & Bundles Section (Placeholder)
@@ -567,16 +791,17 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     @Section(title = "Libraries & Bundles", sideDrawer = true)
     @Advanced
     interface LibrariesAndBundlesSection {
-        @Widget(title = "JAR Files",
-                description = "External JAR files to include on the classpath")
-        @ArrayWidget(element = JarFileEntry.class)
-        @Persistor(JarFilesPersistor.class)
-        JarFileEntry[] getJarFiles();
-
-        @Widget(title = "OSGi Bundles",
-                description = "OSGi bundles to add to the classpath")
-        @ArrayWidget(element = BundleEntry.class)
-        @Persistor(BundlesPersistor.class)
-        BundleEntry[] getBundles();
     }
+
+    @Widget(title = "JAR Files",
+            description = "External JAR files to include on the classpath")
+    @ArrayWidget(element = JarFileEntry.class)
+    @Persistor(JarFilesPersistor.class)
+    JarFileEntry[] getJarFiles();
+
+    @Widget(title = "OSGi Bundles",
+            description = "OSGi bundles to add to the classpath")
+    @ArrayWidget(element = BundleEntry.class)
+    @Persistor(BundlesPersistor.class)
+    BundleEntry[] getBundles();
 }
