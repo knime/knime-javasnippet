@@ -48,7 +48,6 @@
  */
 package org.knime.base.node.jsnippet;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.knime.base.node.jsnippet.util.JavaFieldList;
@@ -61,14 +60,15 @@ import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.webui.node.dialog.defaultdialog.internal.persistence.ArrayPersistor;
 import org.knime.core.webui.node.dialog.defaultdialog.internal.persistence.ElementFieldPersistor;
+import org.knime.core.webui.node.dialog.defaultdialog.internal.persistence.PersistArray;
 import org.knime.core.webui.node.dialog.defaultdialog.internal.persistence.PersistArrayElement;
 import org.knime.node.parameters.Advanced;
 import org.knime.node.parameters.NodeParameters;
 import org.knime.node.parameters.Widget;
 import org.knime.node.parameters.array.ArrayWidget;
+import org.knime.node.parameters.layout.After;
+import org.knime.node.parameters.layout.Layout;
 import org.knime.node.parameters.layout.Section;
-import org.knime.node.parameters.persistence.Persist;
-import org.knime.node.parameters.persistence.Persistor;
 
 /**
  * NodeParameters implementation for the Java Snippet node in the Modern UI.
@@ -520,9 +520,9 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                 for (InputFlowVariableField field : param) {
                     var inVar = new InVar();
                     inVar.setKnimeName(field.m_variableName);
-                    inVar.setFlowVarType(field.m_variableType);
+//                    inVar.setFlowVarType(field.m_variableType);
                     inVar.setJavaName(field.m_javaFieldName);
-                    inVar.setJavaType(field.m_javaType);
+//                    inVar.setJavaType(field.m_javaType);
                     inVarList.add(inVar);
                 }
             }
@@ -754,15 +754,17 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
     @Widget(title = "Input Columns",
             description = "Define which input columns to use and their Java field names")
-    @ArrayWidget(element = InputColumnField.class)
-    @Persistor(InColListPersistor.class)
-    InputColumnField[] getInputColumns();
+    @Layout(InputFieldsSection.class)
+    @ArrayWidget(elementTitle= "Input columns")
+    @PersistArray(InColListPersistor.class)
+    InputColumnField[] m_inputColumns;
 
     @Widget(title = "Input Flow Variables",
             description = "Define which flow variables to use and their Java field names")
-    @ArrayWidget(element = InputFlowVariableField.class)
-    @Persistor(InVarListPersistor.class)
-    InputFlowVariableField[] getInputFlowVariables();
+    @Layout(InputFieldsSection.class)
+    @ArrayWidget(elementTitle= "Input flow variables")
+    @PersistArray(InVarListPersistor.class)
+    InputFlowVariableField[] m_inputFlowVariables;
 
     // =================================================================================
     // Output Fields Section
@@ -774,34 +776,39 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
     @Widget(title = "Output Columns",
             description = "Define output columns and their Java source fields")
-    @ArrayWidget(element = OutputColumnField.class)
-    @Persistor(OutColListPersistor.class)
-    OutputColumnField[] getOutputColumns();
+    @Layout(OutputFieldsSection.class)
+    @ArrayWidget(elementTitle= "Output columns")
+    @PersistArray(OutColListPersistor.class)
+    OutputColumnField[] m_outputColumns;
 
     @Widget(title = "Output Flow Variables",
             description = "Define output flow variables and their Java source fields")
-    @ArrayWidget(element = OutputFlowVariableField.class)
-    @Persistor(OutVarListPersistor.class)
-    OutputFlowVariableField[] getOutputFlowVariables();
+    @Layout(OutputFieldsSection.class)
+    @ArrayWidget(elementTitle = "Output flow variables")
+    @PersistArray(OutVarListPersistor.class)
+    OutputFlowVariableField[] m_outputFlowVariables;
 
     // =================================================================================
     // Libraries & Bundles Section (Placeholder)
     // =================================================================================
 
     @Section(title = "Libraries & Bundles", sideDrawer = true)
+    @After(OutputFieldsSection.class)
     @Advanced
     interface LibrariesAndBundlesSection {
     }
 
     @Widget(title = "JAR Files",
             description = "External JAR files to include on the classpath")
-    @ArrayWidget(element = JarFileEntry.class)
-    @Persistor(JarFilesPersistor.class)
-    JarFileEntry[] getJarFiles();
+    @Layout(LibrariesAndBundlesSection.class)
+    @ArrayWidget(elementTitle = "JAR file")
+    @PersistArray(JarFilesPersistor.class)
+    JarFileEntry[] m_jarFiles;
 
     @Widget(title = "OSGi Bundles",
             description = "OSGi bundles to add to the classpath")
-    @ArrayWidget(element = BundleEntry.class)
-    @Persistor(BundlesPersistor.class)
-    BundleEntry[] getBundles();
+    @Layout(LibrariesAndBundlesSection.class)
+    @ArrayWidget(elementTitle = "OSGi Bundle")
+    @PersistArray(BundlesPersistor.class)
+    BundleEntry[] m_bundles;
 }
