@@ -87,7 +87,8 @@ import org.knime.node.parameters.widget.choices.util.AllFlowVariablesProvider;
  * options except the script sections (imports, fields, body), which are handled by the scripting dialog framework.
  *
  * @author GitHub Copilot
- * @since 5.4
+ * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
+ * @since 5.11
  */
 @SuppressWarnings("restriction")
 public final class JavaSnippetScriptingNodeParameters implements NodeParameters {
@@ -606,6 +607,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
      * Represents a JAR file entry.
      */
     public static final class JarFileEntry implements NodeParameters {
+        // TODO: make this a file browser
         @Widget(title = "JAR Path/URL", description = "File path or KNIME URL to JAR file")
         @PersistArrayElement(JarFilePathPersistor.class)
         String m_path = "";
@@ -635,6 +637,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
      * Represents an OSGi bundle entry.
      */
     public static final class BundleEntry implements NodeParameters {
+        // TODO: make this a choices provider with dropdown of all available bundles
         @Widget(title = "Bundle", description = "OSGi bundle symbolic name with version")
         @PersistArrayElement(BundleNamePersistor.class)
         String m_bundle = "";
@@ -995,19 +998,24 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     // Input Fields Section
     // =================================================================================
 
-    @Section(title = "Input Fields")
-    interface InputFieldsSection {
-    }
+
+    @Section(title="Input Columns")
+    interface InputColumns {}
+
+    @Section(title="Input Variables")
+    @After(InputColumns.class)
+    interface InputVariables {}
+
 
     @Widget(title = "Input Columns", description = "Define which input columns to use and their Java field names")
-    @Layout(InputFieldsSection.class)
+    @Layout(InputColumns.class)
     @ArrayWidget(elementTitle = "Input column", addButtonText = "Add input column")
     @PersistArray(InColListPersistor.class)
     InputColumnField[] m_inputColumns;
 
     @Widget(title = "Input Flow Variables",
         description = "Define which flow variables to use and their Java field names")
-    @Layout(InputFieldsSection.class)
+    @Layout(InputVariables.class)
     @ArrayWidget(elementTitle = "Input flow variable", addButtonText = "Add input flow variable")
     @PersistArray(InVarListPersistor.class)
     InputFlowVariableField[] m_inputFlowVariables;
@@ -1016,18 +1024,22 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     // Output Fields Section
     // =================================================================================
 
-    @Section(title = "Output Fields")
-    interface OutputFieldsSection {
-    }
+    @Section(title="Output Columns")
+    @After(InputVariables.class)
+    interface OutputColumns {}
+
+    @Section(title="Output Variables")
+    @After(OutputColumns.class)
+    interface OutputVariables {}
 
     @Widget(title = "Output Columns", description = "Define output columns and their Java source fields")
-    @Layout(OutputFieldsSection.class)
+    @Layout(OutputColumns.class)
     @ArrayWidget(elementTitle = "Output column", addButtonText = "Add output column")
     @PersistArray(OutColListPersistor.class)
     OutputColumnField[] m_outputColumns;
 
     @Widget(title = "Output Flow Variables", description = "Define output flow variables and their Java source fields")
-    @Layout(OutputFieldsSection.class)
+    @Layout(OutputVariables.class)
     @ArrayWidget(elementTitle = "Output flow variable", addButtonText = "Add output flow variable")
     @PersistArray(OutVarListPersistor.class)
     OutputFlowVariableField[] m_outputFlowVariables;
@@ -1037,19 +1049,24 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     // =================================================================================
 
     @Section(title = "Libraries & Bundles", sideDrawer = true)
-    @After(OutputFieldsSection.class)
+    @After(OutputVariables.class)
     @Advanced
     interface LibrariesAndBundlesSection {
+        @Section(title="JAR Files")
+        interface JARFiles {}
+
+        @Section(title="OSGi Bundles")
+        interface OSGIBundles {}
     }
 
     @Widget(title = "JAR Files", description = "External JAR files to include on the classpath")
-    @Layout(LibrariesAndBundlesSection.class)
+    @Layout(LibrariesAndBundlesSection.JARFiles.class)
     @ArrayWidget(elementTitle = "JAR file", addButtonText = "Add JAR file")
     @PersistArray(JarFilesPersistor.class)
     JarFileEntry[] m_jarFiles;
 
     @Widget(title = "OSGi Bundles", description = "OSGi bundles to add to the classpath")
-    @Layout(LibrariesAndBundlesSection.class)
+    @Layout(LibrariesAndBundlesSection.OSGIBundles.class)
     @ArrayWidget(elementTitle = "OSGi bundle", addButtonText = "Add OSGi bundle")
     @PersistArray(BundlesPersistor.class)
     BundleEntry[] m_bundles;
