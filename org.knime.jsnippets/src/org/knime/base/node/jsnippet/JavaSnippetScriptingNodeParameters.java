@@ -760,14 +760,14 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     @Widget(title = "Input Columns",
             description = "Define which input columns to use and their Java field names")
     @Layout(InputFieldsSection.class)
-    @ArrayWidget(elementTitle= "Input columns")
+    @ArrayWidget(elementTitle= "Input column", addButtonText="Add input column")
     @PersistArray(InColListPersistor.class)
     InputColumnField[] m_inputColumns;
 
     @Widget(title = "Input Flow Variables",
             description = "Define which flow variables to use and their Java field names")
     @Layout(InputFieldsSection.class)
-    @ArrayWidget(elementTitle= "Input flow variables")
+    @ArrayWidget(elementTitle= "Input flow variable", addButtonText="Add input flow variable")
     @PersistArray(InVarListPersistor.class)
     InputFlowVariableField[] m_inputFlowVariables;
 
@@ -782,14 +782,14 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     @Widget(title = "Output Columns",
             description = "Define output columns and their Java source fields")
     @Layout(OutputFieldsSection.class)
-    @ArrayWidget(elementTitle= "Output columns")
+    @ArrayWidget(elementTitle= "Output column", addButtonText="Add output column")
     @PersistArray(OutColListPersistor.class)
     OutputColumnField[] m_outputColumns;
 
     @Widget(title = "Output Flow Variables",
             description = "Define output flow variables and their Java source fields")
     @Layout(OutputFieldsSection.class)
-    @ArrayWidget(elementTitle = "Output flow variables")
+    @ArrayWidget(elementTitle = "Output flow variable", addButtonText="Add output flow variable")
     @PersistArray(OutVarListPersistor.class)
     OutputFlowVariableField[] m_outputFlowVariables;
 
@@ -806,14 +806,14 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     @Widget(title = "JAR Files",
             description = "External JAR files to include on the classpath")
     @Layout(LibrariesAndBundlesSection.class)
-    @ArrayWidget(elementTitle = "JAR file")
+    @ArrayWidget(elementTitle = "JAR file", addButtonText="Add JAR file")
     @PersistArray(JarFilesPersistor.class)
     JarFileEntry[] m_jarFiles;
 
     @Widget(title = "OSGi Bundles",
             description = "OSGi bundles to add to the classpath")
     @Layout(LibrariesAndBundlesSection.class)
-    @ArrayWidget(elementTitle = "OSGi Bundle")
+    @ArrayWidget(elementTitle = "OSGi bundle", addButtonText="Add OSGi bundle")
     @PersistArray(BundlesPersistor.class)
     BundleEntry[] m_bundles;
 }
