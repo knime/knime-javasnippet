@@ -69,6 +69,9 @@ import org.knime.node.parameters.array.ArrayWidget;
 import org.knime.node.parameters.layout.After;
 import org.knime.node.parameters.layout.Layout;
 import org.knime.node.parameters.layout.Section;
+import org.knime.node.parameters.widget.choices.ChoicesProvider;
+import org.knime.node.parameters.widget.choices.util.AllColumnsProvider;
+import org.knime.node.parameters.widget.choices.util.AllFlowVariablesProvider;
 
 /**
  * NodeParameters implementation for the Java Snippet node in the Modern UI.
@@ -96,6 +99,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
      */
     public static final class InputColumnField implements NodeParameters {
         @Widget(title = "Column Name", description = "The input column to use")
+        @ChoicesProvider(AllColumnsProvider.class)
         @PersistArrayElement(InputColumnNamePersistor.class)
         String m_columnName = "";
 
@@ -115,6 +119,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
      */
     public static final class InputFlowVariableField implements NodeParameters {
         @Widget(title = "Flow Variable", description = "The input flow variable to use")
+        @ChoicesProvider(AllFlowVariablesProvider.class)
         @PersistArrayElement(InputFlowVariableNamePersistor.class)
         String m_variableName = "";
 
