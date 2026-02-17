@@ -48,19 +48,23 @@
  */
 package org.knime.base.node.jsnippet;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.knime.base.node.jsnippet.type.ConverterUtil;
+import org.knime.base.node.jsnippet.type.TypeProvider;
 import org.knime.base.node.jsnippet.util.JavaFieldList;
 import org.knime.base.node.jsnippet.util.field.InCol;
 import org.knime.base.node.jsnippet.util.field.InVar;
 import org.knime.base.node.jsnippet.util.field.OutCol;
 import org.knime.base.node.jsnippet.util.field.OutVar;
 import org.knime.core.data.DataType;
+import org.knime.core.data.DataTypeRegistry;
 import org.knime.core.data.def.StringCell;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
+import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.webui.node.dialog.defaultdialog.internal.persistence.ArrayPersistor;
 import org.knime.core.webui.node.dialog.defaultdialog.internal.persistence.ElementFieldPersistor;
 import org.knime.core.webui.node.dialog.defaultdialog.internal.persistence.PersistArray;
@@ -233,8 +237,12 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         @Override
         public List<String> choices(final NodeParametersInput context) {
             // Return all common Java types that converters might support
-            // In real usage, this would be dynamically determined based on the selected flow variable
-            return List.of("String", "Integer", "Double", "Boolean");
+            TypeProvider typeProvider = TypeProvider.getDefault();
+            List<String> types = new ArrayList<>();
+            for (FlowVariable.Type type : typeProvider.getTypes()) {
+                types.add(type.name());
+            }
+            return types;
         }
     }
 
@@ -484,7 +492,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     static final class OutputColumnJavaTypeChoicesProvider implements StringChoicesProvider {
         @Override
         public List<String> choices(final NodeParametersInput context) {
-            List<String> types;
+            List<String> types = new ArrayList<>();
 
             for (final DataType type : ConverterUtil.getAllDestinationDataTypes()) {
                 if (ConverterUtil.getFactoriesForDestinationType(type).stream()
@@ -870,21 +878,32 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
                     // Set converter factory if both data type and factory ID are available
                     if (field.m_dataTypeName != null && !field.m_dataTypeName.isEmpty()
-                            && field.m_converterFactoryId != null && !field.m_converterFactoryId.isEmpty()) {
+                        && field.m_converterFactoryId != null && !field.m_converterFactoryId.isEmpty()) {
                         try {
                             // Parse the data type from string
-                            DataType dataType = DataType.load(field.m_dataTypeName);
+                            var dataCellClass = DataTypeRegistry.getInstance().getCellClass(field.m_dataTypeName);
+                            if (dataCellClass.isPresent()) {
+                                DataType dataType = DataType.getType(dataCellClass.get());
 
-                            // Get the converter factory
-                            var factory =
-                                ConverterUtil.getDataCellToJavaConverterFactory(field.m_converterFactoryId);
-                            if (factory.isPresent()) {
-                                inCol.setConverterFactory(dataType, factory.get());
+                                // Get the converter factory
+                                var factory =
+                                    ConverterUtil.getDataCellToJavaConverterFactory(field.m_converterFactoryId);
+                                if (factory.isPresent()) {
+                                    inCol.setConverterFactory(dataType, factory.get());
+                                }
                             }
                         } catch (Exception e) {
                             // Leave unset if data type or factory cannot be loaded
                         }
                     }
+
+                    inColList.add(inCol);
+                }
+            }
+
+            inColList.saveSettings(settings.addConfig(CONFIG_KEY));
+        }
+
         @Override
         public int getArrayLength(final NodeSettingsRO settings) throws InvalidSettingsException {
             if (settings.containsKey(CONFIG_KEY)) {
