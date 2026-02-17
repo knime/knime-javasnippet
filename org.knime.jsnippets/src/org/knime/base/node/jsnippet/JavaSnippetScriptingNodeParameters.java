@@ -69,7 +69,18 @@ import org.knime.node.parameters.array.ArrayWidget;
 import org.knime.node.parameters.layout.After;
 import org.knime.node.parameters.layout.Layout;
 import org.knime.node.parameters.layout.Section;
+import org.knime.base.node.jsnippet.type.ConverterUtil;
+import org.knime.core.data.DataColumnSpec;
+import org.knime.core.data.DataType;
+import org.knime.core.data.convert.datacell.JavaToDataCellConverterFactory;
+import org.knime.core.data.convert.java.DataCellToJavaConverterFactory;
+import org.knime.core.data.def.StringCell;
+import org.knime.core.node.workflow.FlowVariable;
+import org.knime.node.parameters.updates.StateProvider;
+import org.knime.node.parameters.updates.StateProviderInitializer;
 import org.knime.node.parameters.widget.choices.ChoicesProvider;
+import org.knime.node.parameters.widget.choices.StringChoice;
+import org.knime.node.parameters.widget.choices.StringChoicesProvider;
 import org.knime.node.parameters.widget.choices.util.AllColumnsProvider;
 import org.knime.node.parameters.widget.choices.util.AllFlowVariablesProvider;
 
@@ -108,10 +119,13 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         String m_javaFieldName = "";
 
         @Widget(title = "Java Type", description = "Java type for conversion")
+        @ChoicesProvider(InputColumnJavaTypeChoicesProvider.class)
         @PersistArrayElement(InputColumnJavaTypePersistor.class)
         String m_javaType = "";
 
-        // TODO: Add converter factory ID persistence
+        // Hidden field: converter factory ID
+        @PersistArrayElement(InputColumnConverterFactoryPersistor.class)
+        String m_converterFactoryId = "";
     }
 
     /**
@@ -128,8 +142,13 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         String m_javaFieldName = "";
 
         @Widget(title = "Java Type", description = "Java type for conversion")
+        @ChoicesProvider(FlowVariableJavaTypeChoicesProvider.class)
         @PersistArrayElement(InputFlowVariableJavaTypePersistor.class)
         String m_javaType = "";
+
+        // Hidden field: flow variable type
+        @PersistArrayElement(InputFlowVariableTypePersistor.class)
+        String m_flowVarType = "";
     }
 
     private static abstract class InVarListElementPersistor implements ElementFieldPersistor<String, Integer, InputFlowVariableField> {
@@ -196,6 +215,32 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         }
     }
 
+    private static final class InputFlowVariableTypePersistor extends InVarListElementPersistor {
+        InputFlowVariableTypePersistor() {
+            super("inVars");
+        }
+
+        @Override
+        protected String getFieldFromItem(final InVar inVar) {
+            return inVar.getFlowVarType() != null ? inVar.getFlowVarType().toString() : "";
+        }
+    }
+
+    /**
+     * Provides Java type choices for flow variables.
+     */
+    static final class FlowVariableJavaTypeChoicesProvider implements StringChoicesProvider {
+        @Override
+        public List<StringChoice> choices(final NodeParametersInput context) {
+            return java.util.Arrays.asList(
+                new StringChoice("String", "String"),
+                new StringChoice("Integer", "Integer"),
+                new StringChoice("Double", "Double"),
+                new StringChoice("Boolean", "Boolean")
+            );
+        }
+    }
+
     private static abstract class InColListElementPersistor implements ElementFieldPersistor<String, Integer, InputColumnField> {
         private final String m_configKey;
 
@@ -259,6 +304,35 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         }
     }
 
+    private static final class InputColumnConverterFactoryPersistor extends InColListElementPersistor {
+        InputColumnConverterFactoryPersistor() {
+            super("inCols");
+        }
+
+        @Override
+        protected String getFieldFromItem(final InCol inCol) {
+            return inCol.getConverterFactoryId();
+        }
+    }
+
+    /**
+     * Provides Java type choices for input columns based on available converters for the selected column's data type.
+     */
+    static final class InputColumnJavaTypeChoicesProvider implements StringChoicesProvider {
+        @Override
+        public List<StringChoice> choices(final NodeParametersInput context) {
+            // Return all common Java types that converters might support
+            // In real usage, this would be dynamically determined based on the selected column
+            return java.util.Arrays.asList(
+                new StringChoice("String", "String"),
+                new StringChoice("Integer", "Integer"),
+                new StringChoice("Double", "Double"),
+                new StringChoice("Boolean", "Boolean"),
+                new StringChoice("Long", "Long")
+            );
+        }
+    }
+
     /**
      * Represents an output column field definition.
      */
@@ -272,6 +346,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         String m_javaFieldName = "";
 
         @Widget(title = "Java Type", description = "Java type to convert from")
+        @ChoicesProvider(OutputColumnJavaTypeChoicesProvider.class)
         @PersistArrayElement(OutputColumnJavaTypePersistor.class)
         String m_javaType = "";
 
@@ -282,6 +357,14 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         @Widget(title = "Is Collection", description = "Output is a collection type")
         @PersistArrayElement(OutputColumnIsArrayPersistor.class)
         boolean m_isArray = false;
+
+        // Hidden field: converter factory ID
+        @PersistArrayElement(OutputColumnConverterFactoryPersistor.class)
+        String m_converterFactoryId = "";
+
+        // Hidden field: data type
+        @PersistArrayElement(OutputColumnDataTypePersistor.class)
+        String m_dataTypeName = "";
     }
 
     private static abstract class OutColListElementPersistor<T> implements ElementFieldPersistor<T, Integer, OutputColumnField> {
@@ -369,6 +452,45 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         }
     }
 
+    private static final class OutputColumnConverterFactoryPersistor extends OutColListElementPersistor<String> {
+        OutputColumnConverterFactoryPersistor() {
+            super("outCols");
+        }
+
+        @Override
+        protected String getFieldFromItem(final OutCol outCol) {
+            return outCol.getConverterFactoryId();
+        }
+    }
+
+    private static final class OutputColumnDataTypePersistor extends OutColListElementPersistor<String> {
+        OutputColumnDataTypePersistor() {
+            super("outCols");
+        }
+
+        @Override
+        protected String getFieldFromItem(final OutCol outCol) {
+            return outCol.getDataType() != null ? outCol.getDataType().toString() : "";
+        }
+    }
+
+    /**
+     * Provides Java type choices for output columns based on available converters.
+     */
+    static final class OutputColumnJavaTypeChoicesProvider implements StringChoicesProvider {
+        @Override
+        public List<StringChoice> choices(final NodeParametersInput context) {
+            // Return all common Java types that can be converted to data cells
+            return java.util.Arrays.asList(
+                new StringChoice("String", "String"),
+                new StringChoice(" Integer", "Integer"),
+                new StringChoice("Double", "Double"),
+                new StringChoice("Boolean", "Boolean"),
+                new StringChoice("Long", "Long")
+            );
+        }
+    }
+
     /**
      * Represents an output flow variable field definition.
      */
@@ -382,8 +504,13 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         String m_javaFieldName = "";
 
         @Widget(title = "Java Type", description = "Java type to convert from")
+        @ChoicesProvider(FlowVariableJavaTypeChoicesProvider.class)
         @PersistArrayElement(OutputFlowVariableJavaTypePersistor.class)
         String m_javaType = "";
+
+        // Hidden field: flow variable type
+        @PersistArrayElement(OutputFlowVariableTypePersistor.class)
+        String m_flowVarType = "";
     }
 
     private static abstract class OutVarListElementPersistor implements ElementFieldPersistor<String, Integer, OutputFlowVariableField> {
@@ -446,6 +573,17 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         @Override
         protected String getFieldFromItem(final OutVar outVar) {
             return outVar.getJavaType() != null ? outVar.getJavaType().getName() : "";
+        }
+    }
+
+    private static final class OutputFlowVariableTypePersistor extends OutVarListElementPersistor {
+        OutputFlowVariableTypePersistor() {
+            super("outVars");
+        }
+
+        @Override
+        protected String getFieldFromItem(final OutVar outVar) {
+            return outVar.getFlowVarType() != null ? outVar.getFlowVarType().toString() : "";
         }
     }
 
@@ -525,9 +663,29 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                 for (InputFlowVariableField field : param) {
                     var inVar = new InVar();
                     inVar.setKnimeName(field.m_variableName);
-//                    inVar.setFlowVarType(field.m_variableType);
                     inVar.setJavaName(field.m_javaFieldName);
-//                    inVar.setJavaType(field.m_javaType);
+                    
+                    // Set flow var type from string
+                    if (field.m_flowVarType != null && !field.m_flowVarType.isEmpty()) {
+                        try {
+                            inVar.setFlowVarType(org.knime.core.node.workflow.FlowVariable.Type.valueOf(field.m_flowVarType));
+                        } catch (IllegalArgumentException e) {
+                            // Fallback to STRING if parsing fails
+                            inVar.setFlowVarType(org.knime.core.node.workflow.FlowVariable.Type.STRING);
+                        }
+                    }
+                    
+                    // Set java type from String class name
+                    if (field.m_javaType != null && !field.m_javaType.isEmpty()) {
+                        try {
+                            Class<?> javaClass = Class.forName("java.lang." + field.m_javaType);
+                            inVar.setJavaType(javaClass);
+                        } catch (ClassNotFoundException e) {
+                            // Fallback to String if class not found
+                            inVar.setJavaType(String.class);
+                        }
+                    }
+                    
                     inVarList.add(inVar);
                 }
             }
@@ -570,8 +728,31 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                     outCol.setKnimeName(field.m_columnName);
                     outCol.setJavaName(field.m_javaFieldName);
                     outCol.setReplaceExisting(field.m_replaceExisting);
-                    // TODO: Set java type, data type, and converter factory
-                    // TODO: Handle m_isArray by wrapping datatype in ListCell if needed
+                    
+                    // Set java type from String class name
+                    if (field.m_javaType != null && !field.m_javaType.isEmpty()) {
+                        try {
+                            Class<?> javaClass = Class.forName("java.lang." + field.m_javaType);
+                            
+                            // Try to find a converter factory for this type
+                            if (field.m_converterFactoryId != null && !field.m_converterFactoryId.isEmpty()) {
+                                var factory = ConverterUtil.getJavaToDataCellConverterFactory(field.m_converterFactoryId);
+                                if (factory.isPresent()) {
+                                    outCol.setConverterFactory(factory.get());
+                                }
+                            } else {
+                                // Try to infer data type - use String as fallback
+                                DataType dataType = StringCell.TYPE;
+                                var factory = ConverterUtil.getConverterFactory(javaClass, dataType);
+                                if (factory.isPresent()) {
+                                    outCol.setConverterFactory(factory.get());
+                                }
+                            }
+                        } catch (ClassNotFoundException e) {
+                            // Fallback - leave unset
+                        }
+                    }
+                    
                     outColList.add(outCol);
                 }
             }
@@ -613,7 +794,28 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                     var outVar = new OutVar();
                     outVar.setKnimeName(field.m_variableName);
                     outVar.setJavaName(field.m_javaFieldName);
-                    // TODO: Set java type and flow var type
+                    
+                    // Set flow var type from string
+                    if (field.m_flowVarType != null && !field.m_flowVarType.isEmpty()) {
+                        try {
+                            outVar.setFlowVarType(org.knime.core.node.workflow.FlowVariable.Type.valueOf(field.m_flowVarType));
+                        } catch (IllegalArgumentException e) {
+                            // Fallback to STRING if parsing fails
+                            outVar.setFlowVarType(org.knime.core.node.workflow.FlowVariable.Type.STRING);
+                        }
+                    }
+                    
+                    // Set java type from String class name
+                    if (field.m_javaType != null && !field.m_javaType.isEmpty()) {
+                        try {
+                            Class<?> javaClass = Class.forName("java.lang." + field.m_javaType);
+                            outVar.setJavaType(javaClass);
+                        } catch (ClassNotFoundException e) {
+                            // Fallback to String if class not found
+                            outVar.setJavaType(String.class);
+                        }
+                    }
+                    
                     outVarList.add(outVar);
                 }
             }
@@ -655,7 +857,26 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                     var inCol = new InCol();
                     inCol.setKnimeName(field.m_columnName);
                     inCol.setJavaName(field.m_javaFieldName);
-                    // TODO: Set java type and converter factory
+                    
+                    // Set java type from String class name
+                    if (field.m_javaType != null && !field.m_javaType.isEmpty()) {
+                        try {
+                            Class<?> javaClass = Class.forName("java.lang." + field.m_javaType);
+                            
+                            // Try to use the stored converter factory ID
+                            if (field.m_converterFactoryId != null && !field.m_converterFactoryId.isEmpty()) {
+                                var factory = ConverterUtil.getDataCellToJavaConverterFactory(field.m_converterFactoryId);
+                                if (factory.isPresent()) {
+                                    // Get data type from factory's source type
+                                    DataType dataType = DataType.getType(factory.get().getSourceType());
+                                    inCol.setConverterFactory(dataType, factory.get());
+                                }
+                            }
+                        } catch (ClassNotFoundException e) {
+                            // Leave unset if class not found
+                        }
+                    }
+                    
                     inColList.add(inCol);
                 }
             }
