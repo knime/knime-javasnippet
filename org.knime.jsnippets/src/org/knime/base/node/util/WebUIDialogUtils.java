@@ -316,7 +316,7 @@ public final class WebUIDialogUtils {
 
         @Override
         public String title() {
-            return "Access to Available " + getTerminology().toLowerCase();
+            return "Access to available " + getTerminology().toLowerCase();
         }
 
         @Override
