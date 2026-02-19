@@ -52,7 +52,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 
+import org.knime.core.data.DataColumnSpec;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.workflow.FlowVariable;
@@ -82,46 +84,64 @@ public final class WebUIDialogUtils {
 
     /**
      * Default language identifier for scripting editor syntax highlighting.
+     *
+     * @since 5.11
      */
     public static final String DEFAULT_SCRIPT_LANGUAGE = "plaintext";
 
     /**
      * Default file name for script files.
+     *
+     * @since 5.11
      */
     public static final String DEFAULT_SCRIPT_FILE_NAME = "script.txt";
 
     /**
      * Data supplier key for input objects (tables/columns).
+     *
+     * @since 5.11
      */
     public static final String DATA_SUPPLIER_KEY_INPUT_OBJECTS = "inputObjects";
 
     /**
      * Data supplier key for flow variables.
+     *
+     * @since 5.11
      */
     public static final String DATA_SUPPLIER_KEY_FLOW_VARIABLES = "flowVariables";
 
     /**
      * Data supplier key for output objects.
+     *
+     * @since 5.11
      */
     public static final String DATA_SUPPLIER_KEY_OUTPUT_OBJECTS = "outputObjects";
 
     /**
      * Data supplier key for script language.
+     *
+     * @since 5.11
      */
     public static final String DATA_SUPPLIER_KEY_LANGUAGE = "language";
 
     /**
      * Data supplier key for script file name.
+     *
+     * @since 5.11
      */
     public static final String DATA_SUPPLIER_KEY_FILE_NAME = "fileName";
 
     /**
      * Data supplier key for main script configuration key.
+     *
+     * @since 5.11
      */
     public static final String DATA_SUPPLIER_KEY_MAIN_SCRIPT_CONFIG_KEY = "mainScriptConfigKey";
 
     /**
      * Data supplier key for static completion items.
+     *
+     * @since 5.11
      */
     public static final String DATA_SUPPLIER_KEY_STATIC_COMPLETION_ITEMS = "staticCompletionItems";
 
@@ -177,34 +197,70 @@ public final class WebUIDialogUtils {
      * @return the flow variables input/output model
      */
     public static InputOutputModel getFlowVariablesInputOutputModel(final WorkflowControl workflowControl) {
+        return getFlowVariablesInputOutputModel(workflowControl, SUPPORTED_VARIABLE_TYPES, FLOWVAR_ALIAS_TEMPLATE);
+    }
+
+    /**
+     * Creates an {@link InputOutputModel} for flow variables, allowing to filter the flow variables by providing a set
+     * of allowed types, and configuring how they are added to the code on drag'n'drop as well as double click.
+     *
+     * @param workflowControl the workflow control to get flow variables from
+     * @param supportedFlowVariableTypes The set of flow variable types supported for this input/output model
+     * @param flowVariableAliasTemplate The code alias Handlebars template for flow variables used for drag and drop
+     *            insertion
+     * @return the flow variables input/output model
+     * @since 5.11
+     */
+    public static InputOutputModel getFlowVariablesInputOutputModel(final WorkflowControl workflowControl,
+        final Set<VariableType<?>> supportedFlowVariableTypes, final String flowVariableAliasTemplate) {
         var flowVariables = Optional.ofNullable(workflowControl.getFlowObjectStack()) //
             .map(stack -> stack.getAllAvailableFlowVariables().values()) //
             .orElseGet(List::of) //
             .stream() //
-            .filter(fv -> SUPPORTED_VARIABLE_TYPES.contains(fv.getVariableType())) //
+            .filter(fv -> supportedFlowVariableTypes.contains(fv.getVariableType())) //
             .toList();
 
         return InputOutputModel.flowVariables() //
-            .subItems(flowVariables, SUPPORTED_VARIABLE_TYPES::contains) //
-            .subItemCodeAliasTemplate(FLOWVAR_ALIAS_TEMPLATE) //
+            .subItems(flowVariables, supportedFlowVariableTypes::contains) //
+            .subItemCodeAliasTemplate(flowVariableAliasTemplate) //
             .build();
     }
 
     /**
-     * Creates a list of {@link InputOutputModel} for input table columns.
+     * Creates a list of {@link InputOutputModel} for input table columns, allowing all column types and using the
+     * {@link COLUMN_ALIAS_TEMPLATE} when inserting the column items into the code editor.
      *
      * @param workflowControl the workflow control to get input specs of Table
      * @return a list containing the input table model, or empty list if no table input
      */
     public static List<InputOutputModel> getFirstInputTableModel(final WorkflowControl workflowControl) {
+        return getFirstInputTableModel(workflowControl, (col) -> true, COLUMN_ALIAS_TEMPLATE);
+    }
+
+    /**
+     * Creates a list of {@link InputOutputModel} for input table columns, filtered by a predicate, and with a specific
+     * code template used when inserting the column into the code editor.
+     *
+     * @param workflowControl the workflow control to get input specs of Table
+     * @param columnFilterPredicate A filter that defines which columns should be included
+     * @param columnAliasTemplate The code alias Handlebars template for inserting columns into the editor via drag and
+     *            drop
+     * @return a list containing the input table model, or empty list if no table input
+     * @since 5.11
+     */
+    public static List<InputOutputModel> getFirstInputTableModel(final WorkflowControl workflowControl,
+        final Predicate<? super DataColumnSpec> columnFilterPredicate, final String columnAliasTemplate) {
         var inputSpecs = Optional.ofNullable(workflowControl.getInputSpec()) //
             .orElse(new PortObjectSpec[0]);
 
         if (inputSpecs.length > 0 && inputSpecs[0] instanceof DataTableSpec tableSpec) {
+            var filteredColumns = new DataTableSpec(tableSpec.stream()
+                .filter(colSpec -> columnFilterPredicate.test(colSpec)).toArray(size -> new DataColumnSpec[size]));
+
             var inputModel = InputOutputModel.table() //
                 .name("Input Table") //
-                .subItemCodeAliasTemplate(COLUMN_ALIAS_TEMPLATE) //
-                .subItems(tableSpec, dataType -> dataType.getName()) //
+                .subItemCodeAliasTemplate(columnAliasTemplate) //
+                .subItems(filteredColumns, dataType -> dataType.getName()) //
                 .build();
             return List.of(inputModel);
         }
@@ -218,6 +274,7 @@ public final class WebUIDialogUtils {
      *
      * @param displayName the display name of a manipulator
      * @return the arguments string if the display name follows function pattern, null otherwise
+     * @since 5.11
      */
     public static String extractArguments(final String displayName) {
         int openParen = displayName.indexOf('(');
@@ -233,7 +290,8 @@ public final class WebUIDialogUtils {
     }
 
     /**
-     * Get auto completion items for manipulator provider implementations.
+     * Get auto completion items for manipulator provider implementations, allowing all variable types defined in
+     * {@link SUPPORTED_VARIABLE_TYPES}
      *
      * @param workflowControl a utility class to access workflow controls
      * @param manipulatorProvider a {@link ManipulatorProvider} implementation providing manipulator functions, or null
@@ -244,6 +302,25 @@ public final class WebUIDialogUtils {
      */
     public static StaticCompletionItem[] getCompletionItems(final WorkflowControl workflowControl,
         final ManipulatorProvider manipulatorProvider, final boolean includeColumns) {
+        return getCompletionItems(workflowControl, manipulatorProvider, includeColumns, SUPPORTED_VARIABLE_TYPES, (colSpec) -> true);
+    }
+
+    /**
+     * Get auto completion items for manipulator provider implementations.
+     *
+     * @param workflowControl a utility class to access workflow controls
+     * @param manipulatorProvider a {@link ManipulatorProvider} implementation providing manipulator functions, or null
+     *            to skip adding manipulator functions
+     * @param includeColumns a boolean flag to add columns names for auto-completion.
+     * @param supportedFlowVariableTypes The set of flow variable types that should be supported via autocompletion
+     * @param columnFilterPredicate A filter that defines which columns should be included
+     * @return an array of {@link StaticCompletionItem} objects containing manipulator functions, flow variables, and
+     *         optionally column names
+     * @since 5.11
+     */
+    public static StaticCompletionItem[] getCompletionItems(final WorkflowControl workflowControl,
+        final ManipulatorProvider manipulatorProvider, final boolean includeColumns,
+        final Set<VariableType<?>> supportedFlowVariableTypes, final Predicate<? super DataColumnSpec> columnFilterPredicate) {
         Set<StaticCompletionItem> items = new HashSet<>();
 
         // Add manipulator functions from the provided provider if not null
@@ -262,7 +339,7 @@ public final class WebUIDialogUtils {
             .map(stack -> stack.getAllAvailableFlowVariables().values()) //
             .orElseGet(List::of) //
             .forEach(fv -> {
-                if (SUPPORTED_VARIABLE_TYPES.contains(fv.getVariableType())) {
+                if (supportedFlowVariableTypes.contains(fv.getVariableType())) {
                     items.add(new StaticCompletionItem(//
                         "$${" + getFlowVariableTypePrefix(fv) + fv.getName() + "}$$", //
                         null, //
@@ -277,7 +354,9 @@ public final class WebUIDialogUtils {
                 .orElse(new PortObjectSpec[0]);
 
             if (inputSpecs.length > 0 && inputSpecs[0] instanceof DataTableSpec tableSpec) {
-                tableSpec.forEach(dcs -> items.add( //
+                var filteredColumns = new DataTableSpec(tableSpec.stream()
+                    .filter(colSpec -> columnFilterPredicate.test(colSpec)).toArray(size -> new DataColumnSpec[size]));
+                filteredColumns.forEach(dcs -> items.add( //
                     new StaticCompletionItem( //
                         "$" + dcs.getName() + "$", //
                         null, //
