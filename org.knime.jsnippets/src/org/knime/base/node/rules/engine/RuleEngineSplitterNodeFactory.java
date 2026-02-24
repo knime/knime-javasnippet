@@ -48,28 +48,45 @@
 package org.knime.base.node.rules.engine;
 
 import org.knime.core.node.NodeDialogPane;
+import org.knime.core.node.NodeView;
+import org.knime.core.webui.node.dialog.scripting.AbstractDefaultScriptingNodeDialog;
+import org.knime.core.webui.node.dialog.scripting.AbstractFallbackScriptingNodeFactory;
 
 /**
- * This factory creates all necessary object for the business rule node.
+ * This factory creates all necessary objects for the Rule-based Row Splitter node.
  *
  * @author Thorsten Meinl, University of Konstanz
  * @since 2.8
  */
-public final class RuleEngineSplitterNodeFactory extends RuleEngineFilterNodeFactory {
-    /**
-     * {@inheritDoc}
-     */
+public final class RuleEngineSplitterNodeFactory
+    extends AbstractFallbackScriptingNodeFactory<RuleEngineFilterNodeModel> {
+
     @Override
-    protected NodeDialogPane createNodeDialogPane() {
-//        return new RuleEngineNodeDialog("TRUE to first, FALSE to second output table");
+    public NodeDialogPane createLegacyNodeDialogPane() {
         return new RuleEngineNodeDialog(RuleNodeSettings.RuleSplitter);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public RuleEngineFilterNodeModel createNodeModel() {
         return new RuleEngineFilterNodeModel(false);
+    }
+
+    @Override
+    public NodeView<RuleEngineFilterNodeModel> createNodeView(final int index,
+            final RuleEngineFilterNodeModel model) {
+        return null;
+    }
+
+    @Override
+    protected int getNrNodeViews() {
+        return 0;
+    }
+
+    /**
+     * @since 5.12
+     */
+    @Override
+    public AbstractDefaultScriptingNodeDialog createNodeDialog() {
+        return new RuleEngineSplitterScriptingNodeDialog();
     }
 }
