@@ -48,55 +48,44 @@
 package org.knime.base.node.rules.engine;
 
 import org.knime.core.node.NodeDialogPane;
-import org.knime.core.node.NodeFactory;
 import org.knime.core.node.NodeView;
+import org.knime.core.webui.node.dialog.scripting.AbstractDefaultScriptingNodeDialog;
+import org.knime.core.webui.node.dialog.scripting.AbstractFallbackScriptingNodeFactory;
 
 /**
- * This factory creates all necessary object for the business rule node.
+ * This factory creates all necessary objects for the Rule-based Row Filter node.
  *
  * @author Thorsten Meinl, University of Konstanz
  * @since 2.8
  */
-public class RuleEngineFilterNodeFactory extends NodeFactory<RuleEngineFilterNodeModel> {
-    /**
-     * {@inheritDoc}
-     */
+public class RuleEngineFilterNodeFactory extends AbstractFallbackScriptingNodeFactory<RuleEngineFilterNodeModel> {
+
     @Override
-    protected NodeDialogPane createNodeDialogPane() {
-//        return new RuleEngineNodeDialog("include if first matching rule is TRUE");
+    public NodeDialogPane createLegacyNodeDialogPane() {
         return new RuleEngineNodeDialog(RuleNodeSettings.RuleFilter);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public RuleEngineFilterNodeModel createNodeModel() {
         return new RuleEngineFilterNodeModel(true);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public NodeView<RuleEngineFilterNodeModel> createNodeView(final int index,
             final RuleEngineFilterNodeModel model) {
         return null;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected int getNrNodeViews() {
         return 0;
     }
 
     /**
-     * {@inheritDoc}
+     * @since 5.11
      */
     @Override
-    protected boolean hasDialog() {
-        return true;
+    public AbstractDefaultScriptingNodeDialog createNodeDialog() {
+        return new RuleEngineFilterScriptingNodeDialog();
     }
 }

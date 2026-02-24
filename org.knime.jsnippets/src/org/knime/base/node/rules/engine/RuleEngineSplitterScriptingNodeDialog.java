@@ -1,5 +1,6 @@
 /*
  * ------------------------------------------------------------------------
+ *
  *  Copyright by KNIME AG, Zurich, Switzerland
  *  Website: http://www.knime.com; Email: contact@knime.com
  *
@@ -43,50 +44,50 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   11.04.2008 (thor): created
+ *   Feb 2026 (GitHub Copilot): created
  */
 package org.knime.base.node.rules.engine;
 
-import org.knime.core.node.NodeDialogPane;
-import org.knime.core.node.NodeView;
+import java.util.Collections;
+
+import org.knime.base.node.rules.engine.manipulator.RuleManipulatorProvider;
+import org.knime.base.node.util.WebUIDialogUtils;
+import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.webui.node.dialog.scripting.AbstractDefaultScriptingNodeDialog;
-import org.knime.core.webui.node.dialog.scripting.AbstractFallbackScriptingNodeFactory;
+import org.knime.core.webui.node.dialog.scripting.GenericInitialDataBuilder;
+import org.knime.core.webui.node.dialog.scripting.WorkflowControl;
 
 /**
- * This factory creates all necessary objects for the Rule-based Row Splitter node.
+ * This class implements the configuration dialog and the fallback scripting editor for the Rule-based Row Splitter
+ * node.
  *
- * @author Thorsten Meinl, University of Konstanz
- * @since 2.8
+ * @author Ali Asghar Marvi, KNIME GmbH, Berlin, Germany
+ * @since 5.12
  */
-public final class RuleEngineSplitterNodeFactory
-    extends AbstractFallbackScriptingNodeFactory<RuleEngineFilterNodeModel> {
+@SuppressWarnings("restriction")
+final class RuleEngineSplitterScriptingNodeDialog extends AbstractDefaultScriptingNodeDialog {
 
-    @Override
-    public NodeDialogPane createLegacyNodeDialogPane() {
-        return new RuleEngineNodeDialog(RuleNodeSettings.RuleSplitter);
+    RuleEngineSplitterScriptingNodeDialog() {
+        super(RuleEngineSplitterScriptingNodeParameters.class);
     }
 
     @Override
-    public RuleEngineFilterNodeModel createNodeModel() {
-        return new RuleEngineFilterNodeModel(false);
-    }
-
-    @Override
-    public NodeView<RuleEngineFilterNodeModel> createNodeView(final int index,
-            final RuleEngineFilterNodeModel model) {
-        return null;
-    }
-
-    @Override
-    protected int getNrNodeViews() {
-        return 0;
-    }
-
-    /**
-     * @since 5.12
-     */
-    @Override
-    public AbstractDefaultScriptingNodeDialog createNodeDialog() {
-        return new RuleEngineSplitterScriptingNodeDialog();
+    protected GenericInitialDataBuilder getInitialData(final NodeContext context) {
+        var workflowControl = new WorkflowControl(context.getNodeContainer());
+        return GenericInitialDataBuilder.createDefaultInitialDataBuilder(NodeContext.getContext())
+            .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_INPUT_OBJECTS,
+                () -> WebUIDialogUtils.getFirstInputTableModel(workflowControl))
+            .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_FLOW_VARIABLES,
+                () -> WebUIDialogUtils.getFlowVariablesInputOutputModel(workflowControl))
+            .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_OUTPUT_OBJECTS, Collections::emptyList)
+            .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_LANGUAGE,
+                () -> WebUIDialogUtils.DEFAULT_SCRIPT_LANGUAGE)
+            .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_FILE_NAME,
+                () -> WebUIDialogUtils.DEFAULT_SCRIPT_FILE_NAME)
+            .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_MAIN_SCRIPT_CONFIG_KEY,
+                () -> RuleEngineSettings.RULES)
+            .addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_STATIC_COMPLETION_ITEMS,
+                () -> WebUIDialogUtils.getCompletionItems(workflowControl, RuleManipulatorProvider.getProvider(),
+                    true));
     }
 }
