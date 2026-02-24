@@ -44,7 +44,7 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Feb 2026 (GitHub Copilot): created
+ *   Feb 2026 (Ali Dursun): created
  */
 package org.knime.base.node.rules.engine;
 
