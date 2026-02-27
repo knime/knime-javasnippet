@@ -327,6 +327,10 @@ of UX: how can the user configure this in the modern UI? We need to keep that in
 - Save/load settings preserves all three script sections
 - Round-trip test: open → edit imports/fields/body → save → close → reopen
 
+### End to end Tests
+
+Use workflows with JARs and Bundles to see that they still work and are displayed correctly, such as https://hub.knime.com/knime/spaces/Examples/00_Components/Text%20Processing/Web%20Text%20Scraper~w0O5lTwWwOU7ojJ_/most-recent.
+
 ## Verification Instructions
 
 ### Critical Path Testing
