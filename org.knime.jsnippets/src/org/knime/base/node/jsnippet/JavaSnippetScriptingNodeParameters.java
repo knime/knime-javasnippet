@@ -49,13 +49,19 @@
 package org.knime.base.node.jsnippet;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.function.Supplier;
 
 import org.knime.base.node.jsnippet.type.ConverterUtil;
 import org.knime.base.node.jsnippet.type.TypeProvider;
 import org.knime.base.node.jsnippet.util.JavaFieldList;
+import org.knime.base.node.jsnippet.util.JavaFieldList.InColList;
+import org.knime.base.node.jsnippet.util.JavaFieldList.InVarList;
+import org.knime.base.node.jsnippet.util.JavaSnippetSettings;
 import org.knime.base.node.jsnippet.util.field.InCol;
 import org.knime.base.node.jsnippet.util.field.InVar;
+import org.knime.base.node.jsnippet.util.field.JavaField;
 import org.knime.base.node.jsnippet.util.field.OutCol;
 import org.knime.base.node.jsnippet.util.field.OutVar;
 import org.knime.core.data.DataType;
@@ -69,6 +75,7 @@ import org.knime.core.webui.node.dialog.defaultdialog.internal.persistence.Array
 import org.knime.core.webui.node.dialog.defaultdialog.internal.persistence.ElementFieldPersistor;
 import org.knime.core.webui.node.dialog.defaultdialog.internal.persistence.PersistArray;
 import org.knime.core.webui.node.dialog.defaultdialog.internal.persistence.PersistArrayElement;
+import org.knime.core.webui.node.dialog.defaultdialog.util.updates.StateComputationFailureException;
 import org.knime.node.parameters.Advanced;
 import org.knime.node.parameters.NodeParameters;
 import org.knime.node.parameters.NodeParametersInput;
@@ -77,6 +84,10 @@ import org.knime.node.parameters.array.ArrayWidget;
 import org.knime.node.parameters.layout.After;
 import org.knime.node.parameters.layout.Layout;
 import org.knime.node.parameters.layout.Section;
+import org.knime.node.parameters.updates.ParameterReference;
+import org.knime.node.parameters.updates.StateProvider;
+import org.knime.node.parameters.updates.ValueProvider;
+import org.knime.node.parameters.updates.ValueReference;
 import org.knime.node.parameters.widget.choices.ChoicesProvider;
 import org.knime.node.parameters.widget.choices.StringChoicesProvider;
 import org.knime.node.parameters.widget.choices.util.AllColumnsProvider;
@@ -102,48 +113,22 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
     // =================================================================================
     // Field Type Inner Classes
-    // These represent individual entries in the ArrayWidgets
+    // These represent individual entries in the ArrayWidgets.
     // =================================================================================
 
     /**
-     * Represents an input column field definition.
-     */
-    public static final class InputColumnField implements NodeParameters {
-        @Widget(title = "Column Name", description = "The input column to use")
-        @ChoicesProvider(AllColumnsProvider.class)
-        @PersistArrayElement(InputColumnNamePersistor.class)
-        String m_columnName = "";
-
-        @Widget(title = "Java Field Name", description = "Java variable name for this column")
-        @PersistArrayElement(InputColumnJavaNamePersistor.class)
-        String m_javaFieldName = "";
-
-        @Widget(title = "Java Type", description = "Java type for conversion")
-        @ChoicesProvider(InputColumnJavaTypeChoicesProvider.class)
-        @PersistArrayElement(InputColumnJavaTypePersistor.class)
-        String m_javaType = "";
-
-        // Hidden field: converter factory ID
-        @PersistArrayElement(InputColumnConverterFactoryPersistor.class)
-        String m_converterFactoryId = "";
-
-        // Hidden field: data type (KNIME column type)
-        @PersistArrayElement(InputColumnDataTypePersistor.class)
-        String m_dataTypeName = "";
-    }
-
-    /**
-     * Represents an input flow variable field definition.
+     * Represents an input flow variable field definition. As it represents an {@link InVar} which extends a
+     * {@link JavaField} we need to serialize all InVar fields.
      */
     public static final class InputFlowVariableField implements NodeParameters {
         @Widget(title = "Flow Variable", description = "The input flow variable to use")
         @ChoicesProvider(AllFlowVariablesProvider.class)
-        @PersistArrayElement(InputFlowVariableNamePersistor.class)
-        String m_variableName = "";
+        @PersistArrayElement(InputFlowVariableKnimeNamePersistor.class)
+        String m_knimeName = "";
 
         @Widget(title = "Java Field Name", description = "Java variable name for this flow variable")
         @PersistArrayElement(InputFlowVariableJavaNamePersistor.class)
-        String m_javaFieldName = "";
+        String m_javaName = "";
 
         @Widget(title = "Java Type", description = "Java type for conversion")
         @ChoicesProvider(FlowVariableJavaTypeChoicesProvider.class)
@@ -151,33 +136,32 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         String m_javaType = "";
 
         // Hidden field: flow variable type
-        @PersistArrayElement(InputFlowVariableTypePersistor.class)
-        String m_flowVarType = "";
+        @PersistArrayElement(InputFlowVariableKnimeTypePersistor.class)
+        String m_knimeType = "";
+
+        // bundle and converter factory ID are not used for variable fields, ignored here
     }
 
-    private static abstract class InVarListElementPersistor
-        implements ElementFieldPersistor<String, Integer, InputFlowVariableField> {
+    private static abstract class JavaListElementPersistor<F extends NodeParameters, FieldType extends JavaField>
+        implements ElementFieldPersistor<String, Integer, F> {
         private final String m_configKey;
 
-        InVarListElementPersistor(final String configKey) {
+        JavaListElementPersistor(final String configKey) {
             m_configKey = configKey;
         }
 
-        protected abstract String getFieldFromItem(final InVar inVar);
+        protected abstract String getFieldFromItem(final FieldType inVar);
+
+        protected abstract JavaFieldList<FieldType> createList();
 
         @Override
         public String load(final NodeSettingsRO settings, final Integer loadContext) throws InvalidSettingsException {
-            var inVarList = new JavaFieldList.InVarList();
+            var javaFieldList = createList();
             if (settings.containsKey(m_configKey)) {
-                inVarList.loadSettings(settings.getConfig(m_configKey));
-                return loadContext < inVarList.size() ? getFieldFromItem(inVarList.get(loadContext)) : null;
+                javaFieldList.loadSettings(settings.getConfig(m_configKey));
+                return loadContext < javaFieldList.size() ? getFieldFromItem(javaFieldList.get(loadContext)) : null;
             }
             return null;
-        }
-
-        @Override
-        public void save(final String param, final InputFlowVariableField saveDTO) {
-            saveDTO.m_variableName = param;
         }
 
         @Override
@@ -187,47 +171,80 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
     }
 
-    private static final class InputFlowVariableNamePersistor extends InVarListElementPersistor {
-        InputFlowVariableNamePersistor() {
-            super("variableName");
+    private static abstract class InVarListElementPersistor
+        extends JavaListElementPersistor<InputFlowVariableField, InVar> {
+
+        InVarListElementPersistor(final String configKey) {
+            super(configKey);
+        }
+
+        @Override
+        protected JavaFieldList<InVar> createList() {
+            return new InVarList();
+        }
+    }
+
+    private static final class InputFlowVariableKnimeNamePersistor extends InVarListElementPersistor {
+        InputFlowVariableKnimeNamePersistor() {
+            super(JavaField.KNIME_NAME);
         }
 
         @Override
         protected String getFieldFromItem(final InVar inVar) {
             return inVar.getKnimeName();
         }
+
+        @Override
+        public void save(final String param, final InputFlowVariableField saveDTO) {
+            saveDTO.m_knimeName = param;
+        }
     }
 
     private static final class InputFlowVariableJavaNamePersistor extends InVarListElementPersistor {
         InputFlowVariableJavaNamePersistor() {
-            super("javaFieldName");
+            super(JavaField.JAVA_NAME);
         }
 
         @Override
         protected String getFieldFromItem(final InVar inVar) {
             return inVar.getJavaName();
         }
+
+        @Override
+        public void save(final String param, final InputFlowVariableField saveDTO) {
+            saveDTO.m_javaName = param;
+        }
     }
 
     private static final class InputFlowVariableJavaTypePersistor extends InVarListElementPersistor {
         InputFlowVariableJavaTypePersistor() {
-            super("javaType");
+            super(JavaField.JAVA_TYPE);
         }
 
         @Override
         protected String getFieldFromItem(final InVar inVar) {
             return inVar.getJavaType() != null ? inVar.getJavaType().getName() : "";
         }
+
+        @Override
+        public void save(final String param, final InputFlowVariableField saveDTO) {
+            saveDTO.m_javaType = param;
+        }
     }
 
-    private static final class InputFlowVariableTypePersistor extends InVarListElementPersistor {
-        InputFlowVariableTypePersistor() {
-            super("inVars");
+    private static final class InputFlowVariableKnimeTypePersistor extends InVarListElementPersistor {
+        InputFlowVariableKnimeTypePersistor() {
+            super(JavaField.KNIME_TYPE);
         }
 
         @Override
         protected String getFieldFromItem(final InVar inVar) {
             return inVar.getFlowVarType() != null ? inVar.getFlowVarType().toString() : "";
+        }
+
+        @Override
+        public void save(final String param, final InputFlowVariableField saveDTO) {
+            saveDTO.m_knimeType = param;
         }
     }
 
@@ -247,103 +264,261 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         }
     }
 
-    private static abstract class InColListElementPersistor
-        implements ElementFieldPersistor<String, Integer, InputColumnField> {
-        private final String m_configKey;
+    // ---------------------------------------------------------------------------------
+    // Input Columns
+    // ---------------------------------------------------------------------------------
 
-        InColListElementPersistor(final String configKey) {
-            m_configKey = configKey;
+    /**
+     * Represents an input column field definition.
+     */
+    public static final class InputColumnField implements NodeParameters {
+        @Widget(title = "Column Name", description = "The input column to use")
+        @ChoicesProvider(AllColumnsProvider.class)
+        @ValueReference(SelectedKnimeNameRef.class)
+        @PersistArrayElement(InputColumnKnimeNamePersistor.class)
+        String m_knimeName = "";
+
+        static final class SelectedKnimeNameRef implements ParameterReference<String> {
         }
 
-        protected abstract String getFieldFromItem(final InCol inCol);
+        @Widget(title = "Java Field Name", description = "Java variable name for this column")
+        @PersistArrayElement(InputColumnJavaNamePersistor.class)
+        String m_javaName = "";
 
-        @Override
-        public String load(final NodeSettingsRO settings, final Integer loadContext) throws InvalidSettingsException {
-            var inColList = new JavaFieldList.InColList();
-            if (settings.containsKey(m_configKey)) {
-                inColList.loadSettings(settings.getConfig(m_configKey));
-                return loadContext < inColList.size() ? getFieldFromItem(inColList.get(loadContext)) : null;
+        @Widget(title = "Java Type", description = "Java type for conversion")
+        @ChoicesProvider(InputColumnJavaTypeChoicesProvider.class)
+        @PersistArrayElement(InputColumnJavaTypePersistor.class)
+        @ValueProvider(InputColumnJavaTypeProvider.class)
+        @ValueReference(SelectedJavaTypeRef.class)
+        String m_javaType = "";
+
+        static final class SelectedJavaTypeRef implements ParameterReference<String> {
+        }
+
+        // Hidden field: converter factory ID
+        @Widget(title = "CONVERTER (HIDDEN)", description = "") // TODO: REMOVE
+        @PersistArrayElement(InputColumnConverterFactoryPersistor.class)
+        @ValueProvider(ConverterIDValueProvider.class)
+        String m_converterFactoryId = "";
+
+        // Hidden field: data type (KNIME column type)
+        @PersistArrayElement(InputColumnKnimeTypePersistor.class)
+        String m_knimeType = "";
+
+        /**
+         * Provides Java type choices for input columns based on available converters for the selected column's data
+         * type.
+         */
+        static final class InputColumnJavaTypeChoicesProvider implements StringChoicesProvider {
+            private Supplier<String> m_selectedColumnSupplier;
+
+            @Override
+            public void init(final StateProviderInitializer initializer) {
+                initializer.computeBeforeOpenDialog();
+                m_selectedColumnSupplier = initializer.computeFromValueSupplier(SelectedKnimeNameRef.class);
             }
-            return null;
+
+            @Override
+            public List<String> choices(final NodeParametersInput context) {
+                var selectedColumnName = m_selectedColumnSupplier.get();
+                if (context.getInTableSpec(0).isEmpty()) {
+                    // No input spec -> no type selection
+                    return Collections.emptyList();
+                }
+
+                var tableSpec = context.getInTableSpec(0).get();
+                var selectedColumnSpec = tableSpec.getColumnSpec(selectedColumnName);
+
+                if (null == selectedColumnSpec) {
+                    // Selected column is not present in input table
+                    return Collections.emptyList();
+                }
+
+                return ConverterUtil.getFactoriesForSourceType(selectedColumnSpec.getType()).stream()
+                    .filter(factory -> JavaSnippet.getBuildPathFromCache(factory.getIdentifier()) != null) //
+                    .map(converter -> converter.getDestinationType().getSimpleName()).toList();
+            }
         }
 
-        @Override
-        public void save(final String param, final InputColumnField saveDTO) {
-            // Field saved by individual persistors
+        /**
+         * Provides the Converter Factory ID for the selected combination of input column type and java variable type
+         */
+        static final class InputColumnJavaTypeProvider implements StateProvider<String> {
+            private Supplier<String> m_selectedColumnSupplier;
+
+            @Override
+            public void init(final StateProviderInitializer initializer) {
+                initializer.computeBeforeOpenDialog();
+                m_selectedColumnSupplier = initializer.computeFromValueSupplier(SelectedKnimeNameRef.class);
+            }
+
+            @Override
+            public String computeState(final NodeParametersInput context) throws StateComputationFailureException {
+                String selectedColumnName = m_selectedColumnSupplier.get();
+
+                if (context.getInTableSpec(0).isEmpty()) {
+                    throw new StateComputationFailureException();
+                }
+
+                var tableSpec = context.getInTableSpec(0).get();
+                var selectedColumnSpec = tableSpec.getColumnSpec(selectedColumnName);
+
+                if (null == selectedColumnSpec) {
+                    throw new StateComputationFailureException();
+                }
+
+                var firstType = ConverterUtil.getFactoriesForSourceType(selectedColumnSpec.getType()).stream()
+                    .filter(factory -> JavaSnippet.getBuildPathFromCache(factory.getIdentifier()) != null) //
+                    .map(converter -> converter.getDestinationType().getSimpleName()) //
+                    .findFirst();
+
+                if (firstType.isEmpty()) {
+                    throw new StateComputationFailureException();
+                }
+
+                return firstType.get();
+            }
         }
 
-        @Override
-        public String[][] getConfigPaths() {
-            return new String[][]{{m_configKey}};
+        /**
+         * Provides the Converter Factory ID for the selected combination of input column type and java variable type
+         */
+        static final class ConverterIDValueProvider implements StateProvider<String> {
+            private Supplier<String> m_selectedColumnSupplier;
+
+            private Supplier<String> m_selectedJavaTypeSupplier;
+
+            @Override
+            public void init(final StateProviderInitializer initializer) {
+                initializer.computeBeforeOpenDialog();
+                m_selectedColumnSupplier = initializer.computeFromValueSupplier(SelectedKnimeNameRef.class);
+                m_selectedJavaTypeSupplier = initializer.computeFromValueSupplier(SelectedJavaTypeRef.class);
+            }
+
+            @Override
+            public String computeState(final NodeParametersInput context) throws StateComputationFailureException {
+                String selectedColumnName = m_selectedColumnSupplier.get();
+                String selectedJavaType = m_selectedJavaTypeSupplier.get();
+
+                if (context.getInTableSpec(0).isEmpty()) {
+                    throw new StateComputationFailureException();
+                }
+
+                var tableSpec = context.getInTableSpec(0).get();
+                var selectedColumnSpec = tableSpec.getColumnSpec(selectedColumnName);
+
+                if (null == selectedColumnSpec) {
+                    throw new StateComputationFailureException();
+                }
+
+                var converter = ConverterUtil.getFactoriesForSourceType(selectedColumnSpec.getType()).stream()
+                    .filter(factory -> JavaSnippet.getBuildPathFromCache(factory.getIdentifier()) != null) //
+                    .filter(factory -> factory.getDestinationType().getSimpleName().equals(selectedJavaType)) //
+                    .findFirst();
+
+                if (converter.isEmpty()) {
+                    throw new StateComputationFailureException();
+                }
+
+                return converter.get().getIdentifier();
+            }
         }
     }
 
-    private static final class InputColumnNamePersistor extends InColListElementPersistor {
-        InputColumnNamePersistor() {
-            super("inCols");
+    private static abstract class InColListElementPersistor extends JavaListElementPersistor<InputColumnField, InCol> {
+        InColListElementPersistor(final String configKey) {
+            super(configKey);
+        }
+
+        @Override
+        protected JavaFieldList<InCol> createList() {
+            return new InColList();
+        }
+    }
+
+    private static final class InputColumnKnimeNamePersistor extends InColListElementPersistor {
+        InputColumnKnimeNamePersistor() {
+            super(JavaField.KNIME_NAME);
         }
 
         @Override
         protected String getFieldFromItem(final InCol inCol) {
             return inCol.getKnimeName();
         }
+
+        @Override
+        public void save(final String param, final InputColumnField saveDTO) {
+            saveDTO.m_knimeName = param;
+        }
     }
 
     private static final class InputColumnJavaNamePersistor extends InColListElementPersistor {
         InputColumnJavaNamePersistor() {
-            super("inCols");
+            super(JavaField.JAVA_NAME);
         }
 
         @Override
         protected String getFieldFromItem(final InCol inCol) {
             return inCol.getJavaName();
         }
+
+        @Override
+        public void save(final String param, final InputColumnField saveDTO) {
+            saveDTO.m_javaName = param;
+        }
     }
 
     private static final class InputColumnJavaTypePersistor extends InColListElementPersistor {
         InputColumnJavaTypePersistor() {
-            super("inCols");
+            super(JavaField.JAVA_TYPE);
         }
 
         @Override
         protected String getFieldFromItem(final InCol inCol) {
             return inCol.getJavaType() != null ? inCol.getJavaType().getName() : "";
         }
+
+        @Override
+        public void save(final String param, final InputColumnField saveDTO) {
+            saveDTO.m_javaType = param;
+        }
     }
 
     private static final class InputColumnConverterFactoryPersistor extends InColListElementPersistor {
         InputColumnConverterFactoryPersistor() {
-            super("inCols");
+            super(JavaField.CONV_FACTORY);
         }
 
         @Override
         protected String getFieldFromItem(final InCol inCol) {
             return inCol.getConverterFactoryId();
         }
+
+        @Override
+        public void save(final String param, final InputColumnField saveDTO) {
+            saveDTO.m_converterFactoryId = param;
+        }
     }
 
-    private static final class InputColumnDataTypePersistor extends InColListElementPersistor {
-        InputColumnDataTypePersistor() {
-            super("inCols");
+    private static final class InputColumnKnimeTypePersistor extends InColListElementPersistor {
+        InputColumnKnimeTypePersistor() {
+            super(JavaField.KNIME_TYPE);
         }
 
         @Override
         protected String getFieldFromItem(final InCol inCol) {
             return inCol.getDataType() != null ? inCol.getDataType().toString() : "";
         }
-    }
 
-    /**
-     * Provides Java type choices for input columns based on available converters for the selected column's data type.
-     */
-    static final class InputColumnJavaTypeChoicesProvider implements StringChoicesProvider {
         @Override
-        public List<String> choices(final NodeParametersInput context) {
-            // Return all common Java types that converters might support
-            // In real usage, this would be dynamically determined based on the selected column
-            return List.of("String", "Integer", "Double", "Boolean");
+        public void save(final String param, final InputColumnField saveDTO) {
+            saveDTO.m_knimeType = param;
         }
     }
+
+    // ---------------------------------------------------------------------------------
+    // Output Columns
+    // ---------------------------------------------------------------------------------
 
     /**
      * Represents an output column field definition.
@@ -505,6 +680,10 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
             return types;
         }
     }
+
+    // ---------------------------------------------------------------------------------
+    // Output Variables
+    // ---------------------------------------------------------------------------------
 
     /**
      * Represents an output flow variable field definition.
@@ -672,7 +851,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
      * Persistor for input flow variables (InVarList <-> InputFlowVariableField[]).
      */
     public static final class InVarListPersistor implements ArrayPersistor<Integer, InputFlowVariableField> {
-        private static final String CONFIG_KEY = "inVars";
+        private static final String CONFIG_KEY = JavaSnippetSettings.IN_VARS;
 
         @Override
         public void save(final List<InputFlowVariableField> param, final NodeSettingsWO settings) {
@@ -680,14 +859,14 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
             if (param != null) {
                 for (InputFlowVariableField field : param) {
                     var inVar = new InVar();
-                    inVar.setKnimeName(field.m_variableName);
-                    inVar.setJavaName(field.m_javaFieldName);
+                    inVar.setKnimeName(field.m_knimeName);
+                    inVar.setJavaName(field.m_javaName);
 
                     // Set flow var type from string
-                    if (field.m_flowVarType != null && !field.m_flowVarType.isEmpty()) {
+                    if (field.m_knimeType != null && !field.m_knimeType.isEmpty()) {
                         try {
                             inVar.setFlowVarType(
-                                org.knime.core.node.workflow.FlowVariable.Type.valueOf(field.m_flowVarType));
+                                org.knime.core.node.workflow.FlowVariable.Type.valueOf(field.m_knimeType));
                         } catch (IllegalArgumentException e) {
                             // Fallback to STRING if parsing fails
                             inVar.setFlowVarType(org.knime.core.node.workflow.FlowVariable.Type.STRING);
@@ -736,7 +915,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
      * Persistor for output columns (OutColList <-> OutputColumnField[]).
      */
     public static final class OutColListPersistor implements ArrayPersistor<Integer, OutputColumnField> {
-        private static final String CONFIG_KEY = "outCols";
+        private static final String CONFIG_KEY = JavaSnippetSettings.OUT_COLS;
 
         @Override
         public void save(final List<OutputColumnField> param, final NodeSettingsWO settings) {
@@ -804,7 +983,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
      * Persistor for output flow variables (OutVarList <-> OutputFlowVariableField[]).
      */
     public static final class OutVarListPersistor implements ArrayPersistor<Integer, OutputFlowVariableField> {
-        private static final String CONFIG_KEY = "outVars";
+        private static final String CONFIG_KEY = JavaSnippetSettings.OUT_VARS;
 
         @Override
         public void save(final List<OutputFlowVariableField> param, final NodeSettingsWO settings) {
@@ -818,11 +997,10 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                     // Set flow var type from string
                     if (field.m_flowVarType != null && !field.m_flowVarType.isEmpty()) {
                         try {
-                            outVar.setFlowVarType(
-                                org.knime.core.node.workflow.FlowVariable.Type.valueOf(field.m_flowVarType));
+                            outVar.setFlowVarType(FlowVariable.Type.valueOf(field.m_flowVarType));
                         } catch (IllegalArgumentException e) {
                             // Fallback to STRING if parsing fails
-                            outVar.setFlowVarType(org.knime.core.node.workflow.FlowVariable.Type.STRING);
+                            outVar.setFlowVarType(FlowVariable.Type.STRING);
                         }
                     }
 
@@ -868,7 +1046,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
      * Persistor for input columns (InColList <-> InputColumnField[]).
      */
     public static final class InColListPersistor implements ArrayPersistor<Integer, InputColumnField> {
-        private static final String CONFIG_KEY = "inCols";
+        private static final String CONFIG_KEY = JavaSnippetSettings.IN_COLS;
 
         @Override
         public void save(final List<InputColumnField> param, final NodeSettingsWO settings) {
@@ -876,15 +1054,15 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
             if (param != null) {
                 for (InputColumnField field : param) {
                     var inCol = new InCol();
-                    inCol.setKnimeName(field.m_columnName);
-                    inCol.setJavaName(field.m_javaFieldName);
+                    inCol.setKnimeName(field.m_knimeName);
+                    inCol.setJavaName(field.m_javaName);
 
                     // Set converter factory if both data type and factory ID are available
-                    if (field.m_dataTypeName != null && !field.m_dataTypeName.isEmpty()
-                        && field.m_converterFactoryId != null && !field.m_converterFactoryId.isEmpty()) {
+                    if (field.m_knimeType != null && !field.m_knimeType.isEmpty() && field.m_converterFactoryId != null
+                        && !field.m_converterFactoryId.isEmpty()) {
                         try {
                             // Parse the data type from string
-                            var dataCellClass = DataTypeRegistry.getInstance().getCellClass(field.m_dataTypeName);
+                            var dataCellClass = DataTypeRegistry.getInstance().getCellClass(field.m_knimeType);
                             if (dataCellClass.isPresent()) {
                                 DataType dataType = DataType.getType(dataCellClass.get());
 
@@ -932,7 +1110,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
      * Persistor for JAR files (String[] <-> JarFileEntry[]).
      */
     public static final class JarFilesPersistor implements ArrayPersistor<Integer, JarFileEntry> {
-        private static final String CONFIG_KEY = "jarFiles";
+        private static final String CONFIG_KEY = JavaSnippetSettings.JAR_FILES;
 
         @Override
         public void save(final List<JarFileEntry> param, final NodeSettingsWO settings) {
@@ -965,7 +1143,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
      * Persistor for bundles (String[] <-> BundleEntry[]).
      */
     public static final class BundlesPersistor implements ArrayPersistor<Integer, BundleEntry> {
-        private static final String CONFIG_KEY = "bundles";
+        private static final String CONFIG_KEY = JavaSnippetSettings.BUNDLES;
 
         @Override
         public void save(final List<BundleEntry> param, final NodeSettingsWO settings) {
@@ -998,14 +1176,14 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     // Input Fields Section
     // =================================================================================
 
+    @Section(title = "Input Columns")
+    interface InputColumns {
+    }
 
-    @Section(title="Input Columns")
-    interface InputColumns {}
-
-    @Section(title="Input Variables")
+    @Section(title = "Input Variables")
     @After(InputColumns.class)
-    interface InputVariables {}
-
+    interface InputVariables {
+    }
 
     @Widget(title = "Input Columns", description = "Define which input columns to use and their Java field names")
     @Layout(InputColumns.class)
@@ -1024,13 +1202,15 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     // Output Fields Section
     // =================================================================================
 
-    @Section(title="Output Columns")
+    @Section(title = "Output Columns")
     @After(InputVariables.class)
-    interface OutputColumns {}
+    interface OutputColumns {
+    }
 
-    @Section(title="Output Variables")
+    @Section(title = "Output Variables")
     @After(OutputColumns.class)
-    interface OutputVariables {}
+    interface OutputVariables {
+    }
 
     @Widget(title = "Output Columns", description = "Define output columns and their Java source fields")
     @Layout(OutputColumns.class)
@@ -1052,11 +1232,13 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     @After(OutputVariables.class)
     @Advanced
     interface LibrariesAndBundlesSection {
-        @Section(title="JAR Files")
-        interface JARFiles {}
+        @Section(title = "JAR Files")
+        interface JARFiles {
+        }
 
-        @Section(title="OSGi Bundles")
-        interface OSGIBundles {}
+        @Section(title = "OSGi Bundles")
+        interface OSGIBundles {
+        }
     }
 
     @Widget(title = "JAR Files", description = "External JAR files to include on the classpath")

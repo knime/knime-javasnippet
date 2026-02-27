@@ -93,22 +93,22 @@ public abstract class JavaField {
     }
 
     /* Config Key for KNIME DataType or FlowVariable.Type */
-    static final String KNIME_TYPE = "Type";
+    public static final String KNIME_TYPE = "Type";
 
     /* Config Key for the name of the column or flow var */
-    static final String KNIME_NAME = "Name";
+    public static final String KNIME_NAME = "Name";
 
     /* Config Key for java field name */
-    static final String JAVA_NAME = "JavaName";
+    public static final String JAVA_NAME = "JavaName";
 
     /* Config Key for java type */
-    static final String JAVA_TYPE = "JavaType";
+    public static final String JAVA_TYPE = "JavaType";
 
     /* Config Key for the bundle which provided the java type */
-    static final String JAVA_TYPE_PROVIDER = "JavaTypeProviderBundle";
+    public static final String JAVA_TYPE_PROVIDER = "JavaTypeProviderBundle";
 
     /* Config Key for the converter factory id */
-    static final String CONV_FACTORY = "ConverterFactory";
+    public static final String CONV_FACTORY = "ConverterFactory";
 
     /**
      * The name of the KNIME flow variable or column
