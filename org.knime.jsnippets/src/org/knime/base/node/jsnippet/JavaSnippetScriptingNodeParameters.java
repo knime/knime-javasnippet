@@ -588,7 +588,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
         @Override
         protected String getFieldFromItem(final InCol inCol) {
-            return inCol.getJavaType() != null ? inCol.getJavaType().getName() : "";
+            return inCol.getJavaType() != null ? inCol.getJavaType().getSimpleName() : "";
         }
 
         @Override
@@ -727,7 +727,11 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
         @Override
         protected String getFieldFromItem(final OutCol outCol) {
-            return outCol.getJavaType() != null ? outCol.getJavaType().getName() : "";
+            // Convert from fully qualified class name (persisted) to simple name (UI)
+            if (outCol.getJavaType() != null) {
+                return outCol.getJavaType().getSimpleName();
+            }
+            return "";
         }
     }
 
@@ -1025,6 +1029,30 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     }
 
     /**
+     * Resolves a simple Java type name (e.g. "String") to the corresponding Class by searching
+     * all known converter source types.
+     */
+    private static Class<?> resolveJavaTypeBySimpleName(final String simpleName) {
+        // Check all destination types from converters for a matching simple name
+        for (final DataType destType : ConverterUtil.getAllDestinationDataTypes()) {
+            for (var factory : ConverterUtil.getFactoriesForDestinationType(destType)) {
+                if (factory.getSourceType().getSimpleName().equals(simpleName)) {
+                    return factory.getSourceType();
+                }
+            }
+        }
+        // Fallback: try common packages
+        for (String pkg : new String[]{"java.lang.", "java.util.", ""}) {
+            try {
+                return Class.forName(pkg + simpleName);
+            } catch (ClassNotFoundException e) {
+                // try next
+            }
+        }
+        return String.class;
+    }
+
+    /**
      * Persistor for output columns (OutColList <-> OutputColumnField[]).
      */
     public static final class OutColListPersistor implements ArrayPersistor<Integer, OutputColumnField> {
@@ -1040,28 +1068,22 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                     outCol.setJavaName(field.m_javaFieldName);
                     outCol.setReplaceExisting(field.m_replaceExisting);
 
-                    // Set java type from String class name
+                    // Resolve simple name back to fully qualified class
                     if (field.m_javaType != null && !field.m_javaType.isEmpty()) {
-                        try {
-                            Class<?> javaClass = Class.forName("java.lang." + field.m_javaType);
+                        Class<?> javaClass = resolveJavaTypeBySimpleName(field.m_javaType);
+                        outCol.setJavaType(javaClass);
 
-                            // Try to find a converter factory for this type
-                            if (field.m_converterFactoryId != null && !field.m_converterFactoryId.isEmpty()) {
-                                var factory =
-                                    ConverterUtil.getJavaToDataCellConverterFactory(field.m_converterFactoryId);
-                                if (factory.isPresent()) {
-                                    outCol.setConverterFactory(factory.get());
-                                }
-                            } else {
-                                // Try to infer data type - use String as fallback
-                                DataType dataType = StringCell.TYPE;
-                                var factory = ConverterUtil.getConverterFactory(javaClass, dataType);
-                                if (factory.isPresent()) {
-                                    outCol.setConverterFactory(factory.get());
-                                }
+                        // Set converter factory and data type
+                        if (field.m_converterFactoryId != null && !field.m_converterFactoryId.isEmpty()) {
+                            outCol.setConverterFactory(field.m_converterFactoryId, javaClass);
+                        } else {
+                            // Find the first matching converter factory
+                            var factory = ConverterUtil.getFactoriesForSourceType(javaClass).stream()
+                                .filter(f -> JavaSnippet.getBuildPathFromCache(f.getIdentifier()) != null)
+                                .findFirst();
+                            if (factory.isPresent()) {
+                                outCol.setConverterFactory(factory.get().getIdentifier(), javaClass);
                             }
-                        } catch (ClassNotFoundException e) {
-                            // Fallback - leave unset
                         }
                     }
 
