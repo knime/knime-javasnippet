@@ -51,7 +51,9 @@ package org.knime.base.node.jsnippet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import org.knime.base.node.jsnippet.type.ConverterUtil;
@@ -68,7 +70,6 @@ import org.knime.base.node.jsnippet.util.field.OutCol;
 import org.knime.base.node.jsnippet.util.field.OutVar;
 import org.knime.core.data.DataType;
 import org.knime.core.data.DataTypeRegistry;
-import org.knime.core.data.def.StringCell;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
@@ -336,7 +337,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
         @Override
         protected String getFieldFromItem(final InVar inVar) {
-            return inVar.getJavaType() != null ? inVar.getJavaType().getName() : "";
+            return inVar.getJavaType() != null ? inVar.getJavaType().getSimpleName() : "";
         }
 
         @Override
@@ -367,13 +368,15 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     static final class FlowVariableJavaTypeChoicesProvider implements StringChoicesProvider {
         @Override
         public List<String> choices(final NodeParametersInput context) {
-            // Return all common Java types that converters might support
             TypeProvider typeProvider = TypeProvider.getDefault();
-            List<String> types = new ArrayList<>();
+            Set<String> types = new LinkedHashSet<>();
             for (FlowVariable.Type type : typeProvider.getTypes()) {
-                types.add(type.name());
+                TypeConverter converter = typeProvider.getTypeConverter(type);
+                for (Class<?> javaType : converter.canProvideJavaTypes()) {
+                    types.add(javaType.getSimpleName());
+                }
             }
-            return types;
+            return new ArrayList<>(types);
         }
     }
 
@@ -820,7 +823,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         String m_javaType = "";
 
         // Hidden field: flow variable type
-        @PersistArrayElement(OutputFlowVariableTypePersistor.class)
+        @PersistArrayElement(OutputFlowVariableKnimeTypePersistor.class)
         String m_flowVarType = "";
     }
 
@@ -884,18 +887,23 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
         @Override
         protected String getFieldFromItem(final OutVar outVar) {
-            return outVar.getJavaType() != null ? outVar.getJavaType().getName() : "";
+            return outVar.getJavaType() != null ? outVar.getJavaType().getSimpleName() : "";
         }
     }
 
-    private static final class OutputFlowVariableTypePersistor extends OutVarListElementPersistor {
-        OutputFlowVariableTypePersistor() {
+    private static final class OutputFlowVariableKnimeTypePersistor extends OutVarListElementPersistor {
+        OutputFlowVariableKnimeTypePersistor() {
             super("outVars");
         }
 
         @Override
         protected String getFieldFromItem(final OutVar outVar) {
             return outVar.getFlowVarType() != null ? outVar.getFlowVarType().toString() : "";
+        }
+
+        @Override
+        public void save(final String param, final OutputFlowVariableField saveDTO) {
+            saveDTO.m_flowVarType = param;
         }
     }
 
@@ -990,16 +998,10 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                         }
                     }
 
-                    // Set java type from String class name
-                    if (field.m_javaType != null && !field.m_javaType.isEmpty()) {
-                        try {
-                            Class<?> javaClass = Class.forName("java.lang." + field.m_javaType);
-                            inVar.setJavaType(javaClass);
-                        } catch (ClassNotFoundException e) {
-                            // Fallback to String if class not found
-                            inVar.setJavaType(String.class);
-                        }
-                    }
+                    // Always set java type (required by JavaField.saveSettings)
+                    Class<?> inVarJavaClass = (field.m_javaType != null && !field.m_javaType.isEmpty())
+                        ? resolveJavaTypeBySimpleName(field.m_javaType) : String.class;
+                    inVar.setJavaType(inVarJavaClass);
 
                     inVarList.add(inVar);
                 }
@@ -1029,8 +1031,8 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     }
 
     /**
-     * Resolves a simple Java type name (e.g. "String") to the corresponding Class by searching
-     * all known converter source types.
+     * Resolves a simple Java type name (e.g. "String") to the corresponding Class by searching all known converter
+     * source types.
      */
     private static Class<?> resolveJavaTypeBySimpleName(final String simpleName) {
         // Check all destination types from converters for a matching simple name
@@ -1068,23 +1070,19 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                     outCol.setJavaName(field.m_javaFieldName);
                     outCol.setReplaceExisting(field.m_replaceExisting);
 
-                    // Resolve simple name back to fully qualified class
+                    // Resolve simple name back to fully qualified class and set it
                     if (field.m_javaType != null && !field.m_javaType.isEmpty()) {
                         Class<?> javaClass = resolveJavaTypeBySimpleName(field.m_javaType);
                         outCol.setJavaType(javaClass);
+                    } else {
+                        // Default to String to avoid NPE
+                        outCol.setJavaType(String.class);
+                    }
 
-                        // Set converter factory and data type
-                        if (field.m_converterFactoryId != null && !field.m_converterFactoryId.isEmpty()) {
-                            outCol.setConverterFactory(field.m_converterFactoryId, javaClass);
-                        } else {
-                            // Find the first matching converter factory
-                            var factory = ConverterUtil.getFactoriesForSourceType(javaClass).stream()
-                                .filter(f -> JavaSnippet.getBuildPathFromCache(f.getIdentifier()) != null)
-                                .findFirst();
-                            if (factory.isPresent()) {
-                                outCol.setConverterFactory(factory.get().getIdentifier(), javaClass);
-                            }
-                        }
+                    // Set converter factory
+                    if (field.m_converterFactoryId != null && !field.m_converterFactoryId.isEmpty()) {
+                        var factoryOpt = ConverterUtil.getJavaToDataCellConverterFactory(field.m_converterFactoryId);
+                        factoryOpt.ifPresent(outCol::setConverterFactory);
                     }
 
                     outColList.add(outCol);
@@ -1120,6 +1118,17 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     public static final class OutVarListPersistor implements ArrayPersistor<Integer, OutputFlowVariableField> {
         private static final String CONFIG_KEY = JavaSnippetSettings.OUT_VARS;
 
+        private static FlowVariable.Type deriveFlowVarTypeFromJavaType(final String javaTypeSimpleName) {
+            if (javaTypeSimpleName == null) {
+                return FlowVariable.Type.STRING;
+            }
+            return switch (javaTypeSimpleName) {
+                case "Integer", "int" -> FlowVariable.Type.INTEGER;
+                case "Double", "double" -> FlowVariable.Type.DOUBLE;
+                default -> FlowVariable.Type.STRING;
+            };
+        }
+
         @Override
         public void save(final List<OutputFlowVariableField> param, final NodeSettingsWO settings) {
             var outVarList = new JavaFieldList.OutVarList();
@@ -1129,27 +1138,26 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                     outVar.setKnimeName(field.m_variableName);
                     outVar.setJavaName(field.m_javaFieldName);
 
-                    // Set flow var type from string
+                    // Resolve simple name back to fully qualified class
+                    if (field.m_javaType != null && !field.m_javaType.isEmpty()) {
+                        Class<?> javaClass = resolveJavaTypeBySimpleName(field.m_javaType);
+                        outVar.setJavaType(javaClass);
+                    } else {
+                        outVar.setJavaType(String.class);
+                    }
+
+                    // Set flow variable type - must be set before saveSettings()
                     if (field.m_flowVarType != null && !field.m_flowVarType.isEmpty()) {
                         try {
                             outVar.setFlowVarType(FlowVariable.Type.valueOf(field.m_flowVarType));
                         } catch (IllegalArgumentException e) {
-                            // Fallback to STRING if parsing fails
-                            outVar.setFlowVarType(FlowVariable.Type.STRING);
+                            outVar.setFlowVarType(deriveFlowVarTypeFromJavaType(field.m_javaType));
                         }
+                    } else {
+                        outVar.setFlowVarType(deriveFlowVarTypeFromJavaType(field.m_javaType));
                     }
 
-                    // Set java type from String class name
-                    if (field.m_javaType != null && !field.m_javaType.isEmpty()) {
-                        try {
-                            Class<?> javaClass = Class.forName("java.lang." + field.m_javaType);
-                            outVar.setJavaType(javaClass);
-                        } catch (ClassNotFoundException e) {
-                            // Fallback to String if class not found
-                            outVar.setJavaType(String.class);
-                        }
-                    }
-
+                    outVar.setReplaceExisting(false);
                     outVarList.add(outVar);
                 }
             }
@@ -1192,16 +1200,18 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                     inCol.setKnimeName(field.m_knimeName);
                     inCol.setJavaName(field.m_javaName);
 
-                    // Set converter factory if both data type and factory ID are available
+                    // Always set java type as baseline (required by JavaField.saveSettings)
+                    Class<?> inJavaClass = (field.m_javaType != null && !field.m_javaType.isEmpty())
+                        ? resolveJavaTypeBySimpleName(field.m_javaType) : String.class;
+                    inCol.setJavaType(inJavaClass);
+
+                    // Additionally set converter factory if KNIME type and factory ID are both available
                     if (field.m_knimeType != null && !field.m_knimeType.isEmpty() && field.m_converterFactoryId != null
                         && !field.m_converterFactoryId.isEmpty()) {
                         try {
-                            // Parse the data type from string
                             var dataCellClass = DataTypeRegistry.getInstance().getCellClass(field.m_knimeType);
                             if (dataCellClass.isPresent()) {
                                 DataType dataType = DataType.getType(dataCellClass.get());
-
-                                // Get the converter factory
                                 var factory =
                                     ConverterUtil.getDataCellToJavaConverterFactory(field.m_converterFactoryId);
                                 if (factory.isPresent()) {
@@ -1209,7 +1219,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                                 }
                             }
                         } catch (Exception e) {
-                            // Leave unset if data type or factory cannot be loaded
+                            // Leave java type set above as fallback
                         }
                     }
 
