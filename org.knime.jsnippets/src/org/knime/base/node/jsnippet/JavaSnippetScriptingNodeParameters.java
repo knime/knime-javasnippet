@@ -49,12 +49,14 @@
 package org.knime.base.node.jsnippet;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
 import org.knime.base.node.jsnippet.type.ConverterUtil;
 import org.knime.base.node.jsnippet.type.TypeProvider;
+import org.knime.base.node.jsnippet.type.flowvar.TypeConverter;
 import org.knime.base.node.jsnippet.util.JavaFieldList;
 import org.knime.base.node.jsnippet.util.JavaFieldList.InColList;
 import org.knime.base.node.jsnippet.util.JavaFieldList.InVarList;
@@ -71,6 +73,7 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.webui.node.dialog.defaultdialog.internal.persistence.ArrayPersistor;
 import org.knime.core.webui.node.dialog.defaultdialog.internal.persistence.ElementFieldPersistor;
 import org.knime.core.webui.node.dialog.defaultdialog.internal.persistence.PersistArray;
@@ -123,23 +126,133 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     public static final class InputFlowVariableField implements NodeParameters {
         @Widget(title = "Flow Variable", description = "The input flow variable to use")
         @ChoicesProvider(AllFlowVariablesProvider.class)
+        @ValueReference(KnimeNameRef.class)
         @PersistArrayElement(InputFlowVariableKnimeNamePersistor.class)
         String m_knimeName = "";
+
+        static final class KnimeNameRef implements ParameterReference<String> {
+        }
 
         @Widget(title = "Java Field Name", description = "Java variable name for this flow variable")
         @PersistArrayElement(InputFlowVariableJavaNamePersistor.class)
         String m_javaName = "";
 
         @Widget(title = "Java Type", description = "Java type for conversion")
-        @ChoicesProvider(FlowVariableJavaTypeChoicesProvider.class)
+        @ChoicesProvider(InputFlowVariableJavaTypeChoicesProvider.class)
         @PersistArrayElement(InputFlowVariableJavaTypePersistor.class)
+        @ValueProvider(InputFlowVariableJavaTypeProvider.class)
         String m_javaType = "";
 
-        // Hidden field: flow variable type
+        // TODO Hidden field: flow variable type
+        @Widget(title = "KNIME TYPE (HIDDEN)", description = "")
         @PersistArrayElement(InputFlowVariableKnimeTypePersistor.class)
+        @ValueProvider(InputFlowVariableKnimeTypeProvider.class)
+        @ValueReference(KnimeTypeRef.class)
         String m_knimeType = "";
 
+        static final class KnimeTypeRef implements ParameterReference<String> {
+        }
+
         // bundle and converter factory ID are not used for variable fields, ignored here
+
+        /**
+         * Provides the Flow Variable Type name for the selected flow variable
+         */
+        static final class InputFlowVariableKnimeTypeProvider implements StateProvider<String> {
+            private Supplier<String> m_knimeNameProvider;
+
+            @Override
+            public void init(final StateProviderInitializer initializer) {
+                initializer.computeBeforeOpenDialog();
+                m_knimeNameProvider = initializer.computeFromValueSupplier(KnimeNameRef.class);
+            }
+
+            @Override
+            public String computeState(final NodeParametersInput context) throws StateComputationFailureException {
+                String selectedVariableName = m_knimeNameProvider.get();
+
+                var flowVariables =
+                    context.getAvailableInputFlowVariables(VariableTypeRegistry.getInstance().getAllTypes());
+
+                if (flowVariables.isEmpty() || !flowVariables.containsKey(selectedVariableName)) {
+                    throw new StateComputationFailureException();
+                }
+
+                var flowVariable = flowVariables.get(selectedVariableName);
+                TypeConverter typeConversion = TypeProvider.getDefault().getTypeConverter(flowVariable.getType());
+                return typeConversion.getPreferredJavaType().getSimpleName();
+            }
+        }
+
+        /**
+         * Provides the Flow Variable converter options for the selected combination of flow variable and its KNIME type
+         */
+        static final class InputFlowVariableJavaTypeProvider implements StateProvider<String> {
+            private Supplier<String> m_knimeNameProvider;
+
+            private Supplier<String> m_knimeTypeProvider;
+
+            @Override
+            public void init(final StateProviderInitializer initializer) {
+                initializer.computeBeforeOpenDialog();
+                m_knimeNameProvider = initializer.computeFromValueSupplier(KnimeNameRef.class);
+                m_knimeTypeProvider = initializer.computeFromValueSupplier(KnimeTypeRef.class);
+            }
+
+            @Override
+            public String computeState(final NodeParametersInput context) throws StateComputationFailureException {
+                String selectedVariableName = m_knimeNameProvider.get();
+                String selectedVariableType = m_knimeTypeProvider.get();
+
+                var flowVariables =
+                    context.getAvailableInputFlowVariables(VariableTypeRegistry.getInstance().getAllTypes());
+
+                if (flowVariables.isEmpty() || !flowVariables.containsKey(selectedVariableName)) {
+                    throw new StateComputationFailureException();
+                }
+
+                var flowVariable = flowVariables.get(selectedVariableName);
+                TypeConverter typeConversion = TypeProvider.getDefault().getTypeConverter(flowVariable.getType());
+                var matchingType = Arrays.stream(typeConversion.canProvideJavaTypes())
+                    .filter(type -> type.getSimpleName().equals(selectedVariableType)).findFirst();
+
+                if (matchingType.isEmpty()) {
+                    throw new StateComputationFailureException();
+                }
+
+                return matchingType.get().getSimpleName();
+            }
+        }
+
+        /**
+         * Provides Java type choices for flow variables.
+         */
+        static final class InputFlowVariableJavaTypeChoicesProvider implements StringChoicesProvider {
+            private Supplier<String> m_knimeNameProvider;
+
+            @Override
+            public void init(final StateProviderInitializer initializer) {
+                initializer.computeBeforeOpenDialog();
+                m_knimeNameProvider = initializer.computeFromValueSupplier(KnimeNameRef.class);
+            }
+
+            @Override
+            public List<String> choices(final NodeParametersInput context) {
+                String selectedVariableName = m_knimeNameProvider.get();
+
+                var flowVariables =
+                    context.getAvailableInputFlowVariables(VariableTypeRegistry.getInstance().getAllTypes());
+
+                if (flowVariables.isEmpty() || !flowVariables.containsKey(selectedVariableName)) {
+                    return Collections.emptyList();
+                }
+
+                var flowVariable = flowVariables.get(selectedVariableName);
+                TypeConverter typeConversion = TypeProvider.getDefault().getTypeConverter(flowVariable.getType());
+                // TODO: is there ever more than one option? I couldn't find a type yet where that happens
+                return Arrays.stream(typeConversion.canProvideJavaTypes()).map(clazz -> clazz.getSimpleName()).toList();
+            }
+        }
     }
 
     private static abstract class JavaListElementPersistor<F extends NodeParameters, FieldType extends JavaField>
