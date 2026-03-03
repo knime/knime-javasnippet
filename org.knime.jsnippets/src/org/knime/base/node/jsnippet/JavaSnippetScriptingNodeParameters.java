@@ -299,7 +299,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
     private static final class InputFlowVariableKnimeNamePersistor extends InVarListElementPersistor {
         InputFlowVariableKnimeNamePersistor() {
-            super(JavaField.KNIME_NAME);
+            super(JavaSnippetSettings.IN_VARS);
         }
 
         @Override
@@ -315,7 +315,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
     private static final class InputFlowVariableJavaNamePersistor extends InVarListElementPersistor {
         InputFlowVariableJavaNamePersistor() {
-            super(JavaField.JAVA_NAME);
+            super(JavaSnippetSettings.IN_VARS);
         }
 
         @Override
@@ -331,7 +331,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
     private static final class InputFlowVariableJavaTypePersistor extends InVarListElementPersistor {
         InputFlowVariableJavaTypePersistor() {
-            super(JavaField.JAVA_TYPE);
+            super(JavaSnippetSettings.IN_VARS);
         }
 
         @Override
@@ -347,7 +347,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
     private static final class InputFlowVariableKnimeTypePersistor extends InVarListElementPersistor {
         InputFlowVariableKnimeTypePersistor() {
-            super(JavaField.KNIME_TYPE);
+            super(JavaSnippetSettings.IN_VARS);
         }
 
         @Override
@@ -551,7 +551,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
     private static final class InputColumnKnimeNamePersistor extends InColListElementPersistor {
         InputColumnKnimeNamePersistor() {
-            super(JavaField.KNIME_NAME);
+            super(JavaSnippetSettings.IN_COLS);
         }
 
         @Override
@@ -567,7 +567,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
     private static final class InputColumnJavaNamePersistor extends InColListElementPersistor {
         InputColumnJavaNamePersistor() {
-            super(JavaField.JAVA_NAME);
+            super(JavaSnippetSettings.IN_COLS);
         }
 
         @Override
@@ -583,7 +583,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
     private static final class InputColumnJavaTypePersistor extends InColListElementPersistor {
         InputColumnJavaTypePersistor() {
-            super(JavaField.JAVA_TYPE);
+            super(JavaSnippetSettings.IN_COLS);
         }
 
         @Override
@@ -599,7 +599,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
     private static final class InputColumnConverterFactoryPersistor extends InColListElementPersistor {
         InputColumnConverterFactoryPersistor() {
-            super(JavaField.CONV_FACTORY);
+            super(JavaSnippetSettings.IN_COLS);
         }
 
         @Override
@@ -615,7 +615,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
     private static final class InputColumnKnimeTypePersistor extends InColListElementPersistor {
         InputColumnKnimeTypePersistor() {
-            super(JavaField.KNIME_TYPE);
+            super(JavaSnippetSettings.IN_COLS);
         }
 
         @Override
