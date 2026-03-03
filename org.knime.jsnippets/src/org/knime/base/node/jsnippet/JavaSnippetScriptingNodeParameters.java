@@ -53,6 +53,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -70,6 +71,7 @@ import org.knime.base.node.jsnippet.util.field.OutCol;
 import org.knime.base.node.jsnippet.util.field.OutVar;
 import org.knime.core.data.DataType;
 import org.knime.core.data.DataTypeRegistry;
+import org.knime.core.data.convert.datacell.JavaToDataCellConverterFactory;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
@@ -88,6 +90,7 @@ import org.knime.node.parameters.array.ArrayWidget;
 import org.knime.node.parameters.layout.After;
 import org.knime.node.parameters.layout.Layout;
 import org.knime.node.parameters.layout.Section;
+import org.knime.node.parameters.persistence.Persist;
 import org.knime.node.parameters.updates.ParameterReference;
 import org.knime.node.parameters.updates.StateProvider;
 import org.knime.node.parameters.updates.ValueProvider;
@@ -114,6 +117,15 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     String m_scriptFields = "";
 
     String m_scriptBody = "";
+
+    @Persist(configKey = "version")
+    String m_version = JavaSnippet.VERSION_1_X;
+
+    @Persist(configKey = "templateUUID")
+    String m_templateUUID = null;
+
+    @Persist(configKey = "runOnExecute")
+    boolean m_runOnExecute = false;
 
     // =================================================================================
     // Field Type Inner Classes
@@ -623,7 +635,10 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
         @Override
         protected String getFieldFromItem(final InCol inCol) {
-            return inCol.getDataType() != null ? inCol.getDataType().toString() : "";
+            if (inCol.getDataType() == null || inCol.getDataType().getCellClass() == null) {
+                return "";
+            }
+            return inCol.getDataType().getCellClass().getName();
         }
 
         @Override
@@ -778,7 +793,10 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
         @Override
         protected String getFieldFromItem(final OutCol outCol) {
-            return outCol.getDataType() != null ? outCol.getDataType().toString() : "";
+            if (outCol.getDataType() == null || outCol.getDataType().getCellClass() == null) {
+                return "";
+            }
+            return outCol.getDataType().getCellClass().getName();
         }
     }
 
@@ -1070,19 +1088,27 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                     outCol.setJavaName(field.m_javaFieldName);
                     outCol.setReplaceExisting(field.m_replaceExisting);
 
-                    // Resolve simple name back to fully qualified class and set it
-                    if (field.m_javaType != null && !field.m_javaType.isEmpty()) {
-                        Class<?> javaClass = resolveJavaTypeBySimpleName(field.m_javaType);
-                        outCol.setJavaType(javaClass);
-                    } else {
-                        // Default to String to avoid NPE
-                        outCol.setJavaType(String.class);
-                    }
+                    // Resolve converter factory - must be set so that m_knimeType (DataType) is never null
+                    // (JavaColumnField.saveSettings writes m_knimeType, and OutCol.loadSettings reads it)
+                    Class<?> outJavaClass = (field.m_javaType != null && !field.m_javaType.isEmpty())
+                        ? resolveJavaTypeBySimpleName(field.m_javaType) : String.class;
 
-                    // Set converter factory
+                    // Try the stored converter factory ID first
+                    Optional<JavaToDataCellConverterFactory<?>> outFactory = Optional.empty();
                     if (field.m_converterFactoryId != null && !field.m_converterFactoryId.isEmpty()) {
-                        var factoryOpt = ConverterUtil.getJavaToDataCellConverterFactory(field.m_converterFactoryId);
-                        factoryOpt.ifPresent(outCol::setConverterFactory);
+                        outFactory = ConverterUtil.getJavaToDataCellConverterFactory(field.m_converterFactoryId);
+                    }
+                    // Fall back to any factory matching the java class (ensures m_knimeType is set)
+                    if (outFactory.isEmpty()) {
+                        outFactory = ConverterUtil.getAllJavaToDataCellConverterFactories().stream()
+                            .filter(f -> f.getSourceType().equals(outJavaClass))
+                            .findFirst();
+                    }
+                    if (outFactory.isPresent()) {
+                        outCol.setConverterFactory(outFactory.get());
+                    } else {
+                        // Last resort: set java type directly; m_knimeType stays null but we have no factory
+                        outCol.setJavaType(outJavaClass);
                     }
 
                     outColList.add(outCol);
