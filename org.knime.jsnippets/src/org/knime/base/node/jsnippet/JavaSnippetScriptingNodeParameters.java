@@ -96,6 +96,7 @@ import org.knime.node.parameters.updates.StateProvider;
 import org.knime.node.parameters.updates.ValueProvider;
 import org.knime.node.parameters.updates.ValueReference;
 import org.knime.node.parameters.widget.choices.ChoicesProvider;
+import org.knime.node.parameters.widget.choices.DataTypeChoicesProvider;
 import org.knime.node.parameters.widget.choices.StringChoicesProvider;
 import org.knime.node.parameters.widget.choices.util.AllColumnsProvider;
 import org.knime.node.parameters.widget.choices.util.AllFlowVariablesProvider;
@@ -669,10 +670,28 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         @PersistArrayElement(OutputColumnJavaNamePersistor.class)
         String m_javaFieldName = "";
 
-        @Widget(title = "Java Type", description = "Java type to convert from")
+        @Widget(title = "KNIME Type",
+            description = "The KNIME data type of the output column. The available Java types are determined by the"
+                + " converters registered for this type.")
+        @ChoicesProvider(OutputColumnKnimeTypeChoicesProvider.class)
+        @ValueReference(SelectedKnimeTypeRef.class)
+        @PersistArrayElement(OutputColumnDataTypePersistor.class)
+        DataType m_knimeType = null;
+
+        static final class SelectedKnimeTypeRef implements ParameterReference<DataType> {
+        }
+
+        @Widget(title = "Java Type",
+            description = "The Java type of the value provided by the Java field. The converter factory"
+                + " for the selected KNIME type and Java type combination is used for conversion.")
         @ChoicesProvider(OutputColumnJavaTypeChoicesProvider.class)
+        @ValueProvider(OutputColumnJavaTypeProvider.class)
+        @ValueReference(SelectedJavaTypeRef.class)
         @PersistArrayElement(OutputColumnJavaTypePersistor.class)
         String m_javaType = "";
+
+        static final class SelectedJavaTypeRef implements ParameterReference<String> {
+        }
 
         @Widget(title = "Replace Existing", description = "Replace existing column if present")
         @PersistArrayElement(OutputColumnReplaceExistingPersistor.class)
@@ -682,13 +701,105 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         @PersistArrayElement(OutputColumnIsArrayPersistor.class)
         boolean m_isArray = false;
 
-        // Hidden field: converter factory ID
+        // Internal field: converter factory ID derived from the selected KNIME type and Java type combination.
         @PersistArrayElement(OutputColumnConverterFactoryPersistor.class)
+        @ValueProvider(OutputColumnConverterFactoryIdProvider.class)
         String m_converterFactoryId = "";
 
-        // Hidden field: data type
-        @PersistArrayElement(OutputColumnDataTypePersistor.class)
-        String m_knimeType = "";
+        /**
+         * Provides all KNIME data types for which at least one converter factory with a resolvable build path exists.
+         */
+        static final class OutputColumnKnimeTypeChoicesProvider implements DataTypeChoicesProvider {
+            @Override
+            public List<DataType> choices(final NodeParametersInput context) {
+                return ConverterUtil.getAllDestinationDataTypes().stream()
+                    .filter(type -> ConverterUtil.getFactoriesForDestinationType(type).stream()
+                        .anyMatch(f -> JavaSnippet.getBuildPathFromCache(f.getIdentifier()) != null))
+                    .toList();
+            }
+        }
+
+        /**
+         * Provides the Java source type simple names for converters that produce the currently selected KNIME type.
+         */
+        static final class OutputColumnJavaTypeChoicesProvider implements StringChoicesProvider {
+            private Supplier<DataType> m_knimeTypeSupplier;
+
+            @Override
+            public void init(final StateProviderInitializer initializer) {
+                initializer.computeBeforeOpenDialog();
+                m_knimeTypeSupplier = initializer.computeFromValueSupplier(SelectedKnimeTypeRef.class);
+            }
+
+            @Override
+            public List<String> choices(final NodeParametersInput context) {
+                var knimeType = m_knimeTypeSupplier.get();
+                if (knimeType == null) {
+                    return Collections.emptyList();
+                }
+                return ConverterUtil.getFactoriesForDestinationType(knimeType).stream()
+                    .filter(f -> JavaSnippet.getBuildPathFromCache(f.getIdentifier()) != null)
+                    .map(f -> f.getSourceType().getSimpleName())
+                    .toList();
+            }
+        }
+
+        /**
+         * Auto-selects the first available Java type when the selected KNIME type changes.
+         */
+        static final class OutputColumnJavaTypeProvider implements StateProvider<String> {
+            private Supplier<DataType> m_knimeTypeSupplier;
+
+            @Override
+            public void init(final StateProviderInitializer initializer) {
+                initializer.computeBeforeOpenDialog();
+                m_knimeTypeSupplier = initializer.computeFromValueSupplier(SelectedKnimeTypeRef.class);
+            }
+
+            @Override
+            public String computeState(final NodeParametersInput context) throws StateComputationFailureException {
+                var knimeType = m_knimeTypeSupplier.get();
+                if (knimeType == null) {
+                    throw new StateComputationFailureException();
+                }
+                return ConverterUtil.getFactoriesForDestinationType(knimeType).stream()
+                    .filter(f -> JavaSnippet.getBuildPathFromCache(f.getIdentifier()) != null)
+                    .map(f -> f.getSourceType().getSimpleName())
+                    .findFirst()
+                    .orElseThrow(StateComputationFailureException::new);
+            }
+        }
+
+        /**
+         * Computes the converter factory ID for the selected KNIME type and Java type combination.
+         */
+        static final class OutputColumnConverterFactoryIdProvider implements StateProvider<String> {
+            private Supplier<DataType> m_knimeTypeSupplier;
+
+            private Supplier<String> m_javaTypeSupplier;
+
+            @Override
+            public void init(final StateProviderInitializer initializer) {
+                initializer.computeBeforeOpenDialog();
+                m_knimeTypeSupplier = initializer.computeFromValueSupplier(SelectedKnimeTypeRef.class);
+                m_javaTypeSupplier = initializer.computeFromValueSupplier(SelectedJavaTypeRef.class);
+            }
+
+            @Override
+            public String computeState(final NodeParametersInput context) throws StateComputationFailureException {
+                var knimeType = m_knimeTypeSupplier.get();
+                var javaType = m_javaTypeSupplier.get();
+                if (knimeType == null || javaType == null || javaType.isEmpty()) {
+                    throw new StateComputationFailureException();
+                }
+                return ConverterUtil.getFactoriesForDestinationType(knimeType).stream()
+                    .filter(f -> JavaSnippet.getBuildPathFromCache(f.getIdentifier()) != null)
+                    .filter(f -> f.getSourceType().getSimpleName().equals(javaType))
+                    .map(f -> f.getIdentifier())
+                    .findFirst()
+                    .orElseThrow(StateComputationFailureException::new);
+            }
+        }
     }
 
     private static abstract class OutColListElementPersistor<T>
@@ -820,40 +931,19 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         }
     }
 
-    private static final class OutputColumnDataTypePersistor extends OutColListElementPersistor<String> {
+    private static final class OutputColumnDataTypePersistor extends OutColListElementPersistor<DataType> {
         OutputColumnDataTypePersistor() {
             super(JavaSnippetSettings.OUT_COLS);
         }
 
         @Override
-        protected String getFieldFromItem(final OutCol outCol) {
-            if (outCol.getDataType() == null || outCol.getDataType().getCellClass() == null) {
-                return "";
-            }
-            return outCol.getDataType().getCellClass().getName();
+        protected DataType getFieldFromItem(final OutCol outCol) {
+            return outCol.getDataType();
         }
 
         @Override
-        public void save(final String param, final OutputColumnField saveDTO) {
+        public void save(final DataType param, final OutputColumnField saveDTO) {
             saveDTO.m_knimeType = param;
-        }
-    }
-
-    /**
-     * Provides Java type choices for output columns based on available converters.
-     */
-    static final class OutputColumnJavaTypeChoicesProvider implements StringChoicesProvider {
-        @Override
-        public List<String> choices(final NodeParametersInput context) {
-            List<String> types = new ArrayList<>();
-
-            for (final DataType type : ConverterUtil.getAllDestinationDataTypes()) {
-                if (ConverterUtil.getFactoriesForDestinationType(type).stream()
-                    .anyMatch(factory -> JavaSnippet.getBuildPathFromCache(factory.getIdentifier()) != null)) {
-                    types.add(type.getName());
-                }
-            }
-            return types;
         }
     }
 
@@ -1152,18 +1242,23 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                     outCol.setJavaName(field.m_javaFieldName);
                     outCol.setReplaceExisting(field.m_replaceExisting);
 
-                    // Resolve converter factory - must be set so that m_knimeType (DataType) is never null
-                    // (JavaColumnField.saveSettings writes m_knimeType, and OutCol.loadSettings reads it)
-                    Class<?> outJavaClass = (field.m_javaType != null && !field.m_javaType.isEmpty())
-                        ? resolveJavaTypeBySimpleName(field.m_javaType) : String.class;
-
-                    // Try the stored converter factory ID first
+                    // Resolve converter factory. The factory ID is computed by OutputColumnConverterFactoryIdProvider,
+                    // but as a fallback we also try to match by KNIME type + java source type.
                     Optional<JavaToDataCellConverterFactory<?>> outFactory = Optional.empty();
                     if (field.m_converterFactoryId != null && !field.m_converterFactoryId.isEmpty()) {
                         outFactory = ConverterUtil.getJavaToDataCellConverterFactory(field.m_converterFactoryId);
                     }
-                    // Fall back to any factory matching the java class (ensures m_knimeType is set)
+                    if (outFactory.isEmpty() && field.m_knimeType != null
+                        && field.m_javaType != null && !field.m_javaType.isEmpty()) {
+                        outFactory = ConverterUtil.getFactoriesForDestinationType(field.m_knimeType).stream()
+                            .filter(f -> JavaSnippet.getBuildPathFromCache(f.getIdentifier()) != null)
+                            .filter(f -> f.getSourceType().getSimpleName().equals(field.m_javaType))
+                            .findFirst();
+                    }
+                    // Last resort: any factory matching the java source class
                     if (outFactory.isEmpty()) {
+                        Class<?> outJavaClass = (field.m_javaType != null && !field.m_javaType.isEmpty())
+                            ? resolveJavaTypeBySimpleName(field.m_javaType) : String.class;
                         outFactory = ConverterUtil.getAllJavaToDataCellConverterFactories().stream()
                             .filter(f -> f.getSourceType().equals(outJavaClass))
                             .findFirst();
@@ -1172,7 +1267,8 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                         outCol.setConverterFactory(outFactory.get());
                     } else {
                         // Last resort: set java type directly; m_knimeType stays null but we have no factory
-                        outCol.setJavaType(outJavaClass);
+                        outCol.setJavaType(resolveJavaTypeBySimpleName(
+                            field.m_javaType != null && !field.m_javaType.isEmpty() ? field.m_javaType : "String"));
                     }
 
                     outColList.add(outCol);
