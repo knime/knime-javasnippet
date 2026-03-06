@@ -91,13 +91,19 @@ import org.knime.node.parameters.layout.After;
 import org.knime.node.parameters.layout.Layout;
 import org.knime.node.parameters.layout.Section;
 import org.knime.node.parameters.persistence.Persist;
+import org.knime.node.parameters.updates.Effect;
+import org.knime.node.parameters.updates.Effect.EffectType;
+import org.knime.node.parameters.updates.EffectPredicate;
+import org.knime.node.parameters.updates.EffectPredicateProvider;
 import org.knime.node.parameters.updates.ParameterReference;
 import org.knime.node.parameters.updates.StateProvider;
 import org.knime.node.parameters.updates.ValueProvider;
 import org.knime.node.parameters.updates.ValueReference;
 import org.knime.node.parameters.widget.choices.ChoicesProvider;
 import org.knime.node.parameters.widget.choices.DataTypeChoicesProvider;
+import org.knime.node.parameters.widget.choices.Label;
 import org.knime.node.parameters.widget.choices.StringChoicesProvider;
+import org.knime.node.parameters.widget.choices.ValueSwitchWidget;
 import org.knime.node.parameters.widget.choices.util.AllColumnsProvider;
 import org.knime.node.parameters.widget.choices.util.AllFlowVariablesProvider;
 
@@ -662,9 +668,52 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
      * Represents an output column field definition.
      */
     public static final class OutputColumnField implements NodeParameters {
-        @Widget(title = "Column Name", description = "The output column name")
+
+        /**
+         * Controls whether the Java snippet output is appended as a new column or replaces an existing one.
+         */
+        enum ColumnMode {
+                @Label(value = "Append", description = "Append a new column with the given name.")
+                APPEND, //
+                @Label(value = "Replace", description = "Replace an existing column with the produced value.")
+                REPLACE;
+
+            interface Ref extends ParameterReference<ColumnMode> {
+            }
+
+            static final class IsAppend implements EffectPredicateProvider {
+                @Override
+                public EffectPredicate init(final PredicateInitializer i) {
+                    return i.getEnum(Ref.class).isOneOf(APPEND);
+                }
+            }
+
+            static final class IsReplace implements EffectPredicateProvider {
+                @Override
+                public EffectPredicate init(final PredicateInitializer i) {
+                    return i.getEnum(Ref.class).isOneOf(REPLACE);
+                }
+            }
+        }
+
+        @Widget(title = "Column Mode",
+            description = "Whether to append a new column or replace an existing one with the produced value.")
+        @ValueSwitchWidget
+        @ValueReference(ColumnMode.Ref.class)
+        @PersistArrayElement(OutputColumnModePersistor.class)
+        ColumnMode m_columnMode = ColumnMode.APPEND;
+
+        @Widget(title = "New Column Name", description = "Name of the new output column to append.")
+        @Effect(predicate = ColumnMode.IsAppend.class, type = EffectType.SHOW)
         @PersistArrayElement(OutputColumnNamePersistor.class)
         String m_knimeName = "";
+
+        @Widget(title = "Replace Column",
+            description = "The existing column to replace with the value produced by the Java field.")
+        @Effect(predicate = ColumnMode.IsReplace.class, type = EffectType.SHOW)
+        @ChoicesProvider(AllColumnsProvider.class)
+        @PersistArrayElement(OutputColumnReplaceColumnPersistor.class)
+        String m_replaceColumn = "";
 
         @Widget(title = "Java Field", description = "Java field name that provides the value")
         @PersistArrayElement(OutputColumnJavaNamePersistor.class)
@@ -692,10 +741,6 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
         static final class SelectedJavaTypeRef implements ParameterReference<String> {
         }
-
-        @Widget(title = "Replace Existing", description = "Replace existing column if present")
-        @PersistArrayElement(OutputColumnReplaceExistingPersistor.class)
-        boolean m_replaceExisting = false;
 
         @Widget(title = "Is Collection", description = "Output is a collection type")
         @PersistArrayElement(OutputColumnIsArrayPersistor.class)
@@ -883,19 +928,37 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         }
     }
 
-    private static final class OutputColumnReplaceExistingPersistor extends OutColListElementPersistor<Boolean> {
-        OutputColumnReplaceExistingPersistor() {
+    private static final class OutputColumnModePersistor extends OutColListElementPersistor<OutputColumnField.ColumnMode> {
+        OutputColumnModePersistor() {
             super(JavaSnippetSettings.OUT_COLS);
         }
 
         @Override
-        protected Boolean getFieldFromItem(final OutCol outCol) {
-            return outCol.getReplaceExisting();
+        protected OutputColumnField.ColumnMode getFieldFromItem(final OutCol outCol) {
+            return outCol.getReplaceExisting() ? OutputColumnField.ColumnMode.REPLACE
+                : OutputColumnField.ColumnMode.APPEND;
         }
 
         @Override
-        public void save(final Boolean param, final OutputColumnField saveDTO) {
-            saveDTO.m_replaceExisting = param;
+        public void save(final OutputColumnField.ColumnMode param, final OutputColumnField saveDTO) {
+            saveDTO.m_columnMode = param != null ? param : OutputColumnField.ColumnMode.APPEND;
+        }
+    }
+
+    private static final class OutputColumnReplaceColumnPersistor extends OutColListElementPersistor<String> {
+        OutputColumnReplaceColumnPersistor() {
+            super(JavaSnippetSettings.OUT_COLS);
+        }
+
+        @Override
+        protected String getFieldFromItem(final OutCol outCol) {
+            // When replacing an existing column, knimeName holds the name of the column to replace.
+            return outCol.getReplaceExisting() ? outCol.getKnimeName() : "";
+        }
+
+        @Override
+        public void save(final String param, final OutputColumnField saveDTO) {
+            saveDTO.m_replaceColumn = param;
         }
     }
 
@@ -1238,9 +1301,10 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
             if (param != null) {
                 for (OutputColumnField field : param) {
                     var outCol = new OutCol();
-                    outCol.setKnimeName(field.m_knimeName);
+                    outCol.setKnimeName(field.m_columnMode == OutputColumnField.ColumnMode.REPLACE
+                        ? field.m_replaceColumn : field.m_knimeName);
                     outCol.setJavaName(field.m_javaFieldName);
-                    outCol.setReplaceExisting(field.m_replaceExisting);
+                    outCol.setReplaceExisting(field.m_columnMode == OutputColumnField.ColumnMode.REPLACE);
 
                     // Resolve converter factory. The factory ID is computed by OutputColumnConverterFactoryIdProvider,
                     // but as a fallback we also try to match by KNIME type + java source type.
