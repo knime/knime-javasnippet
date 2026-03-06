@@ -166,7 +166,6 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         // Internal field: tracks the preferred Java type for the selected variable so that
         // InputFlowVariableJavaTypeProvider can preserve the user's selection. Populated by
         // InputFlowVariableKnimeTypeProvider and loaded from the legacy FlowVariable.Type enum name on startup.
-        @Widget(title = "Preferred Java Type", description = "")
         @PersistArrayElement(InputFlowVariableKnimeTypePersistor.class)
         @ValueProvider(InputFlowVariableKnimeTypeProvider.class)
         @ValueReference(KnimeTypeRef.class)
@@ -311,8 +310,8 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     private static abstract class InVarListElementPersistor
         extends JavaListElementPersistor<InputFlowVariableField, InVar> {
 
-        InVarListElementPersistor(final String configKey) {
-            super(configKey);
+        InVarListElementPersistor() {
+            super(JavaSnippetSettings.IN_VARS);
         }
 
         @Override
@@ -322,10 +321,6 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     }
 
     private static final class InputFlowVariableKnimeNamePersistor extends InVarListElementPersistor {
-        InputFlowVariableKnimeNamePersistor() {
-            super(JavaSnippetSettings.IN_VARS);
-        }
-
         @Override
         protected String getFieldFromItem(final InVar inVar) {
             return inVar.getKnimeName();
@@ -338,10 +333,6 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     }
 
     private static final class InputFlowVariableJavaNamePersistor extends InVarListElementPersistor {
-        InputFlowVariableJavaNamePersistor() {
-            super(JavaSnippetSettings.IN_VARS);
-        }
-
         @Override
         protected String getFieldFromItem(final InVar inVar) {
             return inVar.getJavaName();
@@ -354,10 +345,6 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     }
 
     private static final class InputFlowVariableJavaTypePersistor extends InVarListElementPersistor {
-        InputFlowVariableJavaTypePersistor() {
-            super(JavaSnippetSettings.IN_VARS);
-        }
-
         @Override
         protected String getFieldFromItem(final InVar inVar) {
             return inVar.getJavaType() != null ? inVar.getJavaType().getSimpleName() : "";
@@ -370,10 +357,6 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     }
 
     private static final class InputFlowVariableKnimeTypePersistor extends InVarListElementPersistor {
-        InputFlowVariableKnimeTypePersistor() {
-            super(JavaSnippetSettings.IN_VARS);
-        }
-
         @Override
         protected String getFieldFromItem(final InVar inVar) {
             return inVar.getFlowVarType() != null ? inVar.getFlowVarType().toString() : "";
@@ -436,7 +419,6 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
         // Internal field: the converter factory ID for the selected column/type combination,
         // computed by ConverterIDValueProvider and used when saving back to NodeSettings.
-        @Widget(title = "Converter Factory ID", description = "")
         @PersistArrayElement(InputColumnConverterFactoryPersistor.class)
         @ValueProvider(ConverterIDValueProvider.class)
         String m_converterFactoryId = "";
@@ -567,8 +549,8 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     }
 
     private static abstract class InColListElementPersistor extends JavaListElementPersistor<InputColumnField, InCol> {
-        InColListElementPersistor(final String configKey) {
-            super(configKey);
+        InColListElementPersistor() {
+            super(JavaSnippetSettings.IN_COLS);
         }
 
         @Override
@@ -578,10 +560,6 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     }
 
     private static final class InputColumnKnimeNamePersistor extends InColListElementPersistor {
-        InputColumnKnimeNamePersistor() {
-            super(JavaSnippetSettings.IN_COLS);
-        }
-
         @Override
         protected String getFieldFromItem(final InCol inCol) {
             return inCol.getKnimeName();
@@ -594,10 +572,6 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     }
 
     private static final class InputColumnJavaNamePersistor extends InColListElementPersistor {
-        InputColumnJavaNamePersistor() {
-            super(JavaSnippetSettings.IN_COLS);
-        }
-
         @Override
         protected String getFieldFromItem(final InCol inCol) {
             return inCol.getJavaName();
@@ -610,10 +584,6 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     }
 
     private static final class InputColumnJavaTypePersistor extends InColListElementPersistor {
-        InputColumnJavaTypePersistor() {
-            super(JavaSnippetSettings.IN_COLS);
-        }
-
         @Override
         protected String getFieldFromItem(final InCol inCol) {
             return inCol.getJavaType() != null ? inCol.getJavaType().getSimpleName() : "";
@@ -626,10 +596,6 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     }
 
     private static final class InputColumnConverterFactoryPersistor extends InColListElementPersistor {
-        InputColumnConverterFactoryPersistor() {
-            super(JavaSnippetSettings.IN_COLS);
-        }
-
         @Override
         protected String getFieldFromItem(final InCol inCol) {
             return inCol.getConverterFactoryId();
@@ -642,10 +608,6 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     }
 
     private static final class InputColumnKnimeTypePersistor extends InColListElementPersistor {
-        InputColumnKnimeTypePersistor() {
-            super(JavaSnippetSettings.IN_COLS);
-        }
-
         @Override
         protected String getFieldFromItem(final InCol inCol) {
             if (inCol.getDataType() == null || inCol.getDataType().getCellClass() == null) {
@@ -849,19 +811,14 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
     private static abstract class OutColListElementPersistor<T>
         implements ElementFieldPersistor<T, Integer, OutputColumnField> {
-        private final String m_configKey;
-
-        OutColListElementPersistor(final String configKey) {
-            m_configKey = configKey;
-        }
 
         protected abstract T getFieldFromItem(final OutCol outCol);
 
         @Override
         public T load(final NodeSettingsRO settings, final Integer loadContext) throws InvalidSettingsException {
             var outColList = new JavaFieldList.OutColList();
-            if (settings.containsKey(m_configKey)) {
-                outColList.loadSettings(settings.getConfig(m_configKey));
+            if (settings.containsKey(JavaSnippetSettings.OUT_COLS)) {
+                outColList.loadSettings(settings.getConfig(JavaSnippetSettings.OUT_COLS));
                 return loadContext < outColList.size() ? getFieldFromItem(outColList.get(loadContext)) : null;
             }
             return null;
@@ -872,15 +829,11 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
         @Override
         public String[][] getConfigPaths() {
-            return new String[][]{{m_configKey}};
+            return new String[][]{{JavaSnippetSettings.OUT_COLS}};
         }
     }
 
     private static final class OutputColumnNamePersistor extends OutColListElementPersistor<String> {
-        OutputColumnNamePersistor() {
-            super(JavaSnippetSettings.OUT_COLS);
-        }
-
         @Override
         protected String getFieldFromItem(final OutCol outCol) {
             return outCol.getKnimeName();
@@ -893,10 +846,6 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     }
 
     private static final class OutputColumnJavaNamePersistor extends OutColListElementPersistor<String> {
-        OutputColumnJavaNamePersistor() {
-            super(JavaSnippetSettings.OUT_COLS);
-        }
-
         @Override
         protected String getFieldFromItem(final OutCol outCol) {
             return outCol.getJavaName();
@@ -909,10 +858,6 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     }
 
     private static final class OutputColumnJavaTypePersistor extends OutColListElementPersistor<String> {
-        OutputColumnJavaTypePersistor() {
-            super(JavaSnippetSettings.OUT_COLS);
-        }
-
         @Override
         protected String getFieldFromItem(final OutCol outCol) {
             // Convert from fully qualified class name (persisted) to simple name (UI)
@@ -929,10 +874,6 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     }
 
     private static final class OutputColumnModePersistor extends OutColListElementPersistor<OutputColumnField.ColumnMode> {
-        OutputColumnModePersistor() {
-            super(JavaSnippetSettings.OUT_COLS);
-        }
-
         @Override
         protected OutputColumnField.ColumnMode getFieldFromItem(final OutCol outCol) {
             return outCol.getReplaceExisting() ? OutputColumnField.ColumnMode.REPLACE
@@ -946,10 +887,6 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     }
 
     private static final class OutputColumnReplaceColumnPersistor extends OutColListElementPersistor<String> {
-        OutputColumnReplaceColumnPersistor() {
-            super(JavaSnippetSettings.OUT_COLS);
-        }
-
         @Override
         protected String getFieldFromItem(final OutCol outCol) {
             // When replacing an existing column, knimeName holds the name of the column to replace.
@@ -963,10 +900,6 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     }
 
     private static final class OutputColumnIsArrayPersistor extends OutColListElementPersistor<Boolean> {
-        OutputColumnIsArrayPersistor() {
-            super(JavaSnippetSettings.OUT_COLS);
-        }
-
         @Override
         protected Boolean getFieldFromItem(final OutCol outCol) {
             return outCol.getDataType() != null && outCol.getDataType().isCollectionType();
@@ -979,10 +912,6 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     }
 
     private static final class OutputColumnConverterFactoryPersistor extends OutColListElementPersistor<String> {
-        OutputColumnConverterFactoryPersistor() {
-            super(JavaSnippetSettings.OUT_COLS);
-        }
-
         @Override
         protected String getFieldFromItem(final OutCol outCol) {
             return outCol.getConverterFactoryId();
@@ -995,10 +924,6 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     }
 
     private static final class OutputColumnDataTypePersistor extends OutColListElementPersistor<DataType> {
-        OutputColumnDataTypePersistor() {
-            super(JavaSnippetSettings.OUT_COLS);
-        }
-
         @Override
         protected DataType getFieldFromItem(final OutCol outCol) {
             return outCol.getDataType();
@@ -1038,19 +963,14 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
     private static abstract class OutVarListElementPersistor
         implements ElementFieldPersistor<String, Integer, OutputFlowVariableField> {
-        private final String m_configKey;
-
-        OutVarListElementPersistor(final String configKey) {
-            m_configKey = configKey;
-        }
 
         protected abstract String getFieldFromItem(final OutVar outVar);
 
         @Override
         public String load(final NodeSettingsRO settings, final Integer loadContext) throws InvalidSettingsException {
             var outVarList = new JavaFieldList.OutVarList();
-            if (settings.containsKey(m_configKey)) {
-                outVarList.loadSettings(settings.getConfig(m_configKey));
+            if (settings.containsKey(JavaSnippetSettings.OUT_VARS)) {
+                outVarList.loadSettings(settings.getConfig(JavaSnippetSettings.OUT_VARS));
                 return loadContext < outVarList.size() ? getFieldFromItem(outVarList.get(loadContext)) : null;
             }
             return null;
@@ -1061,15 +981,11 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
         @Override
         public String[][] getConfigPaths() {
-            return new String[][]{{m_configKey}};
+            return new String[][]{{JavaSnippetSettings.OUT_VARS}};
         }
     }
 
     private static final class OutputFlowVariableNamePersistor extends OutVarListElementPersistor {
-        OutputFlowVariableNamePersistor() {
-            super(JavaSnippetSettings.OUT_VARS);
-        }
-
         @Override
         protected String getFieldFromItem(final OutVar outVar) {
             return outVar.getKnimeName();
@@ -1082,10 +998,6 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     }
 
     private static final class OutputFlowVariableJavaNamePersistor extends OutVarListElementPersistor {
-        OutputFlowVariableJavaNamePersistor() {
-            super(JavaSnippetSettings.OUT_VARS);
-        }
-
         @Override
         protected String getFieldFromItem(final OutVar outVar) {
             return outVar.getJavaName();
@@ -1098,10 +1010,6 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     }
 
     private static final class OutputFlowVariableJavaTypePersistor extends OutVarListElementPersistor {
-        OutputFlowVariableJavaTypePersistor() {
-            super(JavaSnippetSettings.OUT_VARS);
-        }
-
         @Override
         protected String getFieldFromItem(final OutVar outVar) {
             return outVar.getJavaType() != null ? outVar.getJavaType().getSimpleName() : "";
@@ -1114,10 +1022,6 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     }
 
     private static final class OutputFlowVariableKnimeTypePersistor extends OutVarListElementPersistor {
-        OutputFlowVariableKnimeTypePersistor() {
-            super(JavaSnippetSettings.OUT_VARS);
-        }
-
         @Override
         protected String getFieldFromItem(final OutVar outVar) {
             return outVar.getFlowVarType() != null ? outVar.getFlowVarType().toString() : "";
