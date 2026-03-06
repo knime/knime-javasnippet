@@ -156,8 +156,10 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         @ValueProvider(InputFlowVariableJavaTypeProvider.class)
         String m_javaType = "";
 
-        // TODO Hidden field: flow variable type
-        @Widget(title = "KNIME TYPE (HIDDEN)", description = "")
+        // Internal field: tracks the preferred Java type for the selected variable so that
+        // InputFlowVariableJavaTypeProvider can preserve the user's selection. Populated by
+        // InputFlowVariableKnimeTypeProvider and loaded from the legacy FlowVariable.Type enum name on startup.
+        @Widget(title = "Preferred Java Type", description = "")
         @PersistArrayElement(InputFlowVariableKnimeTypePersistor.class)
         @ValueProvider(InputFlowVariableKnimeTypeProvider.class)
         @ValueReference(KnimeTypeRef.class)
@@ -169,7 +171,9 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         // bundle and converter factory ID are not used for variable fields, ignored here
 
         /**
-         * Provides the Flow Variable Type name for the selected flow variable
+         * Provides the preferred Java type simple name (e.g. "String", "Double") for the selected flow variable.
+         * This is used internally to initialise {@code m_knimeType} and to drive
+         * {@link InputFlowVariableJavaTypeProvider}.
          */
         static final class InputFlowVariableKnimeTypeProvider implements StateProvider<String> {
             private Supplier<String> m_knimeNameProvider;
@@ -423,13 +427,15 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         static final class SelectedJavaTypeRef implements ParameterReference<String> {
         }
 
-        // Hidden field: converter factory ID
-        @Widget(title = "CONVERTER (HIDDEN)", description = "") // TODO: REMOVE
+        // Internal field: the converter factory ID for the selected column/type combination,
+        // computed by ConverterIDValueProvider and used when saving back to NodeSettings.
+        @Widget(title = "Converter Factory ID", description = "")
         @PersistArrayElement(InputColumnConverterFactoryPersistor.class)
         @ValueProvider(ConverterIDValueProvider.class)
         String m_converterFactoryId = "";
 
-        // Hidden field: data type (KNIME column type)
+        // Internal field: KNIME data type cell class name for the selected column, used when saving
+        // back to NodeSettings to reconstruct the full DataType.
         @PersistArrayElement(InputColumnKnimeTypePersistor.class)
         String m_knimeType = "";
 
@@ -457,7 +463,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                 var tableSpec = context.getInTableSpec(0).get();
                 var selectedColumnSpec = tableSpec.getColumnSpec(selectedColumnName);
 
-                if (null == selectedColumnSpec) {
+                if (selectedColumnSpec == null) {
                     // Selected column is not present in input table
                     return Collections.emptyList();
                 }
@@ -491,7 +497,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                 var tableSpec = context.getInTableSpec(0).get();
                 var selectedColumnSpec = tableSpec.getColumnSpec(selectedColumnName);
 
-                if (null == selectedColumnSpec) {
+                if (selectedColumnSpec == null) {
                     throw new StateComputationFailureException();
                 }
 
@@ -535,7 +541,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                 var tableSpec = context.getInTableSpec(0).get();
                 var selectedColumnSpec = tableSpec.getColumnSpec(selectedColumnName);
 
-                if (null == selectedColumnSpec) {
+                if (selectedColumnSpec == null) {
                     throw new StateComputationFailureException();
                 }
 
@@ -657,7 +663,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     public static final class OutputColumnField implements NodeParameters {
         @Widget(title = "Column Name", description = "The output column name")
         @PersistArrayElement(OutputColumnNamePersistor.class)
-        String m_columnName = "";
+        String m_knimeName = "";
 
         @Widget(title = "Java Field", description = "Java field name that provides the value")
         @PersistArrayElement(OutputColumnJavaNamePersistor.class)
@@ -682,7 +688,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
         // Hidden field: data type
         @PersistArrayElement(OutputColumnDataTypePersistor.class)
-        String m_dataTypeName = "";
+        String m_knimeType = "";
     }
 
     private static abstract class OutColListElementPersistor<T>
@@ -706,9 +712,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         }
 
         @Override
-        public void save(final T param, final OutputColumnField saveDTO) {
-            // Field saved by individual persistors
-        }
+        public abstract void save(final T param, final OutputColumnField saveDTO);
 
         @Override
         public String[][] getConfigPaths() {
@@ -718,29 +722,39 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
     private static final class OutputColumnNamePersistor extends OutColListElementPersistor<String> {
         OutputColumnNamePersistor() {
-            super("outCols");
+            super(JavaSnippetSettings.OUT_COLS);
         }
 
         @Override
         protected String getFieldFromItem(final OutCol outCol) {
             return outCol.getKnimeName();
         }
+
+        @Override
+        public void save(final String param, final OutputColumnField saveDTO) {
+            saveDTO.m_knimeName = param;
+        }
     }
 
     private static final class OutputColumnJavaNamePersistor extends OutColListElementPersistor<String> {
         OutputColumnJavaNamePersistor() {
-            super("outCols");
+            super(JavaSnippetSettings.OUT_COLS);
         }
 
         @Override
         protected String getFieldFromItem(final OutCol outCol) {
             return outCol.getJavaName();
         }
+
+        @Override
+        public void save(final String param, final OutputColumnField saveDTO) {
+            saveDTO.m_javaFieldName = param;
+        }
     }
 
     private static final class OutputColumnJavaTypePersistor extends OutColListElementPersistor<String> {
         OutputColumnJavaTypePersistor() {
-            super("outCols");
+            super(JavaSnippetSettings.OUT_COLS);
         }
 
         @Override
@@ -751,44 +765,64 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
             }
             return "";
         }
+
+        @Override
+        public void save(final String param, final OutputColumnField saveDTO) {
+            saveDTO.m_javaType = param;
+        }
     }
 
     private static final class OutputColumnReplaceExistingPersistor extends OutColListElementPersistor<Boolean> {
         OutputColumnReplaceExistingPersistor() {
-            super("outCols");
+            super(JavaSnippetSettings.OUT_COLS);
         }
 
         @Override
         protected Boolean getFieldFromItem(final OutCol outCol) {
             return outCol.getReplaceExisting();
         }
+
+        @Override
+        public void save(final Boolean param, final OutputColumnField saveDTO) {
+            saveDTO.m_replaceExisting = param;
+        }
     }
 
     private static final class OutputColumnIsArrayPersistor extends OutColListElementPersistor<Boolean> {
         OutputColumnIsArrayPersistor() {
-            super("outCols");
+            super(JavaSnippetSettings.OUT_COLS);
         }
 
         @Override
         protected Boolean getFieldFromItem(final OutCol outCol) {
             return outCol.getDataType() != null && outCol.getDataType().isCollectionType();
         }
+
+        @Override
+        public void save(final Boolean param, final OutputColumnField saveDTO) {
+            saveDTO.m_isArray = param;
+        }
     }
 
     private static final class OutputColumnConverterFactoryPersistor extends OutColListElementPersistor<String> {
         OutputColumnConverterFactoryPersistor() {
-            super("outCols");
+            super(JavaSnippetSettings.OUT_COLS);
         }
 
         @Override
         protected String getFieldFromItem(final OutCol outCol) {
             return outCol.getConverterFactoryId();
         }
+
+        @Override
+        public void save(final String param, final OutputColumnField saveDTO) {
+            saveDTO.m_converterFactoryId = param;
+        }
     }
 
     private static final class OutputColumnDataTypePersistor extends OutColListElementPersistor<String> {
         OutputColumnDataTypePersistor() {
-            super("outCols");
+            super(JavaSnippetSettings.OUT_COLS);
         }
 
         @Override
@@ -797,6 +831,11 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                 return "";
             }
             return outCol.getDataType().getCellClass().getName();
+        }
+
+        @Override
+        public void save(final String param, final OutputColumnField saveDTO) {
+            saveDTO.m_knimeType = param;
         }
     }
 
@@ -810,8 +849,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
             for (final DataType type : ConverterUtil.getAllDestinationDataTypes()) {
                 if (ConverterUtil.getFactoriesForDestinationType(type).stream()
-                    .filter(factory -> JavaSnippet.getBuildPathFromCache(factory.getIdentifier()) != null).findAny()
-                    .isPresent()) {
+                    .anyMatch(factory -> JavaSnippet.getBuildPathFromCache(factory.getIdentifier()) != null)) {
                     types.add(type.getName());
                 }
             }
@@ -829,7 +867,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     public static final class OutputFlowVariableField implements NodeParameters {
         @Widget(title = "Flow Variable Name", description = "The output flow variable name")
         @PersistArrayElement(OutputFlowVariableNamePersistor.class)
-        String m_variableName = "";
+        String m_knimeName = "";
 
         @Widget(title = "Java Field", description = "Java field name that provides the value")
         @PersistArrayElement(OutputFlowVariableJavaNamePersistor.class)
@@ -866,9 +904,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         }
 
         @Override
-        public void save(final String param, final OutputFlowVariableField saveDTO) {
-            // Field saved by individual persistors
-        }
+        public abstract void save(final String param, final OutputFlowVariableField saveDTO);
 
         @Override
         public String[][] getConfigPaths() {
@@ -878,40 +914,55 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
     private static final class OutputFlowVariableNamePersistor extends OutVarListElementPersistor {
         OutputFlowVariableNamePersistor() {
-            super("outVars");
+            super(JavaSnippetSettings.OUT_VARS);
         }
 
         @Override
         protected String getFieldFromItem(final OutVar outVar) {
             return outVar.getKnimeName();
         }
+
+        @Override
+        public void save(final String param, final OutputFlowVariableField saveDTO) {
+            saveDTO.m_knimeName = param;
+        }
     }
 
     private static final class OutputFlowVariableJavaNamePersistor extends OutVarListElementPersistor {
         OutputFlowVariableJavaNamePersistor() {
-            super("outVars");
+            super(JavaSnippetSettings.OUT_VARS);
         }
 
         @Override
         protected String getFieldFromItem(final OutVar outVar) {
             return outVar.getJavaName();
         }
+
+        @Override
+        public void save(final String param, final OutputFlowVariableField saveDTO) {
+            saveDTO.m_javaFieldName = param;
+        }
     }
 
     private static final class OutputFlowVariableJavaTypePersistor extends OutVarListElementPersistor {
         OutputFlowVariableJavaTypePersistor() {
-            super("outVars");
+            super(JavaSnippetSettings.OUT_VARS);
         }
 
         @Override
         protected String getFieldFromItem(final OutVar outVar) {
             return outVar.getJavaType() != null ? outVar.getJavaType().getSimpleName() : "";
         }
+
+        @Override
+        public void save(final String param, final OutputFlowVariableField saveDTO) {
+            saveDTO.m_javaType = param;
+        }
     }
 
     private static final class OutputFlowVariableKnimeTypePersistor extends OutVarListElementPersistor {
         OutputFlowVariableKnimeTypePersistor() {
-            super("outVars");
+            super(JavaSnippetSettings.OUT_VARS);
         }
 
         @Override
@@ -936,11 +987,9 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     }
 
     private static final class JarFilePathPersistor implements ElementFieldPersistor<String, Integer, JarFileEntry> {
-        private static final String CONFIG_KEY = "jarFiles";
-
         @Override
         public String load(final NodeSettingsRO settings, final Integer loadContext) throws InvalidSettingsException {
-            String[] jarFiles = settings.getStringArray(CONFIG_KEY, new String[0]);
+            String[] jarFiles = settings.getStringArray(JavaSnippetSettings.JAR_FILES, new String[0]);
             return loadContext < jarFiles.length ? jarFiles[loadContext] : null;
         }
 
@@ -951,7 +1000,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
         @Override
         public String[][] getConfigPaths() {
-            return new String[][]{{CONFIG_KEY}};
+            return new String[][]{{JavaSnippetSettings.JAR_FILES}};
         }
     }
 
@@ -966,11 +1015,9 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     }
 
     private static final class BundleNamePersistor implements ElementFieldPersistor<String, Integer, BundleEntry> {
-        private static final String CONFIG_KEY = "bundles";
-
         @Override
         public String load(final NodeSettingsRO settings, final Integer loadContext) throws InvalidSettingsException {
-            String[] bundles = settings.getStringArray(CONFIG_KEY, new String[0]);
+            String[] bundles = settings.getStringArray(JavaSnippetSettings.BUNDLES, new String[0]);
             return loadContext < bundles.length ? bundles[loadContext] : null;
         }
 
@@ -981,7 +1028,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
         @Override
         public String[][] getConfigPaths() {
-            return new String[][]{{CONFIG_KEY}};
+            return new String[][]{{JavaSnippetSettings.BUNDLES}};
         }
     }
 
@@ -1005,15 +1052,17 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                     inVar.setKnimeName(field.m_knimeName);
                     inVar.setJavaName(field.m_javaName);
 
-                    // Set flow var type from string
+                    // Set flow var type: m_knimeType stores the FlowVariable.Type enum name when loaded from
+                    // legacy settings (e.g. "STRING"). Fall back to deriving the type from m_javaType when
+                    // m_knimeType is absent or does not match an enum constant (e.g. for newly added entries).
                     if (field.m_knimeType != null && !field.m_knimeType.isEmpty()) {
                         try {
-                            inVar.setFlowVarType(
-                                org.knime.core.node.workflow.FlowVariable.Type.valueOf(field.m_knimeType));
+                            inVar.setFlowVarType(FlowVariable.Type.valueOf(field.m_knimeType));
                         } catch (IllegalArgumentException e) {
-                            // Fallback to STRING if parsing fails
-                            inVar.setFlowVarType(org.knime.core.node.workflow.FlowVariable.Type.STRING);
+                            inVar.setFlowVarType(deriveFlowVarTypeFromJavaType(field.m_javaType));
                         }
+                    } else {
+                        inVar.setFlowVarType(deriveFlowVarTypeFromJavaType(field.m_javaType));
                     }
 
                     // Always set java type (required by JavaField.saveSettings)
@@ -1046,6 +1095,21 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         public InputFlowVariableField createElementSaveDTO(final int index) {
             return new InputFlowVariableField();
         }
+    }
+
+    /**
+     * Maps a Java type simple name (e.g. "Integer", "Double") to the corresponding {@link FlowVariable.Type}.
+     * Defaults to {@link FlowVariable.Type#STRING} for unknown types.
+     */
+    private static FlowVariable.Type deriveFlowVarTypeFromJavaType(final String javaTypeSimpleName) {
+        if (javaTypeSimpleName == null) {
+            return FlowVariable.Type.STRING;
+        }
+        return switch (javaTypeSimpleName) {
+            case "Integer", "int" -> FlowVariable.Type.INTEGER;
+            case "Double", "double" -> FlowVariable.Type.DOUBLE;
+            default -> FlowVariable.Type.STRING;
+        };
     }
 
     /**
@@ -1084,7 +1148,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
             if (param != null) {
                 for (OutputColumnField field : param) {
                     var outCol = new OutCol();
-                    outCol.setKnimeName(field.m_columnName);
+                    outCol.setKnimeName(field.m_knimeName);
                     outCol.setJavaName(field.m_javaFieldName);
                     outCol.setReplaceExisting(field.m_replaceExisting);
 
@@ -1144,24 +1208,13 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     public static final class OutVarListPersistor implements ArrayPersistor<Integer, OutputFlowVariableField> {
         private static final String CONFIG_KEY = JavaSnippetSettings.OUT_VARS;
 
-        private static FlowVariable.Type deriveFlowVarTypeFromJavaType(final String javaTypeSimpleName) {
-            if (javaTypeSimpleName == null) {
-                return FlowVariable.Type.STRING;
-            }
-            return switch (javaTypeSimpleName) {
-                case "Integer", "int" -> FlowVariable.Type.INTEGER;
-                case "Double", "double" -> FlowVariable.Type.DOUBLE;
-                default -> FlowVariable.Type.STRING;
-            };
-        }
-
         @Override
         public void save(final List<OutputFlowVariableField> param, final NodeSettingsWO settings) {
             var outVarList = new JavaFieldList.OutVarList();
             if (param != null) {
                 for (OutputFlowVariableField field : param) {
                     var outVar = new OutVar();
-                    outVar.setKnimeName(field.m_variableName);
+                    outVar.setKnimeName(field.m_knimeName);
                     outVar.setJavaName(field.m_javaFieldName);
 
                     // Resolve simple name back to fully qualified class
