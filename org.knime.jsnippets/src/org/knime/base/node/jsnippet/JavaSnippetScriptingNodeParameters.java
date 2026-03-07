@@ -787,15 +787,23 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         }
 
         /**
-         * Auto-selects the first available Java type when the selected KNIME type changes.
+         * Provides the currently selected Java type (simple name) for the selected KNIME output type.
+         * Preserves the stored value (which may be a fully qualified class name from legacy settings)
+         * if it still matches one of the available choices for the currently selected KNIME type.
+         * Falls back to the first available type when the KNIME type changes and the stored Java type
+         * is no longer valid, or when the stored value is absent.
          */
         static final class OutputColumnJavaTypeProvider implements StateProvider<String> {
             private Supplier<DataType> m_knimeTypeSupplier;
+
+            private Supplier<String> m_javaTypeSupplier;
 
             @Override
             public void init(final StateProviderInitializer initializer) {
                 initializer.computeBeforeOpenDialog();
                 m_knimeTypeSupplier = initializer.computeFromValueSupplier(SelectedKnimeTypeRef.class);
+                // Read the currently persisted value so we can preserve the user's selection.
+                m_javaTypeSupplier = initializer.getValueSupplier(SelectedJavaTypeRef.class);
             }
 
             @Override
@@ -804,11 +812,28 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                 if (knimeType == null) {
                     throw new StateComputationFailureException();
                 }
-                return ConverterUtil.getFactoriesForDestinationType(knimeType).stream()
+
+                var availableTypes = ConverterUtil.getFactoriesForDestinationType(knimeType).stream()
                     .filter(f -> JavaSnippet.getBuildPathFromCache(f.getIdentifier()) != null)
                     .map(f -> f.getSourceType().getSimpleName())
-                    .findFirst()
-                    .orElseThrow(StateComputationFailureException::new);
+                    .toList();
+
+                // Preserve the stored type selection if it is still valid for the current KNIME type.
+                // The persisted value may be a FQN (legacy) – extract the simple name first.
+                String stored = m_javaTypeSupplier.get();
+                if (stored != null && !stored.isEmpty()) {
+                    int lastDot = stored.lastIndexOf('.');
+                    String storedSimple = lastDot >= 0 ? stored.substring(lastDot + 1) : stored;
+                    if (availableTypes.contains(storedSimple)) {
+                        return storedSimple;
+                    }
+                }
+
+                if (availableTypes.isEmpty()) {
+                    throw new StateComputationFailureException();
+                }
+
+                return availableTypes.get(0);
             }
         }
 
