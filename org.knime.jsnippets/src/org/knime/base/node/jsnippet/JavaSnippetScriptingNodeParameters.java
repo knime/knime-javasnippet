@@ -161,7 +161,11 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         @ChoicesProvider(InputFlowVariableJavaTypeChoicesProvider.class)
         @PersistArrayElement(InputFlowVariableJavaTypePersistor.class)
         @ValueProvider(InputFlowVariableJavaTypeProvider.class)
+        @ValueReference(JavaTypeRef.class)
         String m_javaType = "";
+
+        static final class JavaTypeRef implements ParameterReference<String> {
+        }
 
         // Internal field: tracks the preferred Java type for the selected variable so that
         // InputFlowVariableJavaTypeProvider can preserve the user's selection. Populated by
@@ -215,11 +219,14 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
             private Supplier<String> m_knimeTypeProvider;
 
+            private Supplier<String> m_javaTypeProvider;
+
             @Override
             public void init(final StateProviderInitializer initializer) {
                 initializer.computeBeforeOpenDialog();
                 m_knimeNameProvider = initializer.computeFromValueSupplier(KnimeNameRef.class);
                 m_knimeTypeProvider = initializer.computeFromValueSupplier(KnimeTypeRef.class);
+                m_javaTypeProvider = initializer.getValueSupplier(JavaTypeRef.class);
             }
 
             @Override
@@ -230,20 +237,24 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                 var flowVariables =
                     context.getAvailableInputFlowVariables(VariableTypeRegistry.getInstance().getAllTypes());
 
-                if (flowVariables.isEmpty() || !flowVariables.containsKey(selectedVariableName)) {
-                    throw new StateComputationFailureException();
+                if (!flowVariables.isEmpty() && flowVariables.containsKey(selectedVariableName)) {
+                    var flowVariable = flowVariables.get(selectedVariableName);
+                    TypeConverter typeConversion = TypeProvider.getDefault().getTypeConverter(flowVariable.getType());
+                    var matchingType = Arrays.stream(typeConversion.canProvideJavaTypes())
+                        .filter(type -> type.getSimpleName().equals(selectedVariableType)).findFirst();
+
+                    if (matchingType.isPresent()) {
+                        return matchingType.get().getSimpleName();
+                    }
                 }
 
-                var flowVariable = flowVariables.get(selectedVariableName);
-                TypeConverter typeConversion = TypeProvider.getDefault().getTypeConverter(flowVariable.getType());
-                var matchingType = Arrays.stream(typeConversion.canProvideJavaTypes())
-                    .filter(type -> type.getSimpleName().equals(selectedVariableType)).findFirst();
-
-                if (matchingType.isEmpty()) {
-                    throw new StateComputationFailureException();
+                // Fallback: convert the persisted value (which may be a fully qualified class name) to a simple name.
+                String current = m_javaTypeProvider.get();
+                if (current != null && !current.isEmpty()) {
+                    int lastDot = current.lastIndexOf('.');
+                    return lastDot >= 0 ? current.substring(lastDot + 1) : current;
                 }
-
-                return matchingType.get().getSimpleName();
+                throw new StateComputationFailureException();
             }
         }
 
@@ -347,7 +358,10 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     private static final class InputFlowVariableJavaTypePersistor extends InVarListElementPersistor {
         @Override
         protected String getFieldFromItem(final InVar inVar) {
-            return inVar.getJavaType() != null ? inVar.getJavaType().getSimpleName() : "";
+            // Store the fully qualified class name to match what the legacy settings format persists.
+            // The @ValueProvider on m_javaType (computeBeforeOpenDialog) converts this to a simple
+            // name for UI display, preventing a load/save asymmetry that would cause dirty state.
+            return inVar.getJavaType() != null ? inVar.getJavaType().getName() : "";
         }
 
         @Override
@@ -464,15 +478,22 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         }
 
         /**
-         * Provides the Converter Factory ID for the selected combination of input column type and java variable type
+         * Provides the currently selected Java type (simple name) for the selected input column.
+         * Preserves the stored value (which may be a fully qualified class name from legacy settings)
+         * if it still matches one of the available choices. Only falls back to the first available
+         * type when the stored value is absent or no longer valid.
          */
         static final class InputColumnJavaTypeProvider implements StateProvider<String> {
             private Supplier<String> m_selectedColumnSupplier;
+
+            private Supplier<String> m_javaTypeSupplier;
 
             @Override
             public void init(final StateProviderInitializer initializer) {
                 initializer.computeBeforeOpenDialog();
                 m_selectedColumnSupplier = initializer.computeFromValueSupplier(SelectedKnimeNameRef.class);
+                // Read the currently persisted value so we can preserve the user's selection.
+                m_javaTypeSupplier = initializer.getValueSupplier(SelectedJavaTypeRef.class);
             }
 
             @Override
@@ -490,16 +511,27 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                     throw new StateComputationFailureException();
                 }
 
-                var firstType = ConverterUtil.getFactoriesForSourceType(selectedColumnSpec.getType()).stream()
+                var availableTypes = ConverterUtil.getFactoriesForSourceType(selectedColumnSpec.getType()).stream()
                     .filter(factory -> JavaSnippet.getBuildPathFromCache(factory.getIdentifier()) != null) //
                     .map(converter -> converter.getDestinationType().getSimpleName()) //
-                    .findFirst();
+                    .toList();
 
-                if (firstType.isEmpty()) {
+                // Preserve the stored type selection if it is still valid. The persisted value may be a
+                // fully qualified class name (FQN) from legacy settings – extract the simple name first.
+                String stored = m_javaTypeSupplier.get();
+                if (stored != null && !stored.isEmpty()) {
+                    int lastDot = stored.lastIndexOf('.');
+                    String storedSimple = lastDot >= 0 ? stored.substring(lastDot + 1) : stored;
+                    if (availableTypes.contains(storedSimple)) {
+                        return storedSimple;
+                    }
+                }
+
+                if (availableTypes.isEmpty()) {
                     throw new StateComputationFailureException();
                 }
 
-                return firstType.get();
+                return availableTypes.get(0);
             }
         }
 
@@ -586,7 +618,10 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     private static final class InputColumnJavaTypePersistor extends InColListElementPersistor {
         @Override
         protected String getFieldFromItem(final InCol inCol) {
-            return inCol.getJavaType() != null ? inCol.getJavaType().getSimpleName() : "";
+            // Store the fully qualified class name to match what the legacy settings format persists.
+            // The @ValueProvider on m_javaType (computeBeforeOpenDialog) converts this to a simple
+            // name for UI display, preventing a load/save asymmetry that would cause dirty state.
+            return inCol.getJavaType() != null ? inCol.getJavaType().getName() : "";
         }
 
         @Override
@@ -860,9 +895,11 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     private static final class OutputColumnJavaTypePersistor extends OutColListElementPersistor<String> {
         @Override
         protected String getFieldFromItem(final OutCol outCol) {
-            // Convert from fully qualified class name (persisted) to simple name (UI)
+            // Store the fully qualified class name to match what the legacy settings format persists.
+            // The @ValueProvider on m_javaType (computeBeforeOpenDialog) converts this to a simple
+            // name for UI display, preventing a load/save asymmetry that would cause dirty state.
             if (outCol.getJavaType() != null) {
-                return outCol.getJavaType().getSimpleName();
+                return outCol.getJavaType().getName();
             }
             return "";
         }
