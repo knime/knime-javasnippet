@@ -1280,9 +1280,15 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                     }
                     if (outFactory.isEmpty() && field.m_knimeType != null
                         && field.m_javaType != null && !field.m_javaType.isEmpty()) {
+                        // m_javaType may be either a simple name (after ValueProvider ran) or a fully
+                        // qualified class name (persisted by the legacy persistor before the dialog was
+                        // opened).  Normalise to simple name for the comparison so both cases work.
+                        final String javaSimpleName = field.m_javaType.contains(".")
+                            ? field.m_javaType.substring(field.m_javaType.lastIndexOf('.') + 1)
+                            : field.m_javaType;
                         outFactory = ConverterUtil.getFactoriesForDestinationType(field.m_knimeType).stream()
                             .filter(f -> JavaSnippet.getBuildPathFromCache(f.getIdentifier()) != null)
-                            .filter(f -> f.getSourceType().getSimpleName().equals(field.m_javaType))
+                            .filter(f -> f.getSourceType().getSimpleName().equals(javaSimpleName))
                             .findFirst();
                     }
                     // Last resort: any factory matching the java source class
