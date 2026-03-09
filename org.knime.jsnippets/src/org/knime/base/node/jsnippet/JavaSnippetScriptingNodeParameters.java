@@ -70,7 +70,6 @@ import org.knime.base.node.jsnippet.util.field.JavaField;
 import org.knime.base.node.jsnippet.util.field.OutCol;
 import org.knime.base.node.jsnippet.util.field.OutVar;
 import org.knime.core.data.DataType;
-import org.knime.core.data.DataTypeRegistry;
 import org.knime.core.data.convert.datacell.JavaToDataCellConverterFactory;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
@@ -437,10 +436,10 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         @ValueProvider(ConverterIDValueProvider.class)
         String m_converterFactoryId = "";
 
-        // Internal field: KNIME data type cell class name for the selected column, used when saving
-        // back to NodeSettings to reconstruct the full DataType.
+        // Internal field: the KNIME DataType of the selected column, used when saving back to
+        // NodeSettings to reconstruct the full DataType including element types for collections.
         @PersistArrayElement(InputColumnKnimeTypePersistor.class)
-        String m_knimeType = "";
+        DataType m_knimeType = null;
 
         /**
          * Provides Java type choices for input columns based on available converters for the selected column's data
@@ -642,18 +641,36 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
         }
     }
 
-    private static final class InputColumnKnimeTypePersistor extends InColListElementPersistor {
+    /**
+     * Persistor for the KNIME DataType of an input column. Stores the full {@link DataType} object
+     * (not just the cell-class FQN) so that collection types such as {@code ListCell<XMLCell>}
+     * round-trip correctly.  The previous String-based approach lost element-type information for
+     * collection DataTypes.
+     */
+    private static final class InputColumnKnimeTypePersistor
+        implements ElementFieldPersistor<DataType, Integer, InputColumnField> {
+
         @Override
-        protected String getFieldFromItem(final InCol inCol) {
-            if (inCol.getDataType() == null || inCol.getDataType().getCellClass() == null) {
-                return "";
+        public DataType load(final NodeSettingsRO settings, final Integer loadContext)
+            throws InvalidSettingsException {
+            var inColList = new InColList();
+            if (settings.containsKey(JavaSnippetSettings.IN_COLS)) {
+                inColList.loadSettings(settings.getConfig(JavaSnippetSettings.IN_COLS));
+                if (loadContext < inColList.size()) {
+                    return inColList.get(loadContext).getDataType();
+                }
             }
-            return inCol.getDataType().getCellClass().getName();
+            return null;
         }
 
         @Override
-        public void save(final String param, final InputColumnField saveDTO) {
+        public void save(final DataType param, final InputColumnField saveDTO) {
             saveDTO.m_knimeType = param;
+        }
+
+        @Override
+        public String[][] getConfigPaths() {
+            return new String[][]{{JavaSnippetSettings.IN_COLS}};
         }
     }
 
@@ -1416,18 +1433,16 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                         ? resolveJavaTypeBySimpleName(field.m_javaType) : String.class;
                     inCol.setJavaType(inJavaClass);
 
-                    // Additionally set converter factory if KNIME type and factory ID are both available
-                    if (field.m_knimeType != null && !field.m_knimeType.isEmpty() && field.m_converterFactoryId != null
+                    // Additionally set converter factory if the full DataType and factory ID are both
+                    // available. Using the DataType object directly (instead of reconstructing from a
+                    // cell-class FQN string) preserves element-type information for collection types.
+                    if (field.m_knimeType != null && field.m_converterFactoryId != null
                         && !field.m_converterFactoryId.isEmpty()) {
                         try {
-                            var dataCellClass = DataTypeRegistry.getInstance().getCellClass(field.m_knimeType);
-                            if (dataCellClass.isPresent()) {
-                                DataType dataType = DataType.getType(dataCellClass.get());
-                                var factory =
-                                    ConverterUtil.getDataCellToJavaConverterFactory(field.m_converterFactoryId);
-                                if (factory.isPresent()) {
-                                    inCol.setConverterFactory(dataType, factory.get());
-                                }
+                            var factory =
+                                ConverterUtil.getDataCellToJavaConverterFactory(field.m_converterFactoryId);
+                            if (factory.isPresent()) {
+                                inCol.setConverterFactory(field.m_knimeType, factory.get());
                             }
                         } catch (Exception e) {
                             // Leave java type set above as fallback
