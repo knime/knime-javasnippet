@@ -1308,18 +1308,38 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
                             .filter(f -> f.getSourceType().getSimpleName().equals(javaSimpleName))
                             .findFirst();
                     }
-                    // Last resort: any factory matching the java source class
+                    // Last resort: search all factories matching the java source class.
+                    // Prefer a factory whose destination type equals the expected KNIME type so
+                    // that OutCol.setConverterFactory() sets the correct m_knimeType and the nested
+                    // 'Type' config written by JavaColumnField.saveSettings() matches the original.
+                    // Falling back to any factory (without KNIME-type constraint) is kept as a
+                    // safety net, but may write a different DataType if the plugin is not installed.
                     if (outFactory.isEmpty()) {
                         Class<?> outJavaClass = (field.m_javaType != null && !field.m_javaType.isEmpty())
                             ? resolveJavaTypeBySimpleName(field.m_javaType) : String.class;
-                        outFactory = ConverterUtil.getAllJavaToDataCellConverterFactories().stream()
+                        var matchingFactories = ConverterUtil.getAllJavaToDataCellConverterFactories().stream()
                             .filter(f -> f.getSourceType().equals(outJavaClass))
-                            .findFirst();
+                            .toList();
+                        // Prefer factory whose destination equals the expected KNIME type
+                        if (field.m_knimeType != null) {
+                            outFactory = matchingFactories.stream()
+                                .filter(f -> f.getDestinationType().equals(field.m_knimeType))
+                                .findFirst();
+                        }
+                        // Fall back to any matching factory
+                        if (outFactory.isEmpty()) {
+                            outFactory = matchingFactories.stream().findFirst();
+                        }
                     }
                     if (outFactory.isPresent()) {
+                        // setConverterFactory also sets m_knimeType (= factory.getDestinationType()),
+                        // ensuring the 'Type' config is written with the correct cell class and
+                        // 'replaceExisting' is preserved in the final OutCol.saveSettings() call.
                         outCol.setConverterFactory(outFactory.get());
                     } else {
-                        // Last resort: set java type directly; m_knimeType stays null but we have no factory
+                        // Absolute last resort: no factory found at all (e.g. plugin not installed).
+                        // setJavaType() leaves m_knimeType as null which means the 'Type' config is
+                        // written with is_null=true – this is unavoidable without a factory.
                         outCol.setJavaType(resolveJavaTypeBySimpleName(
                             field.m_javaType != null && !field.m_javaType.isEmpty() ? field.m_javaType : "String"));
                     }
