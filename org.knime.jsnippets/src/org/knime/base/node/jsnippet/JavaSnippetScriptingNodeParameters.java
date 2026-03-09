@@ -1506,12 +1506,12 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
         @Override
         public void save(final List<JarFileEntry> param, final NodeSettingsWO settings) {
-            if (param == null || param.isEmpty()) {
-                settings.addStringArray(CONFIG_KEY, new String[0]);
-            } else {
-                String[] paths = param.stream().map(e -> e.m_path).toArray(String[]::new);
-                settings.addStringArray(CONFIG_KEY, paths);
-            }
+            // NodeSettings.addStringArray writes a config/array-size sub-config which is the same
+            // format used by the legacy JavaSnippetSettings.saveSettings() / loadSettings(), so
+            // the persisted representation is preserved on a load/save round-trip.
+            String[] paths =
+                (param == null) ? new String[0] : param.stream().map(e -> e.m_path).toArray(String[]::new);
+            settings.addStringArray(CONFIG_KEY, paths);
         }
 
         @Override
@@ -1539,12 +1539,11 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
         @Override
         public void save(final List<BundleEntry> param, final NodeSettingsWO settings) {
-            if (param == null || param.isEmpty()) {
-                settings.addStringArray(CONFIG_KEY, new String[0]);
-            } else {
-                String[] bundles = param.stream().map(e -> e.m_bundle).toArray(String[]::new);
-                settings.addStringArray(CONFIG_KEY, bundles);
-            }
+            // NodeSettings.addStringArray writes a config/array-size sub-config matching the format
+            // of JavaSnippetSettings.saveSettings()/loadSettings() (added in KNIME 3.6).
+            String[] bundles =
+                (param == null) ? new String[0] : param.stream().map(e -> e.m_bundle).toArray(String[]::new);
+            settings.addStringArray(CONFIG_KEY, bundles);
         }
 
         @Override
