@@ -88,11 +88,11 @@ final class RuleEngineSplitterScriptingNodeParameters implements NodeParameters 
      * Enum to specify which output table TRUE matches go to.
      */
     enum OutputTable {
-            @Label(value = "first output table",
+            @Label(value = "First output table",
                 description = "Rows matching a rule with TRUE outcome will be sent to the first (top) output port")
             FIRST,
 
-            @Label(value = "second output table",
+            @Label(value = "Second output table",
                 description = "Rows matching a rule with TRUE outcome will be sent to the second (bottom) output port")
             SECOND;
     }
