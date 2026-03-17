@@ -123,20 +123,7 @@ public class JavaSnippetScriptingNodeDialog extends AbstractDefaultScriptingNode
         
         // Add the script sections to the builder
         builder.addScriptSectionData(scriptSections);
-        
-        // TODO: Add static completion items for Java (imports, KNIME API, etc.)
-        // builder.addDataSupplier(WebUIDialogUtils.DATA_SUPPLIER_KEY_STATIC_COMPLETION_ITEMS,
-        //     () -> getJavaCompletionItems(workflowControl));
-        
+
         return builder;
     }
-
-    // TODO: Implement Java-specific completion items
-    // private static List<CompletionItem> getJavaCompletionItems(WorkflowControl workflowControl) {
-    //     List<CompletionItem> items = new ArrayList<>();
-    //     // Add common Java imports
-    //     // Add KNIME API completions
-    //     // Add input column/variable completions
-    //     return items;
-    // }
 }
