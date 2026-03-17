@@ -77,6 +77,10 @@ import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.webui.node.dialog.defaultdialog.internal.persistence.ArrayPersistor;
+import org.knime.core.webui.node.dialog.defaultdialog.internal.file.FileReaderWidget;
+import org.knime.core.webui.node.dialog.defaultdialog.internal.file.FileSelection;
+import org.knime.filehandling.core.connections.FSCategory;
+import org.knime.filehandling.core.connections.FSLocation;
 import org.knime.core.webui.node.dialog.defaultdialog.internal.persistence.ElementFieldPersistor;
 import org.knime.core.webui.node.dialog.defaultdialog.internal.persistence.PersistArray;
 import org.knime.core.webui.node.dialog.defaultdialog.internal.persistence.PersistArrayElement;
@@ -1115,21 +1119,27 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
      * Represents a JAR file entry.
      */
     public static final class JarFileEntry implements NodeParameters {
-        // NB: could be enhanced with a file browser widget in the future
         @Widget(title = "JAR Path/URL", description = "File path or KNIME URL to JAR file")
+        @FileReaderWidget(fileExtensions = {"jar"})
         @PersistArrayElement(JarFilePathPersistor.class)
-        String m_path = "";
+        FileSelection m_path = new FileSelection();
     }
 
-    private static final class JarFilePathPersistor implements ElementFieldPersistor<String, Integer, JarFileEntry> {
+    private static final class JarFilePathPersistor implements ElementFieldPersistor<FileSelection, Integer, JarFileEntry> {
         @Override
-        public String load(final NodeSettingsRO settings, final Integer loadContext) throws InvalidSettingsException {
+        public FileSelection load(final NodeSettingsRO settings, final Integer loadContext) throws InvalidSettingsException {
             String[] jarFiles = settings.getStringArray(JavaSnippetSettings.JAR_FILES, new String[0]);
-            return loadContext < jarFiles.length ? jarFiles[loadContext] : null;
+            if (loadContext >= jarFiles.length) {
+                return null;
+            }
+            final String path = jarFiles[loadContext];
+            // Detect KNIME URLs vs local paths
+            final FSCategory category = path.startsWith("knime://") ? FSCategory.CUSTOM_URL : FSCategory.LOCAL;
+            return new FileSelection(new FSLocation(category, path));
         }
 
         @Override
-        public void save(final String param, final JarFileEntry saveDTO) {
+        public void save(final FileSelection param, final JarFileEntry saveDTO) {
             saveDTO.m_path = param;
         }
 
@@ -1540,7 +1550,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
             // format used by the legacy JavaSnippetSettings.saveSettings() / loadSettings(), so
             // the persisted representation is preserved on a load/save round-trip.
             String[] paths =
-                (param == null) ? new String[0] : param.stream().map(e -> e.m_path).toArray(String[]::new);
+                (param == null) ? new String[0] : param.stream().map(e -> e.m_path.getFSLocation().getPath()).toArray(String[]::new);
             settings.addStringArray(CONFIG_KEY, paths);
         }
 
