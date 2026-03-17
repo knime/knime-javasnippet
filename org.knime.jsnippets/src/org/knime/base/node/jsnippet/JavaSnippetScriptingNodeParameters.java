@@ -1656,7 +1656,7 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     OutputFlowVariableField[] m_outputFlowVariables;
 
     // =================================================================================
-    // Libraries & Bundles Section (Placeholder)
+    // Libraries & Bundles Section
     // =================================================================================
 
     @Section(title = "Libraries & Bundles", sideDrawer = true)
