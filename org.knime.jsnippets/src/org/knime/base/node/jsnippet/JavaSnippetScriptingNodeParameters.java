@@ -101,10 +101,13 @@ import org.knime.node.parameters.updates.ValueReference;
 import org.knime.node.parameters.widget.choices.ChoicesProvider;
 import org.knime.node.parameters.widget.choices.DataTypeChoicesProvider;
 import org.knime.node.parameters.widget.choices.Label;
+import org.knime.node.parameters.widget.choices.StringChoice;
 import org.knime.node.parameters.widget.choices.StringChoicesProvider;
 import org.knime.node.parameters.widget.choices.ValueSwitchWidget;
 import org.knime.node.parameters.widget.choices.util.AllColumnsProvider;
 import org.knime.node.parameters.widget.choices.util.AllFlowVariablesProvider;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
 
 /**
  * NodeParameters implementation for the Java Snippet node in the Modern UI. This class defines all configuration
@@ -1140,10 +1143,32 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
      * Represents an OSGi bundle entry.
      */
     public static final class BundleEntry implements NodeParameters {
-        // NB: could be enhanced with a choices provider dropdown in the future
         @Widget(title = "Bundle", description = "OSGi bundle symbolic name with version")
+        @ChoicesProvider(InstalledBundlesChoicesProvider.class)
         @PersistArrayElement(BundleNamePersistor.class)
         String m_bundle = "";
+    }
+
+    /**
+     * Provides a list of all installed OSGi bundles as choices for the bundle dropdown.
+     */
+    static final class InstalledBundlesChoicesProvider implements StringChoicesProvider {
+        @Override
+        public List<String> choices(final NodeParametersInput context) {
+            final var bundle = FrameworkUtil.getBundle(InstalledBundlesChoicesProvider.class);
+            if (bundle == null) {
+                return Collections.emptyList();
+            }
+            final BundleContext ctx = bundle.getBundleContext();
+            if (ctx == null) {
+                return Collections.emptyList();
+            }
+            return Arrays.stream(ctx.getBundles())
+                .filter(b -> b.getSymbolicName() != null)
+                .map(b -> b.getSymbolicName() + " " + b.getVersion().toString())
+                .sorted()
+                .toList();
+        }
     }
 
     private static final class BundleNamePersistor implements ElementFieldPersistor<String, Integer, BundleEntry> {
