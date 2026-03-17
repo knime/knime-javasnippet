@@ -358,10 +358,10 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     private static final class InputFlowVariableJavaTypePersistor extends InVarListElementPersistor {
         @Override
         protected String getFieldFromItem(final InVar inVar) {
-            // Store the fully qualified class name to match what the legacy settings format persists.
-            // The @ValueProvider on m_javaType (computeBeforeOpenDialog) converts this to a simple
-            // name for UI display, preventing a load/save asymmetry that would cause dirty state.
-            return inVar.getJavaType() != null ? inVar.getJavaType().getName() : "";
+            // Load as simple name to match what InputFlowVariableJavaTypeProvider returns
+            // (computeBeforeOpenDialog). Using FQN here would cause the framework to detect a
+            // change on dialog open (FQN -> simple name) and mark settings as dirty.
+            return inVar.getJavaType() != null ? inVar.getJavaType().getSimpleName() : "";
         }
 
         @Override
@@ -373,7 +373,16 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     private static final class InputFlowVariableKnimeTypePersistor extends InVarListElementPersistor {
         @Override
         protected String getFieldFromItem(final InVar inVar) {
-            return inVar.getFlowVarType() != null ? inVar.getFlowVarType().toString() : "";
+            // Load as the preferred Java type simple name to match what
+            // InputFlowVariableKnimeTypeProvider.computeState returns. Using the
+            // FlowVariable.Type enum name (e.g. "STRING") would differ from the
+            // ValueProvider output (e.g. "String") and cause false dirty state.
+            if (inVar.getFlowVarType() != null) {
+                TypeConverter typeConversion =
+                    TypeProvider.getDefault().getTypeConverter(inVar.getFlowVarType());
+                return typeConversion.getPreferredJavaType().getSimpleName();
+            }
+            return "";
         }
 
         @Override
@@ -618,10 +627,10 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     private static final class InputColumnJavaTypePersistor extends InColListElementPersistor {
         @Override
         protected String getFieldFromItem(final InCol inCol) {
-            // Store the fully qualified class name to match what the legacy settings format persists.
-            // The @ValueProvider on m_javaType (computeBeforeOpenDialog) converts this to a simple
-            // name for UI display, preventing a load/save asymmetry that would cause dirty state.
-            return inCol.getJavaType() != null ? inCol.getJavaType().getName() : "";
+            // Load as simple name to match what InputColumnJavaTypeProvider returns
+            // (computeBeforeOpenDialog). Using FQN here would cause the framework to detect a
+            // change on dialog open (FQN -> simple name) and mark settings as dirty.
+            return inCol.getJavaType() != null ? inCol.getJavaType().getSimpleName() : "";
         }
 
         @Override
@@ -938,11 +947,11 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
     private static final class OutputColumnJavaTypePersistor extends OutColListElementPersistor<String> {
         @Override
         protected String getFieldFromItem(final OutCol outCol) {
-            // Store the fully qualified class name to match what the legacy settings format persists.
-            // The @ValueProvider on m_javaType (computeBeforeOpenDialog) converts this to a simple
-            // name for UI display, preventing a load/save asymmetry that would cause dirty state.
+            // Load as simple name to match what OutputColumnJavaTypeProvider returns
+            // (computeBeforeOpenDialog). Using FQN here would cause the framework to detect a
+            // change on dialog open (FQN -> simple name) and mark settings as dirty.
             if (outCol.getJavaType() != null) {
-                return outCol.getJavaType().getName();
+                return outCol.getJavaType().getSimpleName();
             }
             return "";
         }
