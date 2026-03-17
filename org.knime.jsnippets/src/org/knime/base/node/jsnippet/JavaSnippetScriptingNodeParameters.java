@@ -124,14 +124,14 @@ public final class JavaSnippetScriptingNodeParameters implements NodeParameters 
 
     String m_scriptBody = "";
 
-    // These are internal metadata fields that must not be exposed as flow-variable targets.
-    @Persist(configKey = "version", hidden = true)
+    // These are internal metadata fields not shown in the dialog (no @Widget annotation).
+    @Persist(configKey = "version")
     String m_version = JavaSnippet.VERSION_1_X;
 
-    @Persist(configKey = "templateUUID", hidden = true)
+    @Persist(configKey = "templateUUID")
     String m_templateUUID = null;
 
-    @Persist(configKey = "runOnExecute", hidden = true)
+    @Persist(configKey = "runOnExecute")
     boolean m_runOnExecute = false;
 
     // =================================================================================
