@@ -1,5 +1,6 @@
 /*
  * ------------------------------------------------------------------------
+ *
  *  Copyright by KNIME AG, Zurich, Switzerland
  *  Website: http://www.knime.com; Email: contact@knime.com
  *
@@ -43,83 +44,56 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   11.04.2008 (thor): created
+ *   Mar 19, 2026 (Jochen Reißinger, TNG Technology Consulting GmbH): created
  */
 package org.knime.base.node.rules.engine.twoports;
 
-import java.awt.GridBagConstraints;
-
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
-
-import org.knime.base.node.rules.engine.RuleFactory;
-import org.knime.base.node.rules.engine.RuleNodeSettings;
-import org.knime.base.node.rules.engine.Util;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
-import org.knime.core.node.NodeSettingsWO;
-import org.knime.core.node.NotConfigurableException;
-import org.knime.core.node.port.PortObjectSpec;
+import org.knime.node.parameters.Widget;
+import org.knime.node.parameters.migration.LoadDefaultsForAbsentFields;
+import org.knime.node.parameters.persistence.Persistor;
+import org.knime.node.parameters.persistence.legacy.EnumBooleanPersistor;
+import org.knime.node.parameters.widget.choices.Label;
+import org.knime.node.parameters.widget.choices.ValueSwitchWidget;
 
 /**
- * Rule Engine Variable (Dictionary) node dialog.
+ * Node parameters for the Rule-based Row Filter (Dictionary) node.
  *
- * @author Thorsten Meinl, University of Konstanz
- * @author Gabor Bakos
+ * @author Jochen Reißinger, TNG Technology Consulting GmbH
+ * @since 5.12
  */
-class RuleEngineVariable2PortsNodeDialog extends RuleEngine2PortsSimpleNodeDialog {
-    private JTextField m_newVariableName;
+@SuppressWarnings("restriction")
+@LoadDefaultsForAbsentFields
+final class RuleEngineFilter2PortsNodeParameters extends AbstractRuleEngine2PortsNodeParameters {
 
-    /**
-     * Constructs the default {@link RuleEngineVariable2PortsNodeDialog}.
-     */
-    RuleEngineVariable2PortsNodeDialog() {
-        super(new RuleEngine2PortsSimpleSettings(), RuleNodeSettings.VariableRule);
+    private enum FilterBehavior {
+            @Label(value = "Output matching rows",
+                description = "Rows where the first matching rule evaluates to TRUE are included in the output.")
+            MATCHING_ROWS,
+            @Label(value = "Output non-matching rows",
+                description = "Rows where the first matching rule evaluates to FALSE or no rule matches are included "
+                    + "in the output.")
+            NON_MATCHING_ROWS;
     }
 
-    /**
-     * {@inheritDoc}
-     * Adds the control for the new flow variable name.
-     */
-    @Override
-    protected void addAppendOrReplace(final JPanel panel, final GridBagConstraints gbc) {
-        gbc.gridx = 0;
-        gbc.weightx = 0;
-        gbc.gridwidth = 0;
-        panel.add(new JLabel("Result variable:"), gbc);
-        gbc.gridx = 1;
-        gbc.weightx = 1;
-        gbc.gridwidth = 3;
-        m_newVariableName = Util.createTextFieldWithWatermark(RuleEngineVariable2PortsNodeModel.DEFAULT_VARIABLE_NAME, 33, "Name of the new flow variable");
-        panel.add(m_newVariableName, gbc);
-        gbc.gridy++;
+    private static final class FilterBehaviorPersistor extends EnumBooleanPersistor<FilterBehavior> {
+        FilterBehaviorPersistor() {
+            super(RuleEngineFilter2PortsNodeModel.CFGKEY_INCLUDE_ON_MATCH, FilterBehavior.class,
+                FilterBehavior.MATCHING_ROWS);
+        }
+
+        @Override
+        public FilterBehavior load(final NodeSettingsRO settings) throws InvalidSettingsException {
+            if (!settings.containsKey(RuleEngineFilter2PortsNodeModel.CFGKEY_INCLUDE_ON_MATCH)) {
+                return FilterBehavior.MATCHING_ROWS;
+            }
+            return super.load(settings);
+        }
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected RuleFactory ruleFactory() {
-        RuleFactory ret = RuleFactory.getInstance(RuleNodeSettings.VariableRule).cloned();
-        return ret;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs) throws NotConfigurableException {
-        super.loadSettingsFrom(settings, specs);
-        m_newVariableName.setText(settings.getString(RuleEngineVariable2PortsNodeModel.VARIABLE_NAME, RuleEngineVariable2PortsNodeModel.DEFAULT_VARIABLE_NAME));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
-        super.saveSettingsTo(settings);
-        settings.addString(RuleEngineVariable2PortsNodeModel.VARIABLE_NAME, m_newVariableName.getText());
-    }
+    @Widget(title = "Filter behavior", description = "Choose whether to output matching or non-matching rows.")
+    @ValueSwitchWidget
+    @Persistor(FilterBehaviorPersistor.class)
+    FilterBehavior m_filterBehavior = FilterBehavior.MATCHING_ROWS;
 }

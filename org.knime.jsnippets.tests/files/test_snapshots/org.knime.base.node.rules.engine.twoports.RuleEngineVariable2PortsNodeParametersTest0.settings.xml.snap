@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config xmlns="http://www.knime.org/2008/09/XMLConfig" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.knime.org/2008/09/XMLConfig http://www.knime.org/XMLConfig_2008_09.xsd" key="test">
+    <entry key="dictionaryMode" type="xstring" value="CONDITION_AND_VALUE"/>
+    <entry key="ruleColumn" type="xstring" value="Rule"/>
+    <entry key="conditionColumn" type="xstring" value="Rule"/>
+    <entry key="valueColumn" type="xstring" value="Rule"/>
+    <entry key="treat.outcomes.with.dollar.as.references" type="xboolean" value="false"/>
+    <entry key="disallowLongOutputForCompatibility" type="xboolean" value="false"/>
+    <entry key="variable.name" type="xstring" value="myVal"/>
+</config>

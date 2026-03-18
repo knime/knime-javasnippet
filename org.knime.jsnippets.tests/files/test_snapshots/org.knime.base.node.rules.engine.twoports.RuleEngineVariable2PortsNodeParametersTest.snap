@@ -1,0 +1,244 @@
+{
+  "data" : {
+    "model" : {
+      "dictionaryMode" : "RULE",
+      "ruleColumn" : "",
+      "conditionColumn" : "",
+      "valueColumn" : "",
+      "treatOutcomesWithDollarAsReferences" : true,
+      "disallowLongOutputForCompatibility" : false,
+      "variableName" : "prediction"
+    }
+  },
+  "schema" : {
+    "type" : "object",
+    "properties" : {
+      "model" : {
+        "type" : "object",
+        "properties" : {
+          "conditionColumn" : {
+            "type" : "string",
+            "title" : "Condition column",
+            "description" : "The column in the rules table that contains the condition part of each rule (e.g. \"$Col$ > 0\").",
+            "default" : ""
+          },
+          "dictionaryMode" : {
+            "oneOf" : [ {
+              "const" : "RULE",
+              "title" : "Rule"
+            }, {
+              "const" : "CONDITION_AND_VALUE",
+              "title" : "Condition and value"
+            } ],
+            "title" : "Dictionary mode",
+            "description" : "Choose how the rules table encodes the rules.\n<ul>\n<li><b>Rule</b>: A single column contains the full rule expression including the outcome (e.g. \"$Col$ > 0 => TRUE\").</li>\n<li><b>Condition and value</b>: Two separate columns are used: one for the condition part of the rule and one for the outcome value.</li>\n</ul>",
+            "default" : "RULE"
+          },
+          "disallowLongOutputForCompatibility" : {
+            "type" : "boolean",
+            "default" : false
+          },
+          "ruleColumn" : {
+            "type" : "string",
+            "title" : "Rule column",
+            "description" : "The column in the rules table that contains the full rule expressions (condition and outcome combined, e.g. \"$Col$ > 0 => TRUE\").",
+            "default" : ""
+          },
+          "treatOutcomesWithDollarAsReferences" : {
+            "type" : "boolean",
+            "title" : "Treat values starting with $ as references",
+            "description" : "When checked, values in the value column that start with $ will be treated as references (for example, column, flow variable, or table property references) rather than literal string values.",
+            "default" : true
+          },
+          "valueColumn" : {
+            "type" : "string",
+            "title" : "Value column",
+            "description" : "The column in the rules table that contains the outcome value for each rule (e.g. \"TRUE\" or \"FALSE\").",
+            "default" : ""
+          },
+          "variableName" : {
+            "type" : "string",
+            "title" : "Variable name",
+            "description" : "Name of the flow variable that will hold the result of the first matching rule.",
+            "default" : "prediction"
+          }
+        }
+      }
+    }
+  },
+  "ui_schema" : {
+    "elements" : [ {
+      "type" : "Control",
+      "scope" : "#/properties/model/properties/dictionaryMode",
+      "options" : {
+        "format" : "valueSwitch"
+      }
+    }, {
+      "type" : "Control",
+      "scope" : "#/properties/model/properties/ruleColumn",
+      "options" : {
+        "format" : "dropDown"
+      },
+      "providedOptions" : [ "possibleValues" ],
+      "rule" : {
+        "effect" : "SHOW",
+        "condition" : {
+          "scope" : "#/properties/model/properties/dictionaryMode",
+          "schema" : {
+            "oneOf" : [ {
+              "const" : "RULE"
+            } ]
+          }
+        }
+      }
+    }, {
+      "type" : "Control",
+      "scope" : "#/properties/model/properties/conditionColumn",
+      "options" : {
+        "format" : "dropDown"
+      },
+      "providedOptions" : [ "possibleValues" ],
+      "rule" : {
+        "effect" : "HIDE",
+        "condition" : {
+          "scope" : "#/properties/model/properties/dictionaryMode",
+          "schema" : {
+            "oneOf" : [ {
+              "const" : "RULE"
+            } ]
+          }
+        }
+      }
+    }, {
+      "type" : "Control",
+      "scope" : "#/properties/model/properties/valueColumn",
+      "options" : {
+        "format" : "dropDown"
+      },
+      "providedOptions" : [ "possibleValues" ],
+      "rule" : {
+        "effect" : "HIDE",
+        "condition" : {
+          "scope" : "#/properties/model/properties/dictionaryMode",
+          "schema" : {
+            "oneOf" : [ {
+              "const" : "RULE"
+            } ]
+          }
+        }
+      }
+    }, {
+      "type" : "Control",
+      "scope" : "#/properties/model/properties/treatOutcomesWithDollarAsReferences",
+      "options" : {
+        "format" : "checkbox"
+      },
+      "rule" : {
+        "effect" : "HIDE",
+        "condition" : {
+          "scope" : "#/properties/model/properties/dictionaryMode",
+          "schema" : {
+            "oneOf" : [ {
+              "const" : "RULE"
+            } ]
+          }
+        }
+      }
+    }, {
+      "type" : "Control",
+      "scope" : "#/properties/model/properties/variableName"
+    } ]
+  },
+  "persist" : {
+    "type" : "object",
+    "properties" : {
+      "model" : {
+        "type" : "object",
+        "properties" : {
+          "dictionaryMode" : {
+            "configKey" : "dictionaryMode",
+            "deprecatedConfigKeys" : [ {
+              "deprecated" : [ [ "rules<dot>column" ] ]
+            } ]
+          },
+          "ruleColumn" : {
+            "configKey" : "ruleColumn",
+            "deprecatedConfigKeys" : [ {
+              "deprecated" : [ [ "rules<dot>column" ] ]
+            } ]
+          },
+          "conditionColumn" : {
+            "configKey" : "conditionColumn",
+            "deprecatedConfigKeys" : [ {
+              "deprecated" : [ [ "rules<dot>column" ] ]
+            } ]
+          },
+          "valueColumn" : {
+            "configKey" : "valueColumn",
+            "deprecatedConfigKeys" : [ {
+              "deprecated" : [ [ "outcomes<dot>column" ] ]
+            } ]
+          },
+          "treatOutcomesWithDollarAsReferences" : {
+            "configKey" : "treat<dot>outcomes<dot>with<dot>dollar<dot>as<dot>references"
+          },
+          "disallowLongOutputForCompatibility" : {
+            "configKey" : "disallowLongOutputForCompatibility"
+          },
+          "variableName" : {
+            "configKey" : "variable<dot>name"
+          }
+        }
+      }
+    }
+  },
+  "initialUpdates" : [ {
+    "scope" : "#/properties/model/properties/conditionColumn",
+    "providedOptionName" : "possibleValues",
+    "values" : [ {
+      "indices" : [ ],
+      "value" : [ {
+        "id" : "Rule",
+        "text" : "Rule",
+        "type" : {
+          "id" : "org.knime.core.data.StringValue",
+          "text" : "String"
+        }
+      } ]
+    } ]
+  }, {
+    "scope" : "#/properties/model/properties/ruleColumn",
+    "providedOptionName" : "possibleValues",
+    "values" : [ {
+      "indices" : [ ],
+      "value" : [ {
+        "id" : "Rule",
+        "text" : "Rule",
+        "type" : {
+          "id" : "org.knime.core.data.StringValue",
+          "text" : "String"
+        }
+      } ]
+    } ]
+  }, {
+    "scope" : "#/properties/model/properties/valueColumn",
+    "providedOptionName" : "possibleValues",
+    "values" : [ {
+      "indices" : [ ],
+      "value" : [ {
+        "id" : "Rule",
+        "text" : "Rule",
+        "type" : {
+          "id" : "org.knime.core.data.StringValue",
+          "text" : "String"
+        }
+      } ]
+    } ]
+  } ],
+  "globalUpdates" : [ {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/dictionaryMode"
+    },
+    "dependencies" : [ "#/properties/model/properties/conditionColumn" ]
+  } ]
+}

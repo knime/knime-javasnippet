@@ -189,23 +189,42 @@ public class RuleEngine2PortsNodeModel extends NodeModel implements FlowVariable
         if (ruleSpec == null) {
             throw new InvalidSettingsException("Rule table specification is not available.");
         }
+        if (ruleColumn == null || ruleColumn.isEmpty()) { // auto-guessing
+            final String guessed = guessRuleColumn(ruleSpec, settings.getOutcomeColumn());
+            CheckUtils.checkSetting(guessed != null, "Rules table contains no String column for rules.");
+            settings.setRuleColumn(guessed);
+            return "Guessing target column: \"" + settings.getRuleColumn() + "\".";
+        }
         DataColumnSpec columnSpec = ruleSpec.getColumnSpec(ruleColumn);
         boolean isValid = columnSpec != null && columnSpec.getType().isCompatible(StringValue.class);
-        CheckUtils.checkSetting(ruleColumn == null || isValid,
-            "Rule column \"" + ruleColumn + "\" not found or incompatible");
-        if (ruleColumn == null) { // auto-guessing
-            assert !isValid : "No class column set but valid configuration";
-            // if no useful column is selected guess one
-            // get the first useful one starting at the end of the table
-            for (int i = ruleSpec.getNumColumns(); i-- > 0;) {
-                if (ruleSpec.getColumnSpec(i).getType().isCompatible(StringValue.class)) {
-                    settings.setRuleColumn(ruleSpec.getColumnSpec(i).getName());
-                    return "Guessing target column: \"" + settings.getRuleColumn() + "\".";
-                }
-            }
-            CheckUtils.checkSetting(false, "Rules table contains no String column for rules.");
-        }
+        CheckUtils.checkSetting(isValid, "Rule column \"" + ruleColumn + "\" not found or incompatible");
         return null;
+    }
+
+    /**
+     * Guesses the rule/condition column name from the rules table spec.
+     * <p>
+     * In {@code CONDITION_AND_VALUE} mode (indicated by a non-{@code null} {@code outcomeColumn}) and with at least two
+     * String-compatible columns available, the penultimate String column is chosen so that the last one can serve as
+     * the value/outcome column. In all other cases the last String-compatible column is chosen.
+     *
+     * @param ruleSpec the rules table spec
+     * @param outcomeColumn the current outcome column value from settings; {@code null} signals RULE mode
+     * @return the guessed column name, or {@code null} if no String-compatible column exists
+     */
+    static String guessRuleColumn(final DataTableSpec ruleSpec, final String outcomeColumn) {
+        final List<String> stringCols = ruleSpec.stream() //
+            .filter(col -> col.getType().isCompatible(StringValue.class)) //
+            .map(DataColumnSpec::getName) //
+            .toList();
+        if (stringCols.isEmpty()) {
+            return null;
+        }
+        // outcomeColumn != null means CONDITION_AND_VALUE mode (null is the RULE-mode sentinel)
+        final boolean conditionAndValueMode = outcomeColumn != null;
+        final int idx =
+            (conditionAndValueMode && stringCols.size() >= 2) ? (stringCols.size() - 2) : (stringCols.size() - 1);
+        return stringCols.get(idx);
     }
 
     //    /**

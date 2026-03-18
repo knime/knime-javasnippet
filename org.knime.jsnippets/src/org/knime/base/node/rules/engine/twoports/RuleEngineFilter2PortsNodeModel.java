@@ -137,6 +137,16 @@ class RuleEngineFilter2PortsNodeModel extends RuleEngineNodeModel {
         if (warning != null) {
             setWarningMessage(warning);
         }
+        final DataTableSpec ruleSpec = inSpecs[RuleEngine2PortsNodeModel.RULE_PORT];
+        // Auto-guess rule column to mirror node parameters behaviour
+        if ("".equals(m_settings.getRuleColumn()) && ruleSpec.getNumColumns() > 0) {
+            m_settings
+                .setRuleColumn(RuleEngine2PortsNodeModel.guessRuleColumn(ruleSpec, m_settings.getOutcomeColumn()));
+        }
+        // Auto-guess outcome column to mirror node parameters behaviour
+        if ("".equals(m_settings.getOutcomeColumn()) && ruleSpec.getNumColumns() > 0) {
+            m_settings.setOutcomeColumn(ruleSpec.getColumnSpec(ruleSpec.getNumColumns() - 1).getName());
+        }
         CheckUtils.checkSettingNotNull(
             inSpecs[RuleEngine2PortsNodeModel.RULE_PORT].getColumnSpec(m_settings.getRuleColumn()),
             "No rule column with name: " + m_settings.getRuleColumn() + " is present in the rules table");

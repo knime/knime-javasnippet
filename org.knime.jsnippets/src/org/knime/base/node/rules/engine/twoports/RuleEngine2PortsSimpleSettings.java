@@ -63,6 +63,7 @@ import org.knime.core.node.NodeSettingsWO;
  * The common settings for the Rule * (Dictionary) nodes.
  *
  * @author Gabor Bakos
+ * @author Jochen Reißinger, TNG Technology Consulting GmbH
  */
 class RuleEngine2PortsSimpleSettings {
 
@@ -183,22 +184,43 @@ class RuleEngine2PortsSimpleSettings {
 
     /**
      * Called from model when settings are to be loaded.
+     * <p>
+     * Supports both the <em>new format</em> (written by {@link AbstractRuleEngine2PortsNodeParameters} since AP 5.12,
+     * identified by the presence of the {@value AbstractRuleEngine2PortsNodeParameters#CFG_DICTIONARY_MODE} key) and
+     * the <em>legacy format</em> (using {@value #RULES_COLUMN} / {@value #OUTCOMES_COLUMN}).
      *
      * @param settings To load from
      * @throws InvalidSettingsException If settings are invalid.
      */
     protected void loadSettingsModel(final NodeSettingsRO settings) throws InvalidSettingsException {
-        m_ruleColumn = settings.getString(RULES_COLUMN);
-        m_outcomeColumn = settings.getString(OUTCOMES_COLUMN);
-        // added in 3.2
-        m_disallowLongOutputForCompatibility = settings.getBoolean(DISALLOW_LONG_OUTPUT_FOR_COMPATIBILITY, true);
-        try {
-            m_treatOutcomesAsReferences = settings.getBoolean(TREAT_OUTCOMES_WITH_DOLLAR_AS_REFEENCES);
-        } catch (InvalidSettingsException e) {
-            //Introduced in 3.2, so we should use compatibility settings.
-            m_treatOutcomesAsReferences = COMPAT_TREAT_OUTCOMES_WITH_DOLLAR_AS_REFERENCES;
+        if (settings.containsKey(AbstractRuleEngine2PortsNodeParameters.CFG_DICTIONARY_MODE)) {
+            // New format written by AbstractRuleEngine2PortsNodeParameters
+            final String mode = settings.getString(AbstractRuleEngine2PortsNodeParameters.CFG_DICTIONARY_MODE);
+            if (AbstractRuleEngine2PortsNodeParameters.DictionaryMode.CONDITION_AND_VALUE.name().equals(mode)) {
+                m_ruleColumn = settings.getString(AbstractRuleEngine2PortsNodeParameters.CFG_CONDITION_COLUMN);
+                m_outcomeColumn = settings.getString(AbstractRuleEngine2PortsNodeParameters.CFG_VALUE_COLUMN);
+                m_treatOutcomesAsReferences = settings.getBoolean(TREAT_OUTCOMES_WITH_DOLLAR_AS_REFEENCES,
+                    DEFAULT_TREAT_OUTCOMES_WITH_DOLLAR_AS_REFERENCES);
+            } else {
+                // DictionaryMode.RULE
+                m_ruleColumn = settings.getString(AbstractRuleEngine2PortsNodeParameters.CFG_RULE_COLUMN);
+                m_outcomeColumn = null;
+                m_treatOutcomesAsReferences = DEFAULT_TREAT_OUTCOMES_WITH_DOLLAR_AS_REFERENCES;
+            }
+        } else {
+            // Legacy format
+            m_ruleColumn = settings.getString(RULES_COLUMN);
+            m_outcomeColumn = settings.getString(OUTCOMES_COLUMN);
+            try {
+                m_treatOutcomesAsReferences = settings.getBoolean(TREAT_OUTCOMES_WITH_DOLLAR_AS_REFEENCES);
+            } catch (InvalidSettingsException e) {
+                //Introduced in 3.2, so we should use compatibility settings.
+                m_treatOutcomesAsReferences = COMPAT_TREAT_OUTCOMES_WITH_DOLLAR_AS_REFERENCES;
+            }
         }
-
+        // added in 3.2; default true because if the key is absent, the workflow predates 3.2 and must retain
+        // int-compatible output. For new workflows (written by NodeParameters), the key is always present.
+        m_disallowLongOutputForCompatibility = settings.getBoolean(DISALLOW_LONG_OUTPUT_FOR_COMPATIBILITY, true);
     }
 
     /**
