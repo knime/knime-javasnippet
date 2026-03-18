@@ -369,6 +369,15 @@ class RuleEngineVariable2PortsNodeModel extends NodeModel implements FlowVariabl
         if (ruleTableSpec == null) {
             return null;
         }
+        // Auto-guess rule column to mirror node parameters behaviour
+        if ("".equals(m_settings.getRuleColumn()) && ruleTableSpec.getNumColumns() > 0) {
+            m_settings
+                .setRuleColumn(RuleEngine2PortsNodeModel.guessRuleColumn(ruleTableSpec, m_settings.getOutcomeColumn()));
+        }
+        // Auto-guess outcome column to mirror node parameters behaviour
+        if ("".equals(m_settings.getOutcomeColumn()) && ruleTableSpec.getNumColumns() > 0) {
+            m_settings.setOutcomeColumn(ruleTableSpec.getColumnSpec(ruleTableSpec.getNumColumns() - 1).getName());
+        }
         CheckUtils.checkSettingNotNull(ruleTableSpec.getColumnSpec(m_settings.getRuleColumn()),
             "No rule column in the rules table with name: " + m_settings.getRuleColumn());
         return new PortObjectSpec[]{FlowVariablePortObjectSpec.INSTANCE};
