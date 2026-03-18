@@ -54,6 +54,8 @@ import java.util.List;
 
 import org.knime.base.node.util.WebUIDialogUtils;
 import org.knime.core.node.workflow.NodeContext;
+import org.knime.core.webui.data.RpcDataService;
+import org.knime.core.webui.data.RpcDataService.RpcDataServiceBuilder;
 import org.knime.core.webui.node.dialog.scripting.AbstractDefaultScriptingNodeDialog;
 import org.knime.core.webui.node.dialog.scripting.GenericInitialDataBuilder;
 import org.knime.core.webui.node.dialog.scripting.GenericInitialDataBuilder.ScriptSection;
@@ -124,6 +126,18 @@ public class JavaSnippetScriptingNodeDialog extends AbstractDefaultScriptingNode
         // Add the script sections to the builder
         builder.addScriptSectionData(scriptSections);
 
+        // Enable dynamic completion triggered by "."
+        builder.enableDynamicCompletion(".");
+
         return builder;
+    }
+
+    @Override
+    protected RpcDataServiceBuilder getDataServiceBuilder(final NodeContext context) {
+        var workflowControl = new WorkflowControl(context.getNodeContainer());
+        var scriptingService = new JavaSnippetScriptingService(workflowControl);
+        return RpcDataService.builder()
+            .addService("ScriptingService", scriptingService.getJsonRpcService())
+            .onDeactivate(scriptingService::onDeactivate);
     }
 }
