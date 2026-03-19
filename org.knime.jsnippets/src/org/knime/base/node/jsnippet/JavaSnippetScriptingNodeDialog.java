@@ -129,6 +129,9 @@ public class JavaSnippetScriptingNodeDialog extends AbstractDefaultScriptingNode
         // Enable dynamic completion triggered by "."
         builder.enableDynamicCompletion(".");
 
+        // Show the control bar so the AI button is visible
+        builder.showAIAssistant();
+
         return builder;
     }
 
