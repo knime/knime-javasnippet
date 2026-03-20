@@ -495,7 +495,8 @@ public class RuleEngineNodeModel extends NodeModel implements FlowVariableProvid
             ColumnRearranger crea = createRearranger(inSpecs[0], rules, -1, true);
             return new DataTableSpec[]{crea.createSpec()};
         } catch (ParseException ex) {
-            throw new InvalidSettingsException(ex.getMessage(), ex);
+            setWarningMessage(ex.getMessage());
+            return inSpecs;
         }
     }
 
@@ -510,6 +511,9 @@ public class RuleEngineNodeModel extends NodeModel implements FlowVariableProvid
             List<Rule> rules = parseRules(inData[0].getDataTableSpec(), RuleNodeSettings.RuleEngine);
             ColumnRearranger crea = createRearranger(inData[0].getDataTableSpec(), rules, inData[0].size(), false);
             return new BufferedDataTable[]{exec.createColumnRearrangeTable(inData[0], crea, exec)};
+        } catch (ParseException ex) {
+            setWarningMessage(ex.getMessage());
+            return inData;
         } finally {
             m_rowCount = -1;
         }
@@ -563,7 +567,6 @@ public class RuleEngineNodeModel extends NodeModel implements FlowVariableProvid
     protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
         RuleEngineSettings s = new RuleEngineSettings();
         s.loadSettings(settings);
-        validateRules(s.rules());
     }
 
     /**
@@ -632,14 +635,18 @@ public class RuleEngineNodeModel extends NodeModel implements FlowVariableProvid
     public StreamableOperator createStreamableOperator(final PartitionInfo partitionInfo,
         final PortObjectSpec[] inSpecs) throws InvalidSettingsException {
         final DataTableSpec spec = (DataTableSpec)inSpecs[0];
-        final List<Rule> parsedRules;
-        try {
-            parsedRules = parseRules(spec, RuleNodeSettings.RuleEngine);
-        } catch (final ParseException e) {
-            throw new InvalidSettingsException(e);
-        }
         return new StreamableOperator() {
             private SimpleStreamableOperatorInternals m_internals;
+            private List<Rule> m_parsedRules;
+            private String m_parseWarning;
+
+            {
+                try {
+                    m_parsedRules = parseRules(spec, RuleNodeSettings.RuleEngine);
+                } catch (final ParseException e) {
+                    m_parseWarning = e.getMessage();
+                }
+            }
 
             /**
              * {@inheritDoc}
@@ -673,12 +680,20 @@ public class RuleEngineNodeModel extends NodeModel implements FlowVariableProvid
 
             @Override
             public void runFinal(final PortInput[] inputs, final PortOutput[] outputs, final ExecutionContext exec) throws Exception {
+                if (m_parseWarning != null) {
+                    setWarningMessage(m_parseWarning);
+                    new ColumnRearranger(((RowInput)inputs[0]).getDataTableSpec()).createStreamableFunction(0, 0)
+                        .runFinal(inputs, outputs, exec);
+                    return;
+                }
+
                 long rowCount = -1L;
                 if (m_internals.getConfig().containsKey(CFG_ROW_COUNT)) {
                     rowCount = m_internals.getConfig().getLong(CFG_ROW_COUNT);
                 }
 
-                createRearranger(((RowInput)inputs[0]).getDataTableSpec(), parsedRules, rowCount, false).createStreamableFunction(0, 0).runFinal(inputs, outputs, exec);
+                createRearranger(((RowInput)inputs[0]).getDataTableSpec(), m_parsedRules, rowCount, false)
+                    .createStreamableFunction(0, 0).runFinal(inputs, outputs, exec);
             }
         };
     }
