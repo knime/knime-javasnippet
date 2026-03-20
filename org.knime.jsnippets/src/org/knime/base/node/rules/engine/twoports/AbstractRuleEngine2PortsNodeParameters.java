@@ -127,7 +127,7 @@ abstract class AbstractRuleEngine2PortsNodeParameters implements NodeParameters 
     // -----------------------------------------------------------------------------------------------------------------
 
     /** Provides string columns from the rules table (port {@value RuleEngineFilter2PortsNodeModel#RULE_PORT}). */
-    static final class RulesTableStringColumnsProvider extends CompatibleColumnsProvider {
+    private static final class RulesTableStringColumnsProvider extends CompatibleColumnsProvider {
         RulesTableStringColumnsProvider() {
             super(StringValue.class);
         }
@@ -142,7 +142,7 @@ abstract class AbstractRuleEngine2PortsNodeParameters implements NodeParameters 
      * Provides string, double, and boolean columns from the rules table (port
      * {@value RuleEngineFilter2PortsNodeModel#RULE_PORT}). Used for the value (outcome) column.
      */
-    static final class RulesTableOutcomeColumnsProvider implements ColumnChoicesProvider {
+    private static final class RulesTableOutcomeColumnsProvider implements ColumnChoicesProvider {
         @Override
         public List<DataColumnSpec> columnChoices(final NodeParametersInput context) {
             return context.getInTableSpec(RuleEngineFilter2PortsNodeModel.RULE_PORT) //
@@ -160,11 +160,11 @@ abstract class AbstractRuleEngine2PortsNodeParameters implements NodeParameters 
     // -----------------------------------------------------------------------------------------------------------------
 
     /** Reference for the dictionary mode, used to drive show/hide effects. */
-    interface DictionaryModeRef extends ParameterReference<DictionaryMode> {
+    private interface DictionaryModeRef extends ParameterReference<DictionaryMode> {
     }
 
     /** Predicate: the mode is {@link DictionaryMode#RULE}. */
-    static final class IsRuleMode implements EffectPredicateProvider {
+    private static final class IsRuleMode implements EffectPredicateProvider {
         @Override
         public EffectPredicate init(final PredicateInitializer i) {
             return i.getEnum(DictionaryModeRef.class).isOneOf(DictionaryMode.RULE);
@@ -195,7 +195,7 @@ abstract class AbstractRuleEngine2PortsNodeParameters implements NodeParameters 
      * <li>{@code outcomes.column} was a non-null string → {@link DictionaryMode#CONDITION_AND_VALUE}</li>
      * </ul>
      */
-    static final class DictionaryModeMigration implements NodeParametersMigration<DictionaryMode> {
+    private static final class DictionaryModeMigration implements NodeParametersMigration<DictionaryMode> {
         @Override
         public List<ConfigMigration<DictionaryMode>> getConfigMigrations() {
             return List.of(ConfigMigration //
@@ -227,7 +227,7 @@ abstract class AbstractRuleEngine2PortsNodeParameters implements NodeParameters 
     // -----------------------------------------------------------------------------------------------------------------
 
     /** Migration that reads {@code rules.column} from old settings for the rule column field. */
-    static final class RuleColumnMigration implements NodeParametersMigration<String> {
+    private static final class RuleColumnMigration implements NodeParametersMigration<String> {
         @Override
         public List<ConfigMigration<String>> getConfigMigrations() {
             return List.of(ConfigMigration //
@@ -254,7 +254,7 @@ abstract class AbstractRuleEngine2PortsNodeParameters implements NodeParameters 
      * Migration that reads {@code rules.column} from old settings as the condition column (used when
      * {@code outcomes.column} was non-null in the old format).
      */
-    static final class ConditionColumnMigration implements NodeParametersMigration<String> {
+    private static final class ConditionColumnMigration implements NodeParametersMigration<String> {
         @Override
         public List<ConfigMigration<String>> getConfigMigrations() {
             return List.of(ConfigMigration //
@@ -274,7 +274,7 @@ abstract class AbstractRuleEngine2PortsNodeParameters implements NodeParameters 
     String m_conditionColumn = "";
 
     /** Migration that reads {@code outcomes.column} from old settings as the value column. */
-    static final class ValueColumnMigration implements NodeParametersMigration<String> {
+    private static final class ValueColumnMigration implements NodeParametersMigration<String> {
         @Override
         public List<ConfigMigration<String>> getConfigMigrations() {
             return List.of(ConfigMigration //
