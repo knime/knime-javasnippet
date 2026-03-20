@@ -59,14 +59,7 @@ import java.util.stream.Collectors;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.knime.core.data.DataColumnSpecCreator;
-import org.knime.core.data.DataTableSpec;
-import org.knime.core.data.def.IntCell;
-import org.knime.core.data.def.StringCell;
 import org.knime.core.node.port.PortObjectSpec;
-import org.knime.core.node.workflow.FlowObjectStack;
-import org.knime.core.node.workflow.FlowVariable;
-import org.knime.core.node.workflow.NodeID;
 import org.knime.core.webui.node.dialog.scripting.DynamicCompletionItem;
 import org.knime.core.webui.node.dialog.scripting.DynamicCompletionRequest;
 import org.knime.core.webui.node.dialog.scripting.WorkflowControl;
@@ -83,12 +76,21 @@ public class JavaSnippetCompletionServiceTest {
 
     private JavaSnippetCompletionService m_service;
 
+    /** Convenience helper to create empty FieldMappings. */
+    private static JavaSnippetScriptingService.FieldMappings emptyMappings() {
+        return new JavaSnippetScriptingService.FieldMappings(
+            new JavaSnippetScriptingService.FieldMapping[0],
+            new JavaSnippetScriptingService.FieldMapping[0],
+            new JavaSnippetScriptingService.FieldMapping[0],
+            new JavaSnippetScriptingService.FieldMapping[0]);
+    }
+
     @Before
     public void setUp() {
         m_workflowControl = mock(WorkflowControl.class);
         // Safe defaults: empty spec and no flow variables
         when(m_workflowControl.getInputSpec()).thenReturn(new PortObjectSpec[0]);
-        m_service = new JavaSnippetCompletionService(m_workflowControl);
+        m_service = new JavaSnippetCompletionService(m_workflowControl, emptyMappings());
     }
 
     // ── Helper factories ────────────────────────────────────────────────────
@@ -172,74 +174,124 @@ public class JavaSnippetCompletionServiceTest {
     }
 
     /**
-     * P0: Input columns from the DataTableSpec appear as Variable items labelled {@code $colName$}.
+     * P0: Configured input columns appear as Field items using their Java field name and include documentation.
      */
     @Test
-    public void testP0InputColumnsFromSpec() {
-        var spec = new DataTableSpec(
-            new DataColumnSpecCreator("col1", StringCell.TYPE).createSpec(),
-            new DataColumnSpecCreator("col2", IntCell.TYPE).createSpec());
-        when(m_workflowControl.getInputSpec()).thenReturn(new PortObjectSpec[]{spec});
+    public void testP0InputColumnsFromFieldMappings() {
+        var inputCols = new JavaSnippetScriptingService.FieldMapping[]{
+            new JavaSnippetScriptingService.FieldMapping("Age", "c_Age", "Integer"),
+            new JavaSnippetScriptingService.FieldMapping("Name", "c_Name", "String"),
+        };
+        var service = new JavaSnippetCompletionService(m_workflowControl,
+            new JavaSnippetScriptingService.FieldMappings(
+                inputCols,
+                new JavaSnippetScriptingService.FieldMapping[0],
+                new JavaSnippetScriptingService.FieldMapping[0],
+                new JavaSnippetScriptingService.FieldMapping[0]));
 
-        var result = m_service.getCompletions(invokedRequest("", 1, 1));
+        var result = service.getCompletions(invokedRequest("", 1, 1));
 
-        var variableLabels = labelsOfKind(result, "Variable");
-        assertTrue("Expected $col1$ item", variableLabels.contains("$col1$"));
-        assertTrue("Expected $col2$ item", variableLabels.contains("$col2$"));
+        var fieldLabels = labelsOfKind(result, "Field");
+        assertTrue("Expected c_Age field", fieldLabels.contains("c_Age"));
+        assertTrue("Expected c_Name field", fieldLabels.contains("c_Name"));
+
+        var ageItem = result.stream().filter(i -> "c_Age".equals(i.label())).findFirst().orElseThrow();
+        assertTrue("Documentation should mention KNIME column name", ageItem.documentation().contains("Age"));
+        assertTrue("Documentation should mention Java type", ageItem.documentation().contains("Integer"));
+        assertEquals("detail should be the Java type", "Integer", ageItem.detail());
     }
 
     /**
-     * P0: Available flow variables appear as Variable items in the {@code $${SvarName}$$} format.
+     * P0: Configured input flow variables appear as Field items using their Java field name.
      */
     @Test
-    public void testP0FlowVariablesPresent() {
-        var flowVar = new FlowVariable("myVar", "someValue"); // String flow variable
-        var stack = FlowObjectStack.createFromFlowVariableList(List.of(flowVar), new NodeID(1));
-        when(m_workflowControl.getFlowObjectStack()).thenReturn(stack);
+    public void testP0FlowVariablesFromFieldMappings() {
+        var inputFvs = new JavaSnippetScriptingService.FieldMapping[]{
+            new JavaSnippetScriptingService.FieldMapping("myVar", "fv_myVar", "String"),
+        };
+        var service = new JavaSnippetCompletionService(m_workflowControl,
+            new JavaSnippetScriptingService.FieldMappings(
+                new JavaSnippetScriptingService.FieldMapping[0],
+                inputFvs,
+                new JavaSnippetScriptingService.FieldMapping[0],
+                new JavaSnippetScriptingService.FieldMapping[0]));
 
-        var result = m_service.getCompletions(invokedRequest("", 1, 1));
+        var result = service.getCompletions(invokedRequest("", 1, 1));
 
-        var variableLabels = labelsOfKind(result, "Variable");
-        assertTrue("Expected flow variable item $${SmyVar}$$", variableLabels.contains("$${SmyVar}$$"));
+        var fieldLabels = labelsOfKind(result, "Field");
+        assertTrue("Expected fv_myVar field", fieldLabels.contains("fv_myVar"));
+
+        var fvItem = result.stream().filter(i -> "fv_myVar".equals(i.label())).findFirst().orElseThrow();
+        assertTrue("Documentation should mention KNIME variable name", fvItem.documentation().contains("myVar"));
     }
 
     /**
-     * P0: When input spec is empty no column Variable items are produced; row metadata and keywords are still present.
+     * P0: Configured output columns appear as Field items with documentation indicating they write to KNIME.
      */
     @Test
-    public void testP0NoInputSpec() {
-        // Default mock already returns PortObjectSpec[0]
+    public void testP0OutputColumnsFromFieldMappings() {
+        var outputCols = new JavaSnippetScriptingService.FieldMapping[]{
+            new JavaSnippetScriptingService.FieldMapping("result", "out_result", "String"),
+        };
+        var service = new JavaSnippetCompletionService(m_workflowControl,
+            new JavaSnippetScriptingService.FieldMappings(
+                new JavaSnippetScriptingService.FieldMapping[0],
+                new JavaSnippetScriptingService.FieldMapping[0],
+                outputCols,
+                new JavaSnippetScriptingService.FieldMapping[0]));
+
+        var result = service.getCompletions(invokedRequest("", 1, 1));
+
+        var fieldLabels = labelsOfKind(result, "Field");
+        assertTrue("Expected out_result field", fieldLabels.contains("out_result"));
+
+        var outItem = result.stream().filter(i -> "out_result".equals(i.label())).findFirst().orElseThrow();
+        assertTrue("Documentation should mention writing to KNIME", outItem.documentation().contains("writes"));
+        assertTrue("Documentation should mention KNIME column name", outItem.documentation().contains("result"));
+    }
+
+    /**
+     * P0: Configured output flow variables appear as Field items with documentation indicating they write to KNIME.
+     */
+    @Test
+    public void testP0OutputFlowVariablesFromFieldMappings() {
+        var outputFvs = new JavaSnippetScriptingService.FieldMapping[]{
+            new JavaSnippetScriptingService.FieldMapping("outVar", "outfv_outVar", "Double"),
+        };
+        var service = new JavaSnippetCompletionService(m_workflowControl,
+            new JavaSnippetScriptingService.FieldMappings(
+                new JavaSnippetScriptingService.FieldMapping[0],
+                new JavaSnippetScriptingService.FieldMapping[0],
+                new JavaSnippetScriptingService.FieldMapping[0],
+                outputFvs));
+
+        var result = service.getCompletions(invokedRequest("", 1, 1));
+
+        var fieldLabels = labelsOfKind(result, "Field");
+        assertTrue("Expected outfv_outVar field", fieldLabels.contains("outfv_outVar"));
+
+        var outItem = result.stream().filter(i -> "outfv_outVar".equals(i.label())).findFirst().orElseThrow();
+        assertTrue("Documentation should mention writing to KNIME", outItem.documentation().contains("writes"));
+    }
+
+    /**
+     * P0: When no field mappings are configured, no extra Field items (other than row metadata) are present.
+     */
+    @Test
+    public void testP0EmptyMappingsNoColumnOrFlowVarItems() {
+        // m_service uses empty mappings by default from setUp()
         var result = m_service.getCompletions(invokedRequest("", 1, 1));
 
-        // No column items – column items have labels like "$colName$" (not "$${...}$$")
-        long columnItems = result.stream()
-            .filter(i -> "Variable".equals(i.kind())
-                && i.label().startsWith("$")
-                && !i.label().startsWith("$${"))
+        var nonMetaFieldItems = result.stream()
+            .filter(i -> "Field".equals(i.kind())
+                && !"ROWID".equals(i.label())
+                && !"ROWINDEX".equals(i.label())
+                && !"ROWCOUNT".equals(i.label()))
             .count();
-        assertEquals("No column Variable items expected when spec is empty", 0L, columnItems);
+        assertEquals("No non-metadata Field items expected with empty mappings", 0L, nonMetaFieldItems);
 
-        // Row metadata and keywords still present
         assertTrue("ROWID should be present", labelsOfKind(result, "Field").contains("ROWID"));
         assertTrue("'if' keyword should be present", labelsOfKind(result, "Keyword").contains("if"));
-    }
-
-    /**
-     * P0: When the FlowObjectStack is null no flow variable items are produced; the rest is still present.
-     */
-    @Test
-    public void testP0NoFlowVariables() {
-        // getFlowObjectStack() returns null by default with Mockito
-        var result = m_service.getCompletions(invokedRequest("", 1, 1));
-
-        long fvItems = result.stream()
-            .filter(i -> "Variable".equals(i.kind()) && i.label().startsWith("$${"))
-            .count();
-        assertEquals("No flow variable items expected when stack is null", 0L, fvItems);
-
-        // Row metadata and keywords still present
-        assertTrue("ROWID should be present", labelsOfKind(result, "Field").contains("ROWID"));
-        assertTrue("'for' keyword should be present", labelsOfKind(result, "Keyword").contains("for"));
     }
 
     // ── P1 tests ────────────────────────────────────────────────────────────

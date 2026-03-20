@@ -53,10 +53,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.knime.base.node.jsnippet.expression.AbstractJSnippet;
-import org.knime.base.node.util.WebUIDialogUtils;
-import org.knime.core.data.DataTableSpec;
+import org.knime.base.node.jsnippet.expression.KnimeDoc;
 import org.knime.core.webui.node.dialog.scripting.DynamicCompletionItem;
 import org.knime.core.webui.node.dialog.scripting.DynamicCompletionRequest;
 import org.knime.core.webui.node.dialog.scripting.WorkflowControl;
@@ -88,8 +88,12 @@ final class JavaSnippetCompletionService {
 
     private final WorkflowControl m_workflowControl;
 
-    JavaSnippetCompletionService(final WorkflowControl workflowControl) {
+    private final JavaSnippetScriptingService.FieldMappings m_fieldMappings;
+
+    JavaSnippetCompletionService(final WorkflowControl workflowControl,
+            final JavaSnippetScriptingService.FieldMappings fieldMappings) {
         m_workflowControl = workflowControl;
+        m_fieldMappings = fieldMappings;
     }
 
     List<DynamicCompletionItem> getCompletions(final DynamicCompletionRequest request) {
@@ -123,21 +127,19 @@ final class JavaSnippetCompletionService {
     private List<DynamicCompletionItem> getP0Completions() {
         var items = new ArrayList<DynamicCompletionItem>();
 
-        // Row metadata
-        items.add(new DynamicCompletionItem("ROWID", "Field", "String",
-            "The ID of the current row", "ROWID", false, "0_meta_ROWID", "ROWID"));
-        items.add(new DynamicCompletionItem("ROWINDEX", "Field", "int",
-            "The 0-based index of the current row", "ROWINDEX", false, "0_meta_ROWINDEX", "ROWINDEX"));
-        items.add(new DynamicCompletionItem("ROWCOUNT", "Field", "int",
-            "The total number of rows in the input table", "ROWCOUNT", false, "0_meta_ROWCOUNT", "ROWCOUNT"));
-
-        // Input columns
+        // Input columns from configured field mappings
         addColumnCompletions(items);
 
-        // Flow variables
+        // Input flow variables from configured field mappings
         addFlowVariableCompletions(items);
 
-        // AbstractJSnippet methods
+        // Output columns from configured field mappings
+        addOutputColumnCompletions(items);
+
+        // Output flow variables from configured field mappings
+        addOutputFlowVariableCompletions(items);
+
+        // AbstractJSnippet methods and instance fields (ROWID, ROWINDEX, ROWCOUNT) via reflection + @KnimeDoc
         addSnippetMethodCompletions(items);
 
         // Java keywords
@@ -150,104 +152,116 @@ final class JavaSnippetCompletionService {
     }
 
     private void addColumnCompletions(final List<DynamicCompletionItem> items) {
-        var inputSpec = m_workflowControl.getInputSpec();
-        if (inputSpec == null || inputSpec.length == 0) {
+        var mappings = m_fieldMappings.inputColumns();
+        if (mappings.length == 0) {
             return;
         }
-        if (inputSpec[0] instanceof DataTableSpec tableSpec) {
-            for (var col : tableSpec) {
-                var colName = col.getName();
-                var typeName = col.getType().getCellClass().getSimpleName();
-                var label = "$" + colName + "$";
-                items.add(new DynamicCompletionItem(label, "Variable", typeName,
-                    "Column: " + colName, label, false, "1_col_" + colName, colName));
-            }
+        for (var mapping : mappings) {
+            var doc = "Input column field (" + mapping.javaType() + ") \u2014 reads from KNIME column \""
+                + mapping.knimeName() + "\"";
+            items.add(new DynamicCompletionItem(
+                mapping.javaName(), "Field", mapping.javaType(),
+                doc, mapping.javaName(), false,
+                "1_col_" + mapping.javaName(), mapping.javaName()));
         }
     }
 
     private void addFlowVariableCompletions(final List<DynamicCompletionItem> items) {
-        var stack = m_workflowControl.getFlowObjectStack();
-        if (stack == null) {
+        var mappings = m_fieldMappings.inputFlowVariables();
+        if (mappings.length == 0) {
             return;
         }
-        var flowVars = stack.getAllAvailableFlowVariables();
-        if (flowVars == null) {
+        for (var mapping : mappings) {
+            var doc = "Input flow variable field (" + mapping.javaType() + ") \u2014 reads from KNIME flow variable \""
+                + mapping.knimeName() + "\"";
+            items.add(new DynamicCompletionItem(
+                mapping.javaName(), "Field", mapping.javaType(),
+                doc, mapping.javaName(), false,
+                "2_fv_" + mapping.javaName(), mapping.javaName()));
+        }
+    }
+
+    private void addOutputColumnCompletions(final List<DynamicCompletionItem> items) {
+        var mappings = m_fieldMappings.outputColumns();
+        if (mappings.length == 0) {
             return;
         }
-        for (var fv : flowVars.values()) {
-            if (!WebUIDialogUtils.SUPPORTED_VARIABLE_TYPES.contains(fv.getVariableType())) {
-                continue;
-            }
-            try {
-                var typeChar = WebUIDialogUtils.getFlowVariableTypePrefix(fv);
-                var varName = fv.getName();
-                var label = "$${" + typeChar + varName + "}$$";
-                var typeName = fv.getVariableType().getIdentifier();
-                items.add(new DynamicCompletionItem(label, "Variable", typeName,
-                    "Flow variable: " + varName, label, false, "2_fv_" + varName, varName));
-            } catch (IllegalArgumentException ex) { // NOSONAR - skip unsupported types
-            }
+        for (var mapping : mappings) {
+            var doc = "Output column field (" + mapping.javaType() + ") \u2014 writes to KNIME column \""
+                + mapping.knimeName() + "\"";
+            items.add(new DynamicCompletionItem(
+                mapping.javaName(), "Field", mapping.javaType(),
+                doc, mapping.javaName(), false,
+                "2_outcol_" + mapping.javaName(), mapping.javaName()));
+        }
+    }
+
+    private void addOutputFlowVariableCompletions(final List<DynamicCompletionItem> items) {
+        var mappings = m_fieldMappings.outputFlowVariables();
+        if (mappings.length == 0) {
+            return;
+        }
+        for (var mapping : mappings) {
+            var doc = "Output flow variable field (" + mapping.javaType() + ") \u2014 writes to KNIME flow variable \""
+                + mapping.knimeName() + "\"";
+            items.add(new DynamicCompletionItem(
+                mapping.javaName(), "Field", mapping.javaType(),
+                doc, mapping.javaName(), false,
+                "2_outfv_" + mapping.javaName(), mapping.javaName()));
         }
     }
 
     private static void addSnippetMethodCompletions(final List<DynamicCompletionItem> items) {
-        // getCell variants
-        items.add(makeSnippetMethod("getCell(${1:column}, ${2:type})", "getCell", "T",
-            "Get the value of a column by name", "getCell_name"));
-        items.add(makeSnippetMethod("getCell(${1:colIndex}, ${2:type})", "getCell", "T",
-            "Get the value of a column by index", "getCell_idx"));
+        // Methods via reflection + @KnimeDoc
+        for (var method : AbstractJSnippet.class.getDeclaredMethods()) {
+            if (method.isSynthetic() || method.isBridge()) {
+                continue;
+            }
+            int mods = method.getModifiers();
+            if (!Modifier.isPublic(mods) && !Modifier.isProtected(mods)) {
+                continue;
+            }
+            // Skip internal/lifecycle methods not useful in snippet body
+            var methodName = method.getName();
+            if ("attachLogger".equals(methodName) || "snippet".equals(methodName)) {
+                continue;
+            }
 
-        // isType variants
-        items.add(makeSnippetMethod("isType(${1:column}, ${2:type})", "isType", "boolean",
-            "Returns true when the column is of the given type", "isType_name"));
-        items.add(makeSnippetMethod("isType(${1:colIndex}, ${2:type})", "isType", "boolean",
-            "Returns true when the column is of the given type by index", "isType_idx"));
+            var doc = method.getAnnotation(KnimeDoc.class);
+            String documentation = doc != null ? doc.value() : null;
 
-        // isMissing variants
-        items.add(makeSnippetMethod("isMissing(${1:column})", "isMissing", "boolean",
-            "Returns true when the cell of the given column is a missing cell", "isMissing_name"));
-        items.add(makeSnippetMethod("isMissing(${1:colIndex})", "isMissing", "boolean",
-            "Returns true when the cell at the given column index is a missing cell", "isMissing_idx"));
+            String params = Arrays.stream(method.getParameterTypes())
+                .map(Class::getSimpleName)
+                .collect(Collectors.joining(", "));
+            String returnType = method.getReturnType().getSimpleName();
+            String label = methodName + "(" + params + ")";
+            String insertParams = buildParamSnippet(method.getParameterTypes());
 
-        // Column utilities
-        items.add(makeSnippetMethod("getColumnCount()", "getColumnCount", "int",
-            "Get the number of input columns", "getColumnCount"));
-        items.add(makeSnippetMethod("getColumnName(${1:index})", "getColumnName", "String",
-            "Get the name of the column at the specified index", "getColumnName"));
-        items.add(makeSnippetMethod("columnExists(${1:column})", "columnExists", "boolean",
-            "Returns true when a column with the given name exists", "columnExists_name"));
-        items.add(makeSnippetMethod("columnExists(${1:index})", "columnExists", "boolean",
-            "Returns true when a column at the given index exists", "columnExists_idx"));
-
-        // Flow variable utilities
-        items.add(makeSnippetMethod("getFlowVariable(${1:var}, ${2:type})", "getFlowVariable", "T",
-            "Get the value of the flow variable with the given name", "getFlowVariable"));
-        items.add(makeSnippetMethod("getFlowVariables(${1:type})", "getFlowVariables", "Map<String, T>",
-            "Get all flow variables of the given type as a map", "getFlowVariables"));
-        items.add(makeSnippetMethod("flowVariableExists(${1:name})", "flowVariableExists", "boolean",
-            "Check if a flow variable with the given name exists", "flowVariableExists"));
-        items.add(makeSnippetMethod("isFlowVariableOfType(${1:name}, ${2:t})", "isFlowVariableOfType", "boolean",
-            "Check if a flow variable is of the given type", "isFlowVariableOfType"));
-
-        // Logging methods (single-arg and throwable variants)
-        for (var method : new String[]{"logWarn", "logDebug", "logInfo", "logError", "logFatal"}) {
-            var level = method.substring(3).toLowerCase();
-            items.add(makeSnippetMethod(method + "(${1:o})", method, "void",
-                "Write a " + level + " message to the node logger", method + "_msg"));
-            items.add(makeSnippetMethod(method + "(${1:o}, ${2:t})", method, "void",
-                "Write a " + level + " message with a throwable to the node logger", method + "_ex"));
+            items.add(new DynamicCompletionItem(
+                label, "Method", returnType, documentation,
+                methodName + "(" + insertParams + ")",
+                !insertParams.isEmpty(),
+                "3_method_" + methodName, methodName));
         }
-    }
 
-    /**
-     * Builds a {@link DynamicCompletionItem} for an {@link AbstractJSnippet} method. The visible label is derived by
-     * stripping snippet placeholder syntax from {@code insertText}.
-     */
-    private static DynamicCompletionItem makeSnippetMethod(final String insertText, final String filterText,
-            final String returnType, final String doc, final String sortKey) {
-        var label = insertText.replaceAll("\\$\\{\\d+:(.*?)\\}", "$1");
-        return new DynamicCompletionItem(label, "Method", returnType, doc,
-            insertText, true, "3_method_" + sortKey, filterText);
+        // Public instance fields (ROWID, ROWINDEX, ROWCOUNT) via reflection + @KnimeDoc
+        for (var field : AbstractJSnippet.class.getDeclaredFields()) {
+            if (field.isSynthetic()) {
+                continue;
+            }
+            int mods = field.getModifiers();
+            if (!Modifier.isPublic(mods)) {
+                continue;
+            }
+
+            var doc = field.getAnnotation(KnimeDoc.class);
+            String documentation = doc != null ? doc.value() : null;
+
+            items.add(new DynamicCompletionItem(
+                field.getName(), "Field", field.getType().getSimpleName(), documentation,
+                field.getName(), false,
+                "0_meta_" + field.getName(), field.getName()));
+        }
     }
 
     // ─── P1: context-aware completions after "." ─────────────────────────────
@@ -300,11 +314,17 @@ final class JavaSnippetCompletionService {
             // Heuristic: treat an upper-case prefix as a class name (static context)
             var isStaticContext = Character.isUpperCase(prefix.charAt(0));
 
-            for (var method : targetClass.getMethods()) {
-                if (!Modifier.isPublic(method.getModifiers())) {
+            for (var method : targetClass.getDeclaredMethods()) {
+                if (method.isSynthetic() || method.isBridge()) {
                     continue;
                 }
-                if (isStaticContext && !Modifier.isStatic(method.getModifiers())) {
+                int methodMods = method.getModifiers();
+                boolean includeProtected = targetClass == AbstractJSnippet.class;
+                if (!Modifier.isPublic(methodMods)
+                        && !(includeProtected && Modifier.isProtected(methodMods))) {
+                    continue;
+                }
+                if (isStaticContext && !Modifier.isStatic(methodMods)) {
                     continue;
                 }
                 var paramTypes = Arrays.stream(method.getParameterTypes())
@@ -313,7 +333,9 @@ final class JavaSnippetCompletionService {
                 var signature = method.getName() + "(" + String.join(", ", paramTypes) + ")";
                 var insertText = method.getName() + "(" + snippet + ")";
                 var returnType = method.getReturnType().getSimpleName();
-                items.add(new DynamicCompletionItem(signature, "Method", returnType, null,
+                var methodDoc = method.getAnnotation(KnimeDoc.class);
+                String documentation = methodDoc != null ? methodDoc.value() : null;
+                items.add(new DynamicCompletionItem(signature, "Method", returnType, documentation,
                     insertText, !snippet.isEmpty(), "0_" + method.getName(), method.getName()));
             }
 
@@ -324,8 +346,10 @@ final class JavaSnippetCompletionService {
                 if (isStaticContext && !Modifier.isStatic(field.getModifiers())) {
                     continue;
                 }
+                var fieldDoc = field.getAnnotation(KnimeDoc.class);
+                String fieldDocumentation = fieldDoc != null ? fieldDoc.value() : null;
                 items.add(new DynamicCompletionItem(field.getName(), "Field",
-                    field.getType().getSimpleName(), null,
+                    field.getType().getSimpleName(), fieldDocumentation,
                     field.getName(), false, "1_" + field.getName(), field.getName()));
             }
 

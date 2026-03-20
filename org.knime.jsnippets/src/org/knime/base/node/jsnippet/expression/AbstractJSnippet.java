@@ -57,6 +57,7 @@ import org.knime.core.data.DataColumnSpec;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DataType;
 import org.knime.core.node.NodeLogger;
+import org.knime.base.node.jsnippet.expression.KnimeDoc;
 
 /**
  *
@@ -66,12 +67,15 @@ public abstract class AbstractJSnippet {
     private static NodeLogger LOGGER = NodeLogger.getLogger(AbstractJSnippet.class);
 
     /** the id of the current row. */
+    @KnimeDoc("The ID of the current row.")
     public String ROWID = "";
 
     /** the index of the current row. */
+    @KnimeDoc("The index of the current row (0-based).")
     public int ROWINDEX = -1;
 
     /** the number of rows of the input. */
+    @KnimeDoc("The total number of rows in the input table.")
     public int ROWCOUNT = -1;
 
     private DataTableSpec m_inSpec;
@@ -99,6 +103,12 @@ public abstract class AbstractJSnippet {
      * @throws TypeException if the column cannot provide the given type
      * @throws ColumnException if the column does not exist
      */
+    @KnimeDoc("Get the value of a cell in the given column, converted to the given Java type.\n\n"
+        + "**Parameters:**\n"
+        + "- `col` — the column name\n"
+        + "- `t` — the target type (e.g. `Type.STRING`)\n\n"
+        + "**Returns:** the cell value\n\n"
+        + "**Throws:** `TypeException` if the type conversion fails; `ColumnException` if the column does not exist")
     @SuppressWarnings("unchecked")
     protected <T> T getCell(final String col, final T t) throws TypeException,
             ColumnException {
@@ -121,6 +131,12 @@ public abstract class AbstractJSnippet {
      * @throws TypeException if the column cannot provide the given type
      * @throws ColumnException if the column does not exist
      */
+    @KnimeDoc("Get the value of a cell at the given column index, converted to the given Java type.\n\n"
+        + "**Parameters:**\n"
+        + "- `col` — the zero-based column index\n"
+        + "- `t` — the target type (e.g. `Type.STRING`)\n\n"
+        + "**Returns:** the cell value\n\n"
+        + "**Throws:** `TypeException` if the type conversion fails; `ColumnException` if the index is out of range")
     @SuppressWarnings("unchecked")
     protected <T> T getCell(final int col, final T t) throws TypeException,
             ColumnException {
@@ -143,6 +159,12 @@ public abstract class AbstractJSnippet {
      * @return true when the column is of the given type
      * @throws ColumnException if the column does not exist
      */
+    @KnimeDoc("Returns `true` when the named column can provide values of the given type.\n\n"
+        + "**Parameters:**\n"
+        + "- `column` — the column name\n"
+        + "- `t` — the type to test for (e.g. `Type.STRING`)\n\n"
+        + "**Returns:** `true` if the column is compatible with the given type\n\n"
+        + "**Throws:** `ColumnException` if the column does not exist")
     protected <T> boolean isType(final String column, final T t)
             throws ColumnException {
         if (m_cellsMap.containsKey(column)) {
@@ -164,6 +186,12 @@ public abstract class AbstractJSnippet {
      * @return true when the column is of the given type
      * @throws ColumnException if the column does not exist
      */
+    @KnimeDoc("Returns `true` when the column at the given index can provide values of the given type.\n\n"
+        + "**Parameters:**\n"
+        + "- `column` — the zero-based column index\n"
+        + "- `t` — the type to test for (e.g. `Type.STRING`)\n\n"
+        + "**Returns:** `true` if the column is compatible with the given type\n\n"
+        + "**Throws:** `ColumnException` if the index is out of range")
     protected <T> boolean isType(final int column, final T t)
             throws ColumnException {
         if (column >= 0 || column < m_cells.size()) {
@@ -183,6 +211,11 @@ public abstract class AbstractJSnippet {
      * @return true when the column is a missing cell
      * @throws ColumnException if the column does not exist
      */
+    @KnimeDoc("Returns `true` when the cell of the named column contains a missing value.\n\n"
+        + "**Parameters:**\n"
+        + "- `column` — the column name\n\n"
+        + "**Returns:** `true` if the cell is a missing value\n\n"
+        + "**Throws:** `ColumnException` if the column does not exist")
     protected boolean isMissing(final String column)
             throws ColumnException {
         if (m_cellsMap.containsKey(column)) {
@@ -202,6 +235,11 @@ public abstract class AbstractJSnippet {
      * @return true when the column is a missing cell
      * @throws ColumnException if the column does not exist
      */
+    @KnimeDoc("Returns `true` when the cell at the given column index contains a missing value.\n\n"
+        + "**Parameters:**\n"
+        + "- `column` — the zero-based column index\n\n"
+        + "**Returns:** `true` if the cell is a missing value\n\n"
+        + "**Throws:** `ColumnException` if the index is out of range")
     protected boolean isMissing(final int column)
             throws ColumnException {
         if (column >= 0 || column < m_cells.size()) {
@@ -218,6 +256,7 @@ public abstract class AbstractJSnippet {
      * Get the number of columns.
      * @return the number of columns.
      */
+    @KnimeDoc("Returns the number of columns in the input table.")
     protected int getColumnCount() {
         return m_cells.size();
     }
@@ -227,6 +266,10 @@ public abstract class AbstractJSnippet {
      * @param index the index
      * @return the name of the column at the given index
      */
+    @KnimeDoc("Returns the name of the column at the given zero-based index.\n\n"
+        + "**Parameters:**\n"
+        + "- `index` — the zero-based column index\n\n"
+        + "**Returns:** the column name")
     protected String getColumnName(final int index) {
         return m_columns.get(index);
     }
@@ -237,6 +280,9 @@ public abstract class AbstractJSnippet {
      * @param column the column to test for
      * @return true when a column with the given name exists
      */
+    @KnimeDoc("Returns `true` when a column with the given name exists in the input table.\n\n"
+        + "**Parameters:**\n"
+        + "- `column` — the column name to look up")
     protected boolean columnExists(final String column) {
         return m_cellsMap.get(column) != null;
     }
@@ -246,6 +292,9 @@ public abstract class AbstractJSnippet {
      * @param index the index of the column
      * @return true when a column with the given index exists
      */
+    @KnimeDoc("Returns `true` when a column at the given zero-based index exists in the input table.\n\n"
+        + "**Parameters:**\n"
+        + "- `index` — the zero-based column index to look up")
     protected boolean columnExists(final int index) {
         return index >= 0 && index < getColumnCount();
     }
@@ -261,6 +310,12 @@ public abstract class AbstractJSnippet {
      * the flow variable
      * @throws FlowVariableException if the flow variable does not exist
      */
+    @KnimeDoc("Returns the value of the named flow variable, converted to the given Java type.\n\n"
+        + "**Parameters:**\n"
+        + "- `var` — the flow variable name\n"
+        + "- `t` — the target type (e.g. `Type.STRING`, `Type.INTEGER`, `Type.DOUBLE`)\n\n"
+        + "**Returns:** the flow variable value\n\n"
+        + "**Throws:** `TypeException` if the type does not match; `FlowVariableException` if the variable does not exist")
     protected <T> T getFlowVariable(final String var, final T t)
         throws TypeException, FlowVariableException {
         return m_flowVars.getValueAs(var, t);
@@ -273,6 +328,10 @@ public abstract class AbstractJSnippet {
      * @param t the type to be returned
      * @return the flow variables of the given type.
      */
+    @KnimeDoc("Returns all flow variables that are compatible with the given Java type as a name-to-value map.\n\n"
+        + "**Parameters:**\n"
+        + "- `t` — the target type (e.g. `Type.STRING`, `Type.INTEGER`, `Type.DOUBLE`)\n\n"
+        + "**Returns:** a `Map<String, T>` of matching flow variables")
     protected <T> Map<String, T> getFlowVariables(final T t) {
         Map<String, T> flowVars = new LinkedHashMap<>();
         for (String s : m_flowVars.getFlowVariables(t.getClass())) {
@@ -286,6 +345,9 @@ public abstract class AbstractJSnippet {
      * @param name the name to test for
      * @return true when a flow variable with given name exists
      */
+    @KnimeDoc("Returns `true` when a flow variable with the given name is available.\n\n"
+        + "**Parameters:**\n"
+        + "- `name` — the flow variable name to look up")
     protected boolean flowVariableExists(final String name) {
         return m_flowVars.getFlowVariable(name) != null;
     }
@@ -296,6 +358,10 @@ public abstract class AbstractJSnippet {
      * @param t the type to test for
      * @return true when a flow variable is of given type
      */
+    @KnimeDoc("Returns `true` when the named flow variable is of the given type.\n\n"
+        + "**Parameters:**\n"
+        + "- `name` — the flow variable name\n"
+        + "- `t` — the type to test for (e.g. `Type.STRING`, `Type.INTEGER`, `Type.DOUBLE`)")
     protected boolean isFlowVariableOfType(final String name, final Object t) {
         return m_flowVars.isOfType(name, t.getClass());
     }
@@ -331,6 +397,9 @@ public abstract class AbstractJSnippet {
      *
      * @param o The object to print.
      */
+    @KnimeDoc("Writes a warning message to the node logger.\n\n"
+        + "**Parameters:**\n"
+        + "- `o` — the object to log (converted to string via `toString()`)")
     protected void logWarn(final Object o) {
         m_logger.warn(o);
     }
@@ -340,6 +409,9 @@ public abstract class AbstractJSnippet {
      *
      * @param o The object to print.
      */
+    @KnimeDoc("Writes a debug message to the node logger.\n\n"
+        + "**Parameters:**\n"
+        + "- `o` — the object to log (converted to string via `toString()`)")
     protected void logDebug(final Object o) {
         m_logger.debug(o);
     }
@@ -349,6 +421,9 @@ public abstract class AbstractJSnippet {
      *
      * @param o The object to print.
      */
+    @KnimeDoc("Writes an info message to the node logger.\n\n"
+        + "**Parameters:**\n"
+        + "- `o` — the object to log (converted to string via `toString()`)")
     protected void logInfo(final Object o) {
         m_logger.info(o);
     }
@@ -358,6 +433,9 @@ public abstract class AbstractJSnippet {
      *
      * @param o The object to print.
      */
+    @KnimeDoc("Writes an error message to the node logger.\n\n"
+        + "**Parameters:**\n"
+        + "- `o` — the object to log (converted to string via `toString()`)")
     protected void logError(final Object o) {
         m_logger.error(o);
     }
@@ -367,6 +445,9 @@ public abstract class AbstractJSnippet {
      *
      * @param o The object to print.
      */
+    @KnimeDoc("Writes a fatal error message to the node logger.\n\n"
+        + "**Parameters:**\n"
+        + "- `o` — the object to log (converted to string via `toString()`)")
     protected void logFatal(final Object o) {
         m_logger.fatal(o);
     }
@@ -377,6 +458,10 @@ public abstract class AbstractJSnippet {
      * @param o The object to print.
      * @param t The exception to log at debug level, including its stack trace.
      */
+    @KnimeDoc("Writes a warning message and an exception to the node logger.\n\n"
+        + "**Parameters:**\n"
+        + "- `o` — the object to log\n"
+        + "- `t` — the exception whose stack trace is logged at debug level")
     protected void logWarn(final Object o, final Throwable t) {
         m_logger.warn(o, t);
     }
@@ -387,6 +472,10 @@ public abstract class AbstractJSnippet {
      * @param o The object to print.
      * @param t The exception to log, including its stack trace.
      */
+    @KnimeDoc("Writes a debug message and an exception (including its stack trace) to the node logger.\n\n"
+        + "**Parameters:**\n"
+        + "- `o` — the object to log\n"
+        + "- `t` — the exception to log")
     protected void logDebug(final Object o, final Throwable t) {
         m_logger.debug(o, t);
     }
@@ -397,6 +486,10 @@ public abstract class AbstractJSnippet {
      * @param o The object to print.
      * @param t The exception to log at debug level, including its stack trace.
      */
+    @KnimeDoc("Writes an info message and an exception to the node logger.\n\n"
+        + "**Parameters:**\n"
+        + "- `o` — the object to log\n"
+        + "- `t` — the exception whose stack trace is logged at debug level")
     protected void logInfo(final Object o, final Throwable t) {
         m_logger.info(o, t);
     }
@@ -407,6 +500,10 @@ public abstract class AbstractJSnippet {
      * @param o The object to print.
      * @param t The exception to log at debug level, including its stack trace.
      */
+    @KnimeDoc("Writes an error message and an exception to the node logger.\n\n"
+        + "**Parameters:**\n"
+        + "- `o` — the object to log\n"
+        + "- `t` — the exception whose stack trace is logged at debug level")
     protected void logError(final Object o, final Throwable t) {
         m_logger.error(o, t);
     }
@@ -417,6 +514,10 @@ public abstract class AbstractJSnippet {
      * @param o The object to print.
      * @param t The exception to log at debug level, including its stack trace.
      */
+    @KnimeDoc("Writes a fatal error message and an exception to the node logger.\n\n"
+        + "**Parameters:**\n"
+        + "- `o` — the object to log\n"
+        + "- `t` — the exception whose stack trace is logged at debug level")
     protected void logFatal(final Object o, final Throwable t) {
         m_logger.fatal(o, t);
     }

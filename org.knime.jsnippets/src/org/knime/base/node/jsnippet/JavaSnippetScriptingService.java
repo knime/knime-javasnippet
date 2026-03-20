@@ -87,7 +87,7 @@ public class JavaSnippetScriptingService extends ScriptingService {
      */
     public record FieldMapping(String knimeName, String javaName, String javaType) {}
 
-    private record FieldMappings(
+    record FieldMappings(
             FieldMapping[] inputColumns,
             FieldMapping[] inputFlowVariables,
             FieldMapping[] outputColumns,
@@ -152,8 +152,8 @@ public class JavaSnippetScriptingService extends ScriptingService {
                 .filter(Map.class::isInstance)
                 .map(Map.class::cast)
                 .map(m -> new FieldMapping(
-                    m.get("javaName") instanceof String s ? s : "",
                     m.get("knimeName") instanceof String s ? s : "",
+                    m.get("javaName") instanceof String s ? s : "",
                     m.get("javaType") instanceof String s ? s : ""))
                 .toArray(FieldMapping[]::new);
         }
@@ -310,7 +310,8 @@ public class JavaSnippetScriptingService extends ScriptingService {
 
         @Override
         public List<DynamicCompletionItem> getCompletions(final DynamicCompletionRequest request) {
-            return new JavaSnippetCompletionService(getWorkflowControl()).getCompletions(request);
+            return new JavaSnippetCompletionService(getWorkflowControl(), m_currentMappings)
+                .getCompletions(request);
         }
     }
 }
