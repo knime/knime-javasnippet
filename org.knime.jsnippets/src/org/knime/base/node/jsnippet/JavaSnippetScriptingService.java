@@ -49,8 +49,10 @@
 package org.knime.base.node.jsnippet;
 
 import java.util.List;
+import java.util.Map;
 
 import org.knime.core.node.Node;
+import org.knime.core.node.NodeLogger;
 import org.knime.core.node.workflow.VariableType.DoubleType;
 import org.knime.core.node.workflow.VariableType.IntType;
 import org.knime.core.node.workflow.VariableType.StringType;
@@ -74,6 +76,36 @@ import org.knime.core.webui.node.dialog.scripting.WorkflowControl;
 @SuppressWarnings("restriction")
 public class JavaSnippetScriptingService extends ScriptingService {
 
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(JavaSnippetScriptingService.class);
+
+    /**
+     * A single configured Java field that maps a KNIME column or flow variable to a Java field name and type.
+     *
+     * @param knimeName the KNIME column or flow variable name
+     * @param javaName the Java field name used in the snippet class
+     * @param javaType the simple Java type name (e.g. {@code "Integer"}, {@code "String"})
+     */
+    public record FieldMapping(String knimeName, String javaName, String javaType) {}
+
+    private record FieldMappings(
+            FieldMapping[] inputColumns,
+            FieldMapping[] inputFlowVariables,
+            FieldMapping[] outputColumns,
+            FieldMapping[] outputFlowVariables) {
+
+        boolean isEmpty() {
+            return inputColumns.length == 0 && inputFlowVariables.length == 0
+                && outputColumns.length == 0 && outputFlowVariables.length == 0;
+        }
+    }
+
+    /**
+     * Latest field mappings pushed by the frontend via {@code preSuggestCodeHook}. Initialised to empty arrays so that
+     * the fallback path (workflow-level input models) is taken until the frontend calls the hook.
+     */
+    private volatile FieldMappings m_currentMappings =
+        new FieldMappings(new FieldMapping[0], new FieldMapping[0], new FieldMapping[0], new FieldMapping[0]);
+
     /**
      * Creates a new Java Snippet scripting service.
      *
@@ -96,39 +128,108 @@ public class JavaSnippetScriptingService extends ScriptingService {
     public class JavaSnippetRpcService extends RpcService {
 
         @Override
+        public void preSuggestCodeHook(final Map<String, Object> currentModelSettings) {
+            if (currentModelSettings == null) {
+                return;
+            }
+            try {
+                m_currentMappings = new FieldMappings(
+                    extractFieldArray(currentModelSettings, "inputColumns"),
+                    extractFieldArray(currentModelSettings, "inputFlowVariables"),
+                    extractFieldArray(currentModelSettings, "outputColumns"),
+                    extractFieldArray(currentModelSettings, "outputFlowVariables"));
+            } catch (Exception e) {
+                LOGGER.warn("Failed to parse field mappings from model settings, keeping previous mappings", e);
+            }
+        }
+
+        private static FieldMapping[] extractFieldArray(final Map<String, Object> settings, final String key) {
+            var raw = settings.get(key);
+            if (!(raw instanceof List<?> list)) {
+                return new FieldMapping[0];
+            }
+            return list.stream()
+                .filter(Map.class::isInstance)
+                .map(Map.class::cast)
+                .map(m -> new FieldMapping(
+                    m.get("javaName") instanceof String s ? s : "",
+                    m.get("knimeName") instanceof String s ? s : "",
+                    m.get("javaType") instanceof String s ? s : ""))
+                .toArray(FieldMapping[]::new);
+        }
+
+        @Override
         protected CodeGenerationRequest getCodeSuggestionRequest(final String userPrompt,
                 final String currentCode, final InputOutputModel[] inputModels) {
             var nodeDescription = Node.invokeGetNodeDescription(new JavaSnippetNodeFactory());
             var nodeName = nodeDescription.getNodeName();
 
-            var inputTables = InputOutputModelNameAndTypeUtils.getAllTables(inputModels);
-            var flowVariables = InputOutputModelNameAndTypeUtils.getSupportedFlowVariables(inputModels);
-
-            // Build a description of available input columns and flow variables
             var contextInfo = new StringBuilder();
 
-            if (inputTables.length > 0 && inputTables[0].length > 0) {
-                contextInfo.append("INPUT TABLE COLUMNS:\n");
-                contextInfo.append("Access columns as fields using $columnName$ syntax:\n");
-                for (var column : inputTables[0]) {
-                    contextInfo.append("- ").append(column.name())
-                        .append(" (").append(column.type()).append(")")
-                        .append(" -> use as $").append(column.name()).append("$\n");
+            if (!m_currentMappings.isEmpty()) {
+                // Use the configured Java field names sent by the frontend
+                if (m_currentMappings.inputColumns().length > 0) {
+                    contextInfo.append("CONFIGURED INPUT COLUMNS (available as Java fields in the snippet class):\n");
+                    for (var field : m_currentMappings.inputColumns()) {
+                        contextInfo.append("- Java field: ").append(field.javaName())
+                            .append(" (").append(field.javaType()).append(")")
+                            .append(" \u2014 reads from KNIME column \"").append(field.knimeName()).append("\"\n");
+                    }
+                    contextInfo.append("\n");
                 }
-                contextInfo.append("\n");
-            }
+                if (m_currentMappings.inputFlowVariables().length > 0) {
+                    contextInfo.append(
+                        "CONFIGURED INPUT FLOW VARIABLES (available as Java fields in the snippet class):\n");
+                    for (var field : m_currentMappings.inputFlowVariables()) {
+                        contextInfo.append("- Java field: ").append(field.javaName())
+                            .append(" (").append(field.javaType()).append(")")
+                            .append(" \u2014 reads from KNIME flow variable \"").append(field.knimeName())
+                            .append("\"\n");
+                    }
+                    contextInfo.append("\n");
+                }
+                if (m_currentMappings.outputColumns().length > 0) {
+                    contextInfo.append("CONFIGURED OUTPUT COLUMNS (assign values to these Java fields):\n");
+                    for (var field : m_currentMappings.outputColumns()) {
+                        contextInfo.append("- Java field: ").append(field.javaName())
+                            .append(" (").append(field.javaType()).append(")")
+                            .append(" \u2014 writes to KNIME column \"").append(field.knimeName()).append("\"\n");
+                    }
+                    contextInfo.append("\n");
+                }
+                if (m_currentMappings.outputFlowVariables().length > 0) {
+                    contextInfo.append("CONFIGURED OUTPUT FLOW VARIABLES (assign values to these Java fields):\n");
+                    for (var field : m_currentMappings.outputFlowVariables()) {
+                        contextInfo.append("- Java field: ").append(field.javaName())
+                            .append(" (").append(field.javaType()).append(")")
+                            .append(" \u2014 writes to KNIME flow variable \"").append(field.knimeName())
+                            .append("\"\n");
+                    }
+                    contextInfo.append("\n");
+                }
+            } else {
+                // Fallback: use workflow-level input/output models (no mappings configured yet)
+                var inputTables = InputOutputModelNameAndTypeUtils.getAllTables(inputModels);
+                var flowVariables = InputOutputModelNameAndTypeUtils.getSupportedFlowVariables(inputModels);
 
-            if (flowVariables.length > 0) {
-                contextInfo.append("FLOW VARIABLES:\n");
-                contextInfo.append("Access flow variables using $${SvariableName}$$ syntax (S=String, I=Integer, D=Double):\n");
-                for (var flowVar : flowVariables) {
-                    var typePrefix = getFlowVariableTypePrefix(flowVar.type());
-                    contextInfo.append("- ").append(flowVar.name())
-                        .append(" (").append(flowVar.type()).append(")")
-                        .append(" -> use as $${")
-                        .append(typePrefix).append(flowVar.name()).append("}$$\n");
+                if (inputTables.length > 0 && inputTables[0].length > 0) {
+                    contextInfo.append(
+                        "AVAILABLE INPUT TABLE COLUMNS (configure them as input columns in the node settings panel):\n");
+                    for (var column : inputTables[0]) {
+                        contextInfo.append("- ").append(column.name())
+                            .append(" (").append(column.type()).append(")\n");
+                    }
+                    contextInfo.append("\n");
                 }
-                contextInfo.append("\n");
+                if (flowVariables.length > 0) {
+                    contextInfo.append(
+                        "AVAILABLE FLOW VARIABLES (configure them as input variables in the node settings panel):\n");
+                    for (var flowVar : flowVariables) {
+                        contextInfo.append("- ").append(flowVar.name())
+                            .append(" (").append(flowVar.type()).append(")\n");
+                    }
+                    contextInfo.append("\n");
+                }
             }
 
             String systemPrompt = """
@@ -153,10 +254,10 @@ public class JavaSnippetScriptingService extends ScriptingService {
                 - flowVariableExists(String name): Check if a flow variable exists
                 - logInfo/logWarn/logError/logDebug(Object): Log messages
 
-                Input columns are accessed as fields: $columnName$ (e.g., $Age$ for column "Age")
-                Flow variables are accessed as: $${SvariableName}$$ \
-                (e.g., $${SfilePath}$$ for String "filePath", $${Icount}$$ for Integer "count", $${Dthreshold}$$ for Double "threshold")
-                Output columns are also fields that you write to.
+                Input columns and flow variables are mapped to Java fields that are already declared as \
+                class members in the snippet class. The field names and types are configured in the node \
+                settings panel and shown in the context above. Use these exact field names in your code.
+                Output columns are also Java fields; assign a value to them to produce output.
 
                 Default imports: AbstractJSnippet, Abort, Cell, ColumnException, TypeException, Type.*, \
                 java.util.Date, java.util.Calendar, org.w3c.dom.Document
@@ -176,9 +277,8 @@ public class JavaSnippetScriptingService extends ScriptingService {
                     GUIDELINES:
                     - Return the complete editor content for all three sections (imports, fields, method body)
                     - Preserve existing imports and fields unless changes are required
-                    - Use $columnName$ syntax to access input columns
-                    - Use $${Sname}$$ syntax to access flow variables \
-                    (S=String, I=Integer, D=Double)
+                    - Use the configured Java field names (shown above) to read input columns and flow variables
+                    - Assign values to the configured output Java field names to produce output columns
                     - Write clean, idiomatic Java that matches the node's intended use case
 
                     User Request:
@@ -206,15 +306,6 @@ public class JavaSnippetScriptingService extends ScriptingService {
                     nodeDescription.getXMLDescription(), currentCode, userPrompt);
 
             return new CodeGenerationRequest("/prompt", new PromptRequestBody(prompt, nodeName));
-        }
-
-        private static String getFlowVariableTypePrefix(final String typeId) {
-            return switch (typeId.toUpperCase()) {
-                case "INTEGER" -> "I";
-                case "DOUBLE" -> "D";
-                case "STRING" -> "S";
-                default -> "S"; // fall back to String for unsupported types
-            };
         }
 
         @Override
