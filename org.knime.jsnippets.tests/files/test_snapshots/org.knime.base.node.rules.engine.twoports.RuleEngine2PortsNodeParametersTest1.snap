@@ -1,0 +1,812 @@
+{
+  "data" : {
+    "model" : {
+      "dictionaryMode" : "RULE",
+      "ruleColumn" : "Rule",
+      "conditionColumn" : "Rule",
+      "treatOutcomesWithDollarAsReferences" : false,
+      "disallowLongOutputForCompatibility" : true,
+      "outputMode" : "APPEND",
+      "appendColumn" : "Prediction",
+      "replaceColumn" : "ChurnFlag",
+      "isPmmlRuleSet" : true,
+      "ruleSelectionMethod" : "FirstHit",
+      "useDefaultScore" : false,
+      "defaultScore" : "",
+      "useDefaultConfidence" : false,
+      "defaultConfidence" : 1.0,
+      "ruleConfidenceColumn" : {
+        "specialChoice" : "NONE"
+      },
+      "useDefaultWeight" : false,
+      "defaultWeight" : 1.0,
+      "ruleWeightColumn" : {
+        "specialChoice" : "NONE"
+      },
+      "computeConfidence" : false,
+      "predictionConfidenceColumn" : "Confidence",
+      "provideStatistics" : true,
+      "validateColumn" : {
+        "specialChoice" : "NONE"
+      }
+    }
+  },
+  "schema" : {
+    "type" : "object",
+    "properties" : {
+      "model" : {
+        "type" : "object",
+        "properties" : {
+          "appendColumn" : {
+            "type" : "string",
+            "title" : "Append column",
+            "description" : "Name of the newly appended column, which contains the outcome of the rules.",
+            "default" : "Prediction"
+          },
+          "computeConfidence" : {
+            "type" : "boolean",
+            "title" : "Append confidence values",
+            "description" : "When checked, confidence values are computed and written into a new column in the output table.",
+            "default" : false
+          },
+          "conditionColumn" : {
+            "type" : "string",
+            "title" : "Condition column",
+            "description" : "The column in the rules table that contains the condition part of each rule (e.g. \"$Col$ > 0\").",
+            "default" : ""
+          },
+          "defaultConfidence" : {
+            "type" : "number",
+            "format" : "double",
+            "title" : "Value",
+            "description" : "The default confidence value to use when it is not specified by the confidence column.",
+            "default" : 1.0
+          },
+          "defaultScore" : {
+            "type" : "string",
+            "title" : "Value",
+            "description" : "The default score/value to use when no rules matched.",
+            "default" : ""
+          },
+          "defaultWeight" : {
+            "type" : "number",
+            "format" : "double",
+            "title" : "Value",
+            "description" : "The default weight value to use when it is not specified by the weight column.",
+            "default" : 1.0
+          },
+          "dictionaryMode" : {
+            "oneOf" : [ {
+              "const" : "RULE",
+              "title" : "Rule"
+            }, {
+              "const" : "CONDITION_AND_VALUE",
+              "title" : "Condition and value"
+            } ],
+            "title" : "Dictionary mode",
+            "description" : "Choose how the rules table encodes the rules.\n<ul>\n<li><b>Rule</b>: A single column contains the full rule expression including the outcome (e.g. \"$Col$ > 0 => TRUE\").</li>\n<li><b>Condition and value</b>: Two separate columns are used: one for the condition part of the rule and one for the outcome value.</li>\n</ul>",
+            "default" : "RULE"
+          },
+          "disallowLongOutputForCompatibility" : {
+            "type" : "boolean",
+            "default" : false
+          },
+          "isPmmlRuleSet" : {
+            "type" : "boolean",
+            "title" : "Enable PMML RuleSet generation",
+            "description" : "When checked, PMML mode evaluation is used and fails if the input cannot be translated to PMML.",
+            "default" : false
+          },
+          "outputMode" : {
+            "oneOf" : [ {
+              "const" : "APPEND",
+              "title" : "Append column"
+            }, {
+              "const" : "REPLACE",
+              "title" : "Replace column"
+            } ],
+            "title" : "Output mode",
+            "description" : "Choose whether to append a new column with the outcome of the rules, or replace an existing column.\n<ul>\n<li><b>Append column</b>: Append a new column with the rule outcome to the input table.</li>\n<li><b>Replace column</b>: Replace an existing column in the input table with the rule outcome.</li>\n</ul>",
+            "default" : "APPEND"
+          },
+          "predictionConfidenceColumn" : {
+            "type" : "string",
+            "title" : "Confidence column name",
+            "description" : "The name of the column to write confidence values into.",
+            "default" : "Confidence"
+          },
+          "provideStatistics" : {
+            "type" : "boolean",
+            "title" : "Provide statistics",
+            "description" : "When checked, <tt>recordCount</tt> (and if <b>Validation column</b> is selected, also <tt>nbCorrect</tt>) is computed for the PMML output.",
+            "default" : true
+          },
+          "replaceColumn" : {
+            "type" : "string",
+            "title" : "Replace column",
+            "description" : "The column to replace with the rule outcome.",
+            "default" : ""
+          },
+          "ruleColumn" : {
+            "type" : "string",
+            "title" : "Rule column",
+            "description" : "The column in the rules table that contains the full rule expressions (condition and outcome combined, e.g. \"$Col$ > 0 => TRUE\").",
+            "default" : ""
+          },
+          "ruleConfidenceColumn" : {
+            "type" : "object",
+            "properties" : {
+              "regularChoice" : {
+                "type" : "string"
+              },
+              "specialChoice" : {
+                "oneOf" : [ {
+                  "const" : "NONE",
+                  "title" : "None"
+                } ]
+              }
+            },
+            "title" : "Rule confidence column",
+            "description" : "Specifies confidence of the rules based on the values in the selected column.",
+            "default" : {
+              "specialChoice" : "NONE"
+            }
+          },
+          "ruleSelectionMethod" : {
+            "oneOf" : [ {
+              "const" : "FirstHit",
+              "title" : "First hit"
+            }, {
+              "const" : "WeightedSum",
+              "title" : "Maximal matching weighted sum"
+            }, {
+              "const" : "WeightedMax",
+              "title" : "Highest matching weight"
+            } ],
+            "title" : "Hit selection",
+            "description" : "The method used to select the outcome when multiple rules match.\n<ul>\n<li><b>First hit</b>: The outcome of the first matching rule will be used.</li>\n<li><b>Maximal matching weighted sum</b>: Select all matching rules, sum the weight for all outcomes, select the highest sum's outcome.</li>\n<li><b>Highest matching weight</b>: Select from all matching rules the highest weight (regardless of order) and use its outcome.</li>\n</ul>",
+            "default" : "FirstHit"
+          },
+          "ruleWeightColumn" : {
+            "type" : "object",
+            "properties" : {
+              "regularChoice" : {
+                "type" : "string"
+              },
+              "specialChoice" : {
+                "oneOf" : [ {
+                  "const" : "NONE",
+                  "title" : "None"
+                } ]
+              }
+            },
+            "title" : "Rule weight column",
+            "description" : "Specifies weight values for the rules based on the values in the selected column.",
+            "default" : {
+              "specialChoice" : "NONE"
+            }
+          },
+          "treatOutcomesWithDollarAsReferences" : {
+            "type" : "boolean",
+            "title" : "Treat values starting with $ as references",
+            "description" : "When checked, values in the value column that start with $ will be treated as references (for example, column, flow variable, or table property references) rather than literal string values.",
+            "default" : true
+          },
+          "useDefaultConfidence" : {
+            "type" : "boolean",
+            "title" : "Use default confidence value",
+            "description" : "When checked, the default confidence value specified below is used for rules that do not have a confidence value in the confidence column.",
+            "default" : false
+          },
+          "useDefaultScore" : {
+            "type" : "boolean",
+            "title" : "Use default value/score",
+            "description" : "When checked, the default score/value specified below is used when no rules matched. When unchecked, a missing value is produced instead.",
+            "default" : false
+          },
+          "useDefaultWeight" : {
+            "type" : "boolean",
+            "title" : "Use default weight value",
+            "description" : "When checked, the default weight value specified below is used for rules that do not have a weight value in the weight column.",
+            "default" : false
+          },
+          "validateColumn" : {
+            "type" : "object",
+            "properties" : {
+              "regularChoice" : {
+                "type" : "string"
+              },
+              "specialChoice" : {
+                "oneOf" : [ {
+                  "const" : "NONE",
+                  "title" : "None"
+                } ]
+              }
+            },
+            "title" : "Validation column",
+            "description" : "The column which is containing the correct prediction for the input (test/validation) table. When <b>&lt;none&gt;</b> selected, no <tt>nbCorrect</tt> value will be computed.",
+            "default" : {
+              "specialChoice" : "NONE"
+            }
+          },
+          "valueColumn" : {
+            "type" : "string",
+            "title" : "Value column",
+            "description" : "The column in the rules table that contains the outcome value for each rule (e.g. \"TRUE\" or \"FALSE\").",
+            "default" : ""
+          }
+        }
+      }
+    }
+  },
+  "ui_schema" : {
+    "elements" : [ {
+      "type" : "Control",
+      "scope" : "#/properties/model/properties/dictionaryMode",
+      "options" : {
+        "format" : "valueSwitch"
+      }
+    }, {
+      "type" : "Control",
+      "scope" : "#/properties/model/properties/ruleColumn",
+      "options" : {
+        "format" : "dropDown"
+      },
+      "providedOptions" : [ "possibleValues" ],
+      "rule" : {
+        "effect" : "SHOW",
+        "condition" : {
+          "scope" : "#/properties/model/properties/dictionaryMode",
+          "schema" : {
+            "oneOf" : [ {
+              "const" : "RULE"
+            } ]
+          }
+        }
+      }
+    }, {
+      "type" : "Control",
+      "scope" : "#/properties/model/properties/conditionColumn",
+      "options" : {
+        "format" : "dropDown"
+      },
+      "providedOptions" : [ "possibleValues" ],
+      "rule" : {
+        "effect" : "HIDE",
+        "condition" : {
+          "scope" : "#/properties/model/properties/dictionaryMode",
+          "schema" : {
+            "oneOf" : [ {
+              "const" : "RULE"
+            } ]
+          }
+        }
+      }
+    }, {
+      "type" : "Control",
+      "scope" : "#/properties/model/properties/valueColumn",
+      "options" : {
+        "format" : "dropDown"
+      },
+      "providedOptions" : [ "possibleValues" ],
+      "rule" : {
+        "effect" : "HIDE",
+        "condition" : {
+          "scope" : "#/properties/model/properties/dictionaryMode",
+          "schema" : {
+            "oneOf" : [ {
+              "const" : "RULE"
+            } ]
+          }
+        }
+      }
+    }, {
+      "type" : "Control",
+      "scope" : "#/properties/model/properties/treatOutcomesWithDollarAsReferences",
+      "options" : {
+        "format" : "checkbox"
+      },
+      "rule" : {
+        "effect" : "HIDE",
+        "condition" : {
+          "scope" : "#/properties/model/properties/dictionaryMode",
+          "schema" : {
+            "oneOf" : [ {
+              "const" : "RULE"
+            } ]
+          }
+        }
+      }
+    }, {
+      "type" : "Control",
+      "scope" : "#/properties/model/properties/outputMode",
+      "options" : {
+        "format" : "valueSwitch"
+      }
+    }, {
+      "type" : "Control",
+      "scope" : "#/properties/model/properties/appendColumn",
+      "rule" : {
+        "effect" : "SHOW",
+        "condition" : {
+          "scope" : "#/properties/model/properties/outputMode",
+          "schema" : {
+            "oneOf" : [ {
+              "const" : "APPEND"
+            } ]
+          }
+        }
+      }
+    }, {
+      "type" : "Control",
+      "scope" : "#/properties/model/properties/replaceColumn",
+      "options" : {
+        "format" : "dropDown"
+      },
+      "providedOptions" : [ "possibleValues" ],
+      "rule" : {
+        "effect" : "SHOW",
+        "condition" : {
+          "scope" : "#/properties/model/properties/outputMode",
+          "schema" : {
+            "oneOf" : [ {
+              "const" : "REPLACE"
+            } ]
+          }
+        }
+      }
+    }, {
+      "type" : "Control",
+      "scope" : "#/properties/model/properties/isPmmlRuleSet",
+      "options" : {
+        "format" : "checkbox"
+      }
+    }, {
+      "type" : "Control",
+      "scope" : "#/properties/model/properties/ruleSelectionMethod",
+      "rule" : {
+        "effect" : "SHOW",
+        "condition" : {
+          "scope" : "#/properties/model/properties/isPmmlRuleSet",
+          "schema" : {
+            "const" : true
+          }
+        }
+      }
+    }, {
+      "type" : "Control",
+      "scope" : "#/properties/model/properties/useDefaultScore",
+      "options" : {
+        "format" : "checkbox"
+      },
+      "rule" : {
+        "effect" : "SHOW",
+        "condition" : {
+          "scope" : "#/properties/model/properties/isPmmlRuleSet",
+          "schema" : {
+            "const" : true
+          }
+        }
+      }
+    }, {
+      "type" : "Control",
+      "scope" : "#/properties/model/properties/defaultScore",
+      "rule" : {
+        "effect" : "SHOW",
+        "condition" : {
+          "type" : "AND",
+          "conditions" : [ {
+            "scope" : "#/properties/model/properties/isPmmlRuleSet",
+            "schema" : {
+              "const" : true
+            }
+          }, {
+            "scope" : "#/properties/model/properties/useDefaultScore",
+            "schema" : {
+              "const" : true
+            }
+          } ]
+        }
+      }
+    }, {
+      "type" : "Control",
+      "scope" : "#/properties/model/properties/useDefaultConfidence",
+      "options" : {
+        "format" : "checkbox"
+      },
+      "rule" : {
+        "effect" : "SHOW",
+        "condition" : {
+          "scope" : "#/properties/model/properties/isPmmlRuleSet",
+          "schema" : {
+            "const" : true
+          }
+        }
+      }
+    }, {
+      "type" : "Control",
+      "scope" : "#/properties/model/properties/defaultConfidence",
+      "options" : {
+        "validation" : {
+          "max" : {
+            "errorMessage" : "The value must not exceed 1.",
+            "parameters" : {
+              "isExclusive" : false,
+              "max" : 1.0
+            }
+          },
+          "min" : {
+            "errorMessage" : "The value must be at least 0.",
+            "parameters" : {
+              "isExclusive" : false,
+              "min" : 0.0
+            }
+          }
+        }
+      },
+      "rule" : {
+        "effect" : "SHOW",
+        "condition" : {
+          "type" : "AND",
+          "conditions" : [ {
+            "scope" : "#/properties/model/properties/isPmmlRuleSet",
+            "schema" : {
+              "const" : true
+            }
+          }, {
+            "scope" : "#/properties/model/properties/useDefaultConfidence",
+            "schema" : {
+              "const" : true
+            }
+          } ]
+        }
+      }
+    }, {
+      "type" : "Control",
+      "scope" : "#/properties/model/properties/ruleConfidenceColumn",
+      "options" : {
+        "format" : "singleSelection",
+        "specialChoices" : [ {
+          "id" : "NONE",
+          "text" : "None"
+        } ]
+      },
+      "providedOptions" : [ "possibleValues" ],
+      "rule" : {
+        "effect" : "SHOW",
+        "condition" : {
+          "scope" : "#/properties/model/properties/isPmmlRuleSet",
+          "schema" : {
+            "const" : true
+          }
+        }
+      }
+    }, {
+      "type" : "Control",
+      "scope" : "#/properties/model/properties/useDefaultWeight",
+      "options" : {
+        "format" : "checkbox"
+      },
+      "rule" : {
+        "effect" : "SHOW",
+        "condition" : {
+          "scope" : "#/properties/model/properties/isPmmlRuleSet",
+          "schema" : {
+            "const" : true
+          }
+        }
+      }
+    }, {
+      "type" : "Control",
+      "scope" : "#/properties/model/properties/defaultWeight",
+      "options" : {
+        "validation" : {
+          "min" : {
+            "errorMessage" : "The value must be at least 0.",
+            "parameters" : {
+              "isExclusive" : false,
+              "min" : 0.0
+            }
+          }
+        }
+      },
+      "rule" : {
+        "effect" : "SHOW",
+        "condition" : {
+          "type" : "AND",
+          "conditions" : [ {
+            "scope" : "#/properties/model/properties/isPmmlRuleSet",
+            "schema" : {
+              "const" : true
+            }
+          }, {
+            "scope" : "#/properties/model/properties/useDefaultWeight",
+            "schema" : {
+              "const" : true
+            }
+          } ]
+        }
+      }
+    }, {
+      "type" : "Control",
+      "scope" : "#/properties/model/properties/ruleWeightColumn",
+      "options" : {
+        "format" : "singleSelection",
+        "specialChoices" : [ {
+          "id" : "NONE",
+          "text" : "None"
+        } ]
+      },
+      "providedOptions" : [ "possibleValues" ],
+      "rule" : {
+        "effect" : "SHOW",
+        "condition" : {
+          "scope" : "#/properties/model/properties/isPmmlRuleSet",
+          "schema" : {
+            "const" : true
+          }
+        }
+      }
+    }, {
+      "type" : "Control",
+      "scope" : "#/properties/model/properties/computeConfidence",
+      "options" : {
+        "format" : "checkbox"
+      },
+      "rule" : {
+        "effect" : "SHOW",
+        "condition" : {
+          "scope" : "#/properties/model/properties/isPmmlRuleSet",
+          "schema" : {
+            "const" : true
+          }
+        }
+      }
+    }, {
+      "type" : "Control",
+      "scope" : "#/properties/model/properties/predictionConfidenceColumn",
+      "rule" : {
+        "effect" : "SHOW",
+        "condition" : {
+          "type" : "AND",
+          "conditions" : [ {
+            "scope" : "#/properties/model/properties/isPmmlRuleSet",
+            "schema" : {
+              "const" : true
+            }
+          }, {
+            "scope" : "#/properties/model/properties/computeConfidence",
+            "schema" : {
+              "const" : true
+            }
+          } ]
+        }
+      }
+    }, {
+      "type" : "Control",
+      "scope" : "#/properties/model/properties/provideStatistics",
+      "options" : {
+        "format" : "checkbox"
+      },
+      "rule" : {
+        "effect" : "SHOW",
+        "condition" : {
+          "scope" : "#/properties/model/properties/isPmmlRuleSet",
+          "schema" : {
+            "const" : true
+          }
+        }
+      }
+    }, {
+      "type" : "Control",
+      "scope" : "#/properties/model/properties/validateColumn",
+      "options" : {
+        "format" : "singleSelection",
+        "specialChoices" : [ {
+          "id" : "NONE",
+          "text" : "None"
+        } ]
+      },
+      "providedOptions" : [ "possibleValues" ],
+      "rule" : {
+        "effect" : "SHOW",
+        "condition" : {
+          "type" : "AND",
+          "conditions" : [ {
+            "scope" : "#/properties/model/properties/isPmmlRuleSet",
+            "schema" : {
+              "const" : true
+            }
+          }, {
+            "scope" : "#/properties/model/properties/provideStatistics",
+            "schema" : {
+              "const" : true
+            }
+          } ]
+        }
+      }
+    } ]
+  },
+  "persist" : {
+    "type" : "object",
+    "properties" : {
+      "model" : {
+        "type" : "object",
+        "properties" : {
+          "dictionaryMode" : {
+            "configKey" : "dictionaryMode",
+            "deprecatedConfigKeys" : [ {
+              "deprecated" : [ [ "rules<dot>column" ] ]
+            } ]
+          },
+          "ruleColumn" : {
+            "configKey" : "ruleColumn",
+            "deprecatedConfigKeys" : [ {
+              "deprecated" : [ [ "rules<dot>column" ] ]
+            } ]
+          },
+          "conditionColumn" : {
+            "configKey" : "conditionColumn",
+            "deprecatedConfigKeys" : [ {
+              "deprecated" : [ [ "rules<dot>column" ] ]
+            } ]
+          },
+          "valueColumn" : {
+            "configKey" : "valueColumn",
+            "deprecatedConfigKeys" : [ {
+              "deprecated" : [ [ "outcomes<dot>column" ] ]
+            } ]
+          },
+          "treatOutcomesWithDollarAsReferences" : {
+            "configKey" : "treat<dot>outcomes<dot>with<dot>dollar<dot>as<dot>references"
+          },
+          "disallowLongOutputForCompatibility" : {
+            "configKey" : "disallowLongOutputForCompatibility"
+          },
+          "outputMode" : {
+            "configPaths" : [ [ "is<dot>replaced<dot>column" ] ]
+          },
+          "appendColumn" : {
+            "configKey" : "append<dot>column"
+          },
+          "replaceColumn" : {
+            "configKey" : "replace<dot>column"
+          },
+          "isPmmlRuleSet" : {
+            "configKey" : "is<dot>pmml<dot>ruleset"
+          },
+          "ruleSelectionMethod" : {
+            "configKey" : "rule<dot>selection<dot>method"
+          },
+          "useDefaultScore" : {
+            "configKey" : "has<dot>default<dot>score"
+          },
+          "defaultScore" : {
+            "configKey" : "default<dot>score"
+          },
+          "useDefaultConfidence" : {
+            "configKey" : "has<dot>default<dot>confidence"
+          },
+          "defaultConfidence" : {
+            "configKey" : "default<dot>confidence"
+          },
+          "ruleConfidenceColumn" : {
+            "configPaths" : [ [ "rule<dot>confidence<dot>column" ] ]
+          },
+          "useDefaultWeight" : {
+            "configKey" : "has<dot>default<dot>weight"
+          },
+          "defaultWeight" : {
+            "configKey" : "default<dot>weight"
+          },
+          "ruleWeightColumn" : {
+            "configPaths" : [ [ "rule<dot>weight<dot>column" ] ]
+          },
+          "computeConfidence" : {
+            "configKey" : "compute<dot>confidence"
+          },
+          "predictionConfidenceColumn" : {
+            "configKey" : "prediction<dot>confidence<dot>column"
+          },
+          "provideStatistics" : {
+            "configKey" : "provide<dot>statistics"
+          },
+          "validateColumn" : {
+            "configPaths" : [ [ "validate<dot>column" ] ]
+          }
+        }
+      }
+    }
+  },
+  "initialUpdates" : [ {
+    "scope" : "#/properties/model/properties/conditionColumn",
+    "providedOptionName" : "possibleValues",
+    "values" : [ {
+      "indices" : [ ],
+      "value" : [ {
+        "id" : "Rule",
+        "text" : "Rule",
+        "type" : {
+          "id" : "org.knime.core.data.StringValue",
+          "text" : "String"
+        }
+      } ]
+    } ]
+  }, {
+    "scope" : "#/properties/model/properties/replaceColumn",
+    "providedOptionName" : "possibleValues",
+    "values" : [ {
+      "indices" : [ ],
+      "value" : [ {
+        "id" : "ChurnFlag",
+        "text" : "ChurnFlag",
+        "type" : {
+          "id" : "org.knime.core.data.StringValue",
+          "text" : "String"
+        }
+      } ]
+    } ]
+  }, {
+    "scope" : "#/properties/model/properties/ruleColumn",
+    "providedOptionName" : "possibleValues",
+    "values" : [ {
+      "indices" : [ ],
+      "value" : [ {
+        "id" : "Rule",
+        "text" : "Rule",
+        "type" : {
+          "id" : "org.knime.core.data.StringValue",
+          "text" : "String"
+        }
+      } ]
+    } ]
+  }, {
+    "scope" : "#/properties/model/properties/ruleConfidenceColumn",
+    "providedOptionName" : "possibleValues",
+    "values" : [ {
+      "indices" : [ ],
+      "value" : [ ]
+    } ]
+  }, {
+    "scope" : "#/properties/model/properties/ruleWeightColumn",
+    "providedOptionName" : "possibleValues",
+    "values" : [ {
+      "indices" : [ ],
+      "value" : [ ]
+    } ]
+  }, {
+    "scope" : "#/properties/model/properties/validateColumn",
+    "providedOptionName" : "possibleValues",
+    "values" : [ {
+      "indices" : [ ],
+      "value" : [ {
+        "id" : "ChurnFlag",
+        "text" : "ChurnFlag",
+        "type" : {
+          "id" : "org.knime.core.data.StringValue",
+          "text" : "String"
+        }
+      } ]
+    } ]
+  }, {
+    "scope" : "#/properties/model/properties/valueColumn",
+    "providedOptionName" : "possibleValues",
+    "values" : [ {
+      "indices" : [ ],
+      "value" : [ {
+        "id" : "Rule",
+        "text" : "Rule",
+        "type" : {
+          "id" : "org.knime.core.data.StringValue",
+          "text" : "String"
+        }
+      } ]
+    } ]
+  } ],
+  "globalUpdates" : [ {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/dictionaryMode"
+    },
+    "dependencies" : [ "#/properties/model/properties/conditionColumn" ]
+  } ]
+}

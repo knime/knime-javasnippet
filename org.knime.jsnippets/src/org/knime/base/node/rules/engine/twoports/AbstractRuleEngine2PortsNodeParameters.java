@@ -96,7 +96,7 @@ import org.knime.node.parameters.widget.choices.util.CompatibleColumnsProvider;
  *
  * <h3>Backwards compatibility / migration</h3> Old workflows stored {@code rules.column} / {@code outcomes.column}.
  * Migration is handled by {@link DictionaryModeMigration}, {@link RuleColumnMigration},
- * {@link ConditionColumnMigration}, and {@link ValueColumnMigration}. The old model reads the new format via updated
+ * and {@link ValueColumnMigration}. The old model reads the new format via updated
  * {@code loadValidatedSettingsFrom}/{@code saveSettingsTo} methods in {@link RuleEngine2PortsSimpleSettings}.
  *
  * @author Jochen Reißinger, TNG Technology Consulting GmbH
@@ -246,20 +246,6 @@ abstract class AbstractRuleEngine2PortsNodeParameters implements NodeParameters 
     @Persist(configKey = CFG_RULE_COLUMN)
     String m_ruleColumn = "";
 
-    /**
-     * Migration that reads {@code rules.column} from old settings as the condition column (used when
-     * {@code outcomes.column} was non-null in the old format).
-     */
-    private static final class ConditionColumnMigration implements NodeParametersMigration<String> {
-        @Override
-        public List<ConfigMigration<String>> getConfigMigrations() {
-            return List.of(ConfigMigration //
-                .builder(s -> s.getString(RuleEngine2PortsSimpleSettings.RULES_COLUMN, "")) //
-                .withDeprecatedConfigPath(RuleEngine2PortsSimpleSettings.RULES_COLUMN) //
-                .build());
-        }
-    }
-
     private interface ConditionColumnRef extends ParameterReference<String> {
     }
 
@@ -300,7 +286,7 @@ abstract class AbstractRuleEngine2PortsNodeParameters implements NodeParameters 
     @Effect(predicate = IsRuleMode.class, type = EffectType.HIDE)
     @ValueReference(ConditionColumnRef.class)
     @ValueProvider(ConditionColumnAutoGuesser.class)
-    @Migration(ConditionColumnMigration.class)
+    @Migration(RuleColumnMigration.class)
     @Persist(configKey = CFG_CONDITION_COLUMN)
     String m_conditionColumn = "";
 

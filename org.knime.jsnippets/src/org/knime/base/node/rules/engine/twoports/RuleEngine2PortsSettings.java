@@ -48,10 +48,6 @@
  */
 package org.knime.base.node.rules.engine.twoports;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
 import org.dmg.pmml.RuleSelectionMethodDocument.RuleSelectionMethod.Criterion;
 import org.dmg.pmml.RuleSelectionMethodDocument.RuleSelectionMethod.Criterion.Enum;
 import org.knime.core.data.DataTableSpec;
@@ -60,6 +56,7 @@ import org.knime.core.data.StringValue;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
+import org.knime.node.parameters.widget.choices.Label;
 
 /**
  * Settings used for the Rule Engine (Dictionary) node.
@@ -67,39 +64,39 @@ import org.knime.core.node.NodeSettingsWO;
  * @author Gabor Bakos
  */
 class RuleEngine2PortsSettings extends RuleEngine2PortsSimpleSettings {
-    private static final String APPEND_COLUMN = "append.column";
+    static final String APPEND_COLUMN = "append.column";
 
-    private static final String REPLACE_COLUMN = "replace.column";
+    static final String REPLACE_COLUMN = "replace.column";
 
-    private static final String IS_REPLACED_COLUMN = "is.replaced.column";
+    static final String IS_REPLACED_COLUMN = "is.replaced.column";
 
-    private static final String IS_PMML_RULESET = "is.pmml.ruleset";
+    static final String IS_PMML_RULESET = "is.pmml.ruleset";
 
-    private static final String RULE_SELECTION_METHOD = "rule.selection.method";
+    static final String RULE_SELECTION_METHOD = "rule.selection.method";
 
-    private static final String HAS_DEFAULT_SCORE = "has.default.score";
+    static final String HAS_DEFAULT_SCORE = "has.default.score";
 
-    private static final String DEFAULT_SCORE = "default.score";
+    static final String DEFAULT_SCORE = "default.score";
 
-    private static final String HAS_DEFAULT_CONFIDENCE = "has.default.confidence";
+    static final String HAS_DEFAULT_CONFIDENCE = "has.default.confidence";
 
-    private static final String DEFAULT_CONFIDENCE = "default.confidence";
+    static final String DEFAULT_CONFIDENCE = "default.confidence";
 
-    private static final String CONFIDENCE_COLUMN = "rule.confidence.column";
+    static final String CONFIDENCE_COLUMN = "rule.confidence.column";
 
-    private static final String HAS_DEFAULT_WEIGHT = "has.default.weight";
+    static final String HAS_DEFAULT_WEIGHT = "has.default.weight";
 
-    private static final String DEFAULT_WEIGHT = "default.weight";
+    static final String DEFAULT_WEIGHT = "default.weight";
 
-    private static final String WEIGHT_COLUMN = "rule.weight.column";
+    static final String WEIGHT_COLUMN = "rule.weight.column";
 
-    private static final String COMPUTE_CONFIDENCE = "compute.confidence";
+    static final String COMPUTE_CONFIDENCE = "compute.confidence";
 
-    private static final String PREDICTION_CONFIDENCE_COLUMN = "prediction.confidence.column";
+    static final String PREDICTION_CONFIDENCE_COLUMN = "prediction.confidence.column";
 
-    private static final String PROVIDE_STATISTICS = "provide.statistics";
+    static final String PROVIDE_STATISTICS = "provide.statistics";
 
-    private static final String VALIDATE_COLUMN = "validate.column";
+    static final String VALIDATE_COLUMN = "validate.column";
 
     /** The default column name when appending the prediction column */
     static final String DEFAULT_APPEND_COLUMN = "Prediction";
@@ -112,10 +109,6 @@ class RuleEngine2PortsSettings extends RuleEngine2PortsSimpleSettings {
 
     /** By default {@link RuleSelectionMethod#FirstHit}. */
     static final RuleSelectionMethod DEFAULT_RULE_SELECTION_METHOD = RuleSelectionMethod.FirstHit;
-
-    /** The supported rule selection methods. */
-    static final List<RuleSelectionMethod> POSSIBLE_RULE_SELECTION_METHODS = Collections.unmodifiableList(Arrays
-        .asList(RuleSelectionMethod.values()));
 
     /** By default there is no default score (value when nothing matches) */
     static final boolean DEFAULT_HAS_DEFAULT_SCORE = false;
@@ -184,13 +177,30 @@ class RuleEngine2PortsSettings extends RuleEngine2PortsSimpleSettings {
         String getPMMLName();
     }
 
+    /** Display name for {@link RuleSelectionMethod#FirstHit}. */
+    private static final String RULE_SELECTION_FIRST_HIT_LABEL = "First hit";
+
+    /** Display name for {@link RuleSelectionMethod#WeightedSum}. */
+    private static final String RULE_SELECTION_WEIGHTED_SUM_LABEL = "Maximal matching weighted sum";
+
+    /** Display name for {@link RuleSelectionMethod#WeightedMax}. */
+    private static final String RULE_SELECTION_WEIGHTED_MAX_LABEL = "Highest matching weight";
+
     /** Possible {@link org.dmg.pmml.RuleSelectionMethodDocument.RuleSelectionMethod}s. */
     enum RuleSelectionMethod implements PMMLName, StringValue {
         /** First matching rule is selected to provide outcome. */
+        @Label(value = RULE_SELECTION_FIRST_HIT_LABEL,
+            description = "The outcome of the first matching rule will be used.")
         FirstHit,
-        /**From all matching rules group them by their outcome, select the one with the highest weighted sum. */
+        /** From all matching rules group them by their outcome, select the one with the highest weighted sum. */
+        @Label(value = RULE_SELECTION_WEIGHTED_SUM_LABEL,
+            description = "Select all matching rules, sum the weight for all outcomes, "
+                + "select the highest sum's outcome.")
         WeightedSum,
         /** From all matching rules select the one with the highest weight. */
+        @Label(value = RULE_SELECTION_WEIGHTED_MAX_LABEL,
+            description = "Select from all matching rules the highest weight (regardless of order) "
+                + "and use its outcome.")
         WeightedMax;
 
         /**
@@ -200,11 +210,11 @@ class RuleEngine2PortsSettings extends RuleEngine2PortsSimpleSettings {
         public String getStringValue() {
             switch (this) {
                 case FirstHit:
-                    return "First hit";
+                    return RULE_SELECTION_FIRST_HIT_LABEL;
                 case WeightedMax:
-                    return "Highest matching weight";
+                    return RULE_SELECTION_WEIGHTED_MAX_LABEL;
                 case WeightedSum:
-                    return "Maximal matching weighted sum";
+                    return RULE_SELECTION_WEIGHTED_SUM_LABEL;
                 default:
                     throw new UnsupportedOperationException("Not supported: " + this);
             }
