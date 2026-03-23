@@ -58,6 +58,7 @@ import org.knime.core.node.workflow.VariableType.IntType;
 import org.knime.core.node.workflow.VariableType.StringType;
 import org.knime.core.webui.node.dialog.scripting.CodeGenerationRequest;
 import org.knime.core.webui.node.dialog.scripting.CodeGenerationRequest.PromptRequestBody;
+import org.knime.core.webui.node.dialog.scripting.DiagnosticItem;
 import org.knime.core.webui.node.dialog.scripting.DynamicCompletionItem;
 import org.knime.core.webui.node.dialog.scripting.DynamicCompletionRequest;
 import org.knime.core.webui.node.dialog.scripting.InputOutputModel;
@@ -306,6 +307,13 @@ public class JavaSnippetScriptingService extends ScriptingService {
                     nodeDescription.getXMLDescription(), currentCode, userPrompt);
 
             return new CodeGenerationRequest("/prompt", new PromptRequestBody(prompt, nodeName));
+        }
+
+        private final JavaSnippetDiagnosticsService m_diagnosticsService = new JavaSnippetDiagnosticsService();
+
+        @Override
+        public List<DiagnosticItem> getDiagnostics(final DynamicCompletionRequest request) {
+            return m_diagnosticsService.getDiagnostics(request);
         }
 
         @Override
