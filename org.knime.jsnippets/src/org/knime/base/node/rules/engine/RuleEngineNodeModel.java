@@ -107,9 +107,9 @@ import org.knime.ext.sun.nodes.script.calculator.FlowVariableProvider;
  * @since 2.8
  */
 public class RuleEngineNodeModel extends NodeModel implements FlowVariableProvider {
-//    private static final String CFGKEY_MISSINGS_AND_NANS_MATCH = "missingsAndNaNsMatch";
-//
-//    private static final boolean DEFAULT_MISSINGS_AND_NANS_MATCH = true;
+    //    private static final String CFGKEY_MISSINGS_AND_NANS_MATCH = "missingsAndNaNsMatch";
+    //
+    //    private static final boolean DEFAULT_MISSINGS_AND_NANS_MATCH = true;
 
     /** Config key for row counts. */
     protected static final String CFG_ROW_COUNT = "ROWCOUNT";
@@ -170,20 +170,19 @@ public class RuleEngineNodeModel extends NodeModel implements FlowVariableProvid
         return rules;
     }
 
-    private ColumnRearranger createRearranger(final DataTableSpec inSpec, final List<Rule> rules, final long rowCount, final boolean updateColSpec)
-            throws InvalidSettingsException {
+    private ColumnRearranger createRearranger(final DataTableSpec inSpec, final List<Rule> rules, final long rowCount,
+        final boolean updateColSpec) throws InvalidSettingsException {
         if (m_settings.isAppendColumn() && m_settings.getNewColName().isEmpty()) {
             throw new InvalidSettingsException("No name for prediction column provided");
         }
 
         ColumnRearranger crea = new ColumnRearranger(inSpec);
 
-        String newColName =
-            m_settings.isAppendColumn() ? DataTableSpec.getUniqueColumnName(inSpec, m_settings.getNewColName())
-                : m_settings.getReplaceColumn();
+        String newColName = m_settings.isAppendColumn()
+            ? DataTableSpec.getUniqueColumnName(inSpec, m_settings.getNewColName()) : m_settings.getReplaceColumn();
 
-        final DataType outType = computeOutputType(
-            rules, RuleNodeSettings.RuleEngine, m_settings.isDisallowLongOutputForCompatibility());
+        final DataType outType =
+            computeOutputType(rules, RuleNodeSettings.RuleEngine, m_settings.isDisallowLongOutputForCompatibility());
 
         DataColumnSpecCreator colSpecCreator = new DataColumnSpecCreator(newColName, outType);
         if (updateColSpec) {//only update in configure, execute will compute properly
@@ -194,6 +193,7 @@ public class RuleEngineNodeModel extends NodeModel implements FlowVariableProvid
         final boolean disallowLongOutputForCompatibility = m_settings.isDisallowLongOutputForCompatibility();
         VariableProvider.SingleCellFactoryProto cellFactory = new VariableProvider.SingleCellFactoryProto(cs) {
             private long m_rowIndex = -1L;
+
             @Override
             public DataCell getCell(final DataRow row) {
                 m_rowIndex++;
@@ -237,17 +237,16 @@ public class RuleEngineNodeModel extends NodeModel implements FlowVariableProvid
     }
 
     /**
-     * Updates the prediction column specification if the rule outcomes are computable in advance.
-     * <br/>
-     * This will add all outcomes, not just the possibles.
-     * <br/>
+     * Updates the prediction column specification if the rule outcomes are computable in advance. <br/>
+     * This will add all outcomes, not just the possibles. <br/>
      * Sorry for the high complexity.
      *
      * @param rules The {@link Rule}s we want to analyse.
      * @param outType The output data type.
      * @param colSpecCreator The column creator.
      */
-    private static void updateColSpec(final List<Rule> rules, final DataType outType, final DataColumnSpecCreator colSpecCreator, final FlowVariableProvider nm) {
+    private static void updateColSpec(final List<Rule> rules, final DataType outType,
+        final DataColumnSpecCreator colSpecCreator, final FlowVariableProvider nm) {
         List<DataValue> results = new ArrayList<DataValue>(rules.size());
         for (Rule rule : rules) {
             try {
@@ -261,6 +260,7 @@ public class RuleEngineNodeModel extends NodeModel implements FlowVariableProvid
                         public int getRowCount() {
                             throw new IllegalStateException("We will catch this.");
                         }
+
                         /**
                          * {@inheritDoc}
                          */
@@ -268,6 +268,7 @@ public class RuleEngineNodeModel extends NodeModel implements FlowVariableProvid
                         public long getRowCountLong() {
                             throw new IllegalStateException("We will catch this.");
                         }
+
                         /**
                          * {@inheritDoc}
                          */
@@ -276,6 +277,7 @@ public class RuleEngineNodeModel extends NodeModel implements FlowVariableProvid
                         public int getRowIndex() {
                             throw new IllegalStateException("We will catch this.");
                         }
+
                         /**
                          * {@inheritDoc}
                          */
@@ -283,6 +285,7 @@ public class RuleEngineNodeModel extends NodeModel implements FlowVariableProvid
                         public long getRowIndexLong() {
                             throw new IllegalStateException("We will catch this.");
                         }
+
                         /**
                          * {@inheritDoc}
                          */
@@ -335,9 +338,9 @@ public class RuleEngineNodeModel extends NodeModel implements FlowVariableProvid
     }
 
     /**
-     * Computes the output's type based on the types of the outcomes and on the option of allowed boolean outcome.
-     * <br/>
-     * Its usage is discouraged (outcome type defaults to {@link StringCell#TYPE}), please consider {@link #computeOutputType(List, DataType, boolean, boolean)} instead.
+     * Computes the output's type based on the types of the outcomes and on the option of allowed boolean outcome. <br/>
+     * Its usage is discouraged (outcome type defaults to {@link StringCell#TYPE}), please consider
+     * {@link #computeOutputType(List, DataType, boolean, boolean)} instead.
      *
      * @param types The type of outcomes.
      * @param allowBooleanOutcome Allow or not boolean results in outcome?
@@ -381,8 +384,7 @@ public class RuleEngineNodeModel extends NodeModel implements FlowVariableProvid
     }
 
     /**
-     * Computes the outcome's type.
-     * <br/>
+     * Computes the outcome's type. <br/>
      * Its usage is discouraged. Please consider {@link #computeOutputType(List, DataType, RuleNodeSettings, boolean)}
      *
      * @param rules The {@link Rule}s.
@@ -394,6 +396,7 @@ public class RuleEngineNodeModel extends NodeModel implements FlowVariableProvid
         final boolean disallowLongOutputForCompatibility) {
         return computeOutputType(rules, StringCell.TYPE, nodeType, disallowLongOutputForCompatibility);
     }
+
     /**
      * Computes the outcome's type.
      *
@@ -411,7 +414,8 @@ public class RuleEngineNodeModel extends NodeModel implements FlowVariableProvid
         for (Rule r : rules) {
             types.add(r.getOutcome().getType());
         }
-        return computeOutputType(types, outcomeType, nodeType.allowBooleanOutcome(), disallowLongOutputForCompatibility);
+        return computeOutputType(types, outcomeType, nodeType.allowBooleanOutcome(),
+            disallowLongOutputForCompatibility);
     }
 
     /**
@@ -442,8 +446,7 @@ public class RuleEngineNodeModel extends NodeModel implements FlowVariableProvid
                     }
                     cell = new IntCell((int)l);
                 }
-                if (outType.equals(StringCell.TYPE) && !cell.isMissing()
-                        && !cell.getType().equals(StringCell.TYPE)) {
+                if (outType.equals(StringCell.TYPE) && !cell.isMissing() && !cell.getType().equals(StringCell.TYPE)) {
                     return new StringCell(cell.toString());
                 } else {
                     return cell;
@@ -504,7 +507,7 @@ public class RuleEngineNodeModel extends NodeModel implements FlowVariableProvid
      */
     @Override
     protected BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec)
-            throws Exception {
+        throws Exception {
         m_rowCount = inData[0].size();
         try {
             List<Rule> rules = parseRules(inData[0].getDataTableSpec(), RuleNodeSettings.RuleEngine);
@@ -519,8 +522,8 @@ public class RuleEngineNodeModel extends NodeModel implements FlowVariableProvid
      * {@inheritDoc}
      */
     @Override
-    protected void loadInternals(final File nodeInternDir, final ExecutionMonitor exec) throws IOException,
-            CanceledExecutionException {
+    protected void loadInternals(final File nodeInternDir, final ExecutionMonitor exec)
+        throws IOException, CanceledExecutionException {
         // No internal state
     }
 
@@ -543,8 +546,8 @@ public class RuleEngineNodeModel extends NodeModel implements FlowVariableProvid
      * {@inheritDoc}
      */
     @Override
-    protected void saveInternals(final File nodeInternDir, final ExecutionMonitor exec) throws IOException,
-            CanceledExecutionException {
+    protected void saveInternals(final File nodeInternDir, final ExecutionMonitor exec)
+        throws IOException, CanceledExecutionException {
         //No internal state
     }
 
@@ -563,25 +566,30 @@ public class RuleEngineNodeModel extends NodeModel implements FlowVariableProvid
     protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
         RuleEngineSettings s = new RuleEngineSettings();
         s.loadSettings(settings);
-        validateRules(s.rules());
+
+        // Following line is commented to allow users to save invalid settings.
+        // This validation is already a part of configure method, therefore the commenting out this function shall suffice.
+        //validateRules(s.rules());
     }
 
-    /**
-     * @param rules
-     * @throws InvalidSettingsException
-     */
-    protected void validateRules(final Iterable<String> rules) throws InvalidSettingsException {
-        RuleFactory ruleFactory = RuleFactory.getInstance(RuleNodeSettings.RuleEngine).cloned();
-        ruleFactory.disableColumnChecks();
-        ruleFactory.disableFlowVariableChecks();
-        for (String rule : rules) {
-            try {
-                ruleFactory.parse(rule, null, getAvailableInputFlowVariables());
-            } catch (ParseException e) {
-                throw new InvalidSettingsException(e.getMessage(), e);
-            }
-        }
-    }
+    // This method is commented out,since its only usage in this class (and package) is not needed anymore
+
+    //    /**
+    //     * @param rules
+    //     * @throws InvalidSettingsException
+    //     */
+    //    protected void validateRules(final Iterable<String> rules) throws InvalidSettingsException {
+    //        RuleFactory ruleFactory = RuleFactory.getInstance(RuleNodeSettings.RuleEngine).cloned();
+    //        ruleFactory.disableColumnChecks();
+    //        ruleFactory.disableFlowVariableChecks();
+    //        for (String rule : rules) {
+    //            try {
+    //                ruleFactory.parse(rule, null, getAvailableInputFlowVariables());
+    //            } catch (ParseException e) {
+    //                throw new InvalidSettingsException(e.getMessage(), e);
+    //            }
+    //        }
+    //    }
 
     /**
      * {@inheritDoc}
@@ -592,8 +600,8 @@ public class RuleEngineNodeModel extends NodeModel implements FlowVariableProvid
         final RuleFactory ruleFactory = RuleFactory.getInstance(RuleNodeSettings.RuleEngine);
         //hasNonStreamingRule(ruleFactory);
         final boolean hasNonDistributable = hasNonDistributableRule(ruleFactory);
-        inputPortRoles[0] = hasNonDistributable ?
-            InputPortRole.NONDISTRIBUTED_STREAMABLE : InputPortRole.DISTRIBUTED_STREAMABLE;
+        inputPortRoles[0] =
+            hasNonDistributable ? InputPortRole.NONDISTRIBUTED_STREAMABLE : InputPortRole.DISTRIBUTED_STREAMABLE;
         return inputPortRoles;
     }
 
@@ -620,8 +628,8 @@ public class RuleEngineNodeModel extends NodeModel implements FlowVariableProvid
     public OutputPortRole[] getOutputPortRoles() {
         final OutputPortRole[] outputPortRoles = super.getOutputPortRoles();
         final RuleFactory ruleFactory = RuleFactory.getInstance(RuleNodeSettings.RuleEngine);
-        outputPortRoles[0] = hasNonDistributableRule(ruleFactory)
-            ? OutputPortRole.NONDISTRIBUTED : OutputPortRole.DISTRIBUTED;
+        outputPortRoles[0] =
+            hasNonDistributableRule(ruleFactory) ? OutputPortRole.NONDISTRIBUTED : OutputPortRole.DISTRIBUTED;
         return outputPortRoles;
     }
 
@@ -646,7 +654,7 @@ public class RuleEngineNodeModel extends NodeModel implements FlowVariableProvid
              */
             @Override
             public void loadInternals(final StreamableOperatorInternals internals) {
-                m_internals = (SimpleStreamableOperatorInternals) internals;
+                m_internals = (SimpleStreamableOperatorInternals)internals;
             }
 
             /**
@@ -656,8 +664,8 @@ public class RuleEngineNodeModel extends NodeModel implements FlowVariableProvid
             public void runIntermediate(final PortInput[] inputs, final ExecutionContext exec) throws Exception {
                 //count number of rows
                 long count = 0;
-                RowInput rowInput = (RowInput) inputs[0];
-                while(rowInput.poll()!=null) {
+                RowInput rowInput = (RowInput)inputs[0];
+                while (rowInput.poll() != null) {
                     count++;
                 }
                 m_internals.getConfig().addLong(CFG_ROW_COUNT, count);
@@ -672,13 +680,15 @@ public class RuleEngineNodeModel extends NodeModel implements FlowVariableProvid
             }
 
             @Override
-            public void runFinal(final PortInput[] inputs, final PortOutput[] outputs, final ExecutionContext exec) throws Exception {
+            public void runFinal(final PortInput[] inputs, final PortOutput[] outputs, final ExecutionContext exec)
+                throws Exception {
                 long rowCount = -1L;
                 if (m_internals.getConfig().containsKey(CFG_ROW_COUNT)) {
                     rowCount = m_internals.getConfig().getLong(CFG_ROW_COUNT);
                 }
 
-                createRearranger(((RowInput)inputs[0]).getDataTableSpec(), parsedRules, rowCount, false).createStreamableFunction(0, 0).runFinal(inputs, outputs, exec);
+                createRearranger(((RowInput)inputs[0]).getDataTableSpec(), parsedRules, rowCount, false)
+                    .createStreamableFunction(0, 0).runFinal(inputs, outputs, exec);
             }
         };
     }
@@ -697,7 +707,7 @@ public class RuleEngineNodeModel extends NodeModel implements FlowVariableProvid
     @Override
     public boolean iterate(final StreamableOperatorInternals internals) {
         if (hasNonStreamingRule(RuleFactory.getInstance(RuleNodeSettings.RuleEngine))) {
-            SimpleStreamableOperatorInternals simpleInternals = (SimpleStreamableOperatorInternals) internals;
+            SimpleStreamableOperatorInternals simpleInternals = (SimpleStreamableOperatorInternals)internals;
             if (simpleInternals.getConfig().containsKey(CFG_ROW_COUNT)) {
                 //already iterated
                 return false;
@@ -737,7 +747,7 @@ public class RuleEngineNodeModel extends NodeModel implements FlowVariableProvid
                 }
 
                 SimpleStreamableOperatorInternals res = new SimpleStreamableOperatorInternals();
-                if(count > 0) {
+                if (count > 0) {
                     res.getConfig().addLong(CFG_ROW_COUNT, count);
                 }
                 return res;
@@ -760,11 +770,11 @@ public class RuleEngineNodeModel extends NodeModel implements FlowVariableProvid
         // nothing to do here
     }
 
-//    /**
-//     * @return Creates a {@link SettingsModelBoolean} that allows matching of missing and {@link Double#NaN} values in
-//     *         comparisons.
-//     */
-//    public static SettingsModelBoolean createMissingsAndNaNsMatch() {
-//        return new SettingsModelBoolean(CFGKEY_MISSINGS_AND_NANS_MATCH, DEFAULT_MISSINGS_AND_NANS_MATCH);
-//    }
+    //    /**
+    //     * @return Creates a {@link SettingsModelBoolean} that allows matching of missing and {@link Double#NaN} values in
+    //     *         comparisons.
+    //     */
+    //    public static SettingsModelBoolean createMissingsAndNaNsMatch() {
+    //        return new SettingsModelBoolean(CFGKEY_MISSINGS_AND_NANS_MATCH, DEFAULT_MISSINGS_AND_NANS_MATCH);
+    //    }
 }
