@@ -107,6 +107,11 @@ public class StringManipulationVariableNodeModel extends NodeModel implements Fl
         if (m_settings.getExpression() == null) {
             throw new InvalidSettingsException("No expression has been set.");
         }
+
+        //validation check is ported from validateSettings() method that further calls loadSettingsInModel() from StringManipulationSettings
+        if (!m_settings.m_isReplace && (m_settings.m_colName == null || m_settings.m_colName.length() == 0)) {
+            throw new InvalidSettingsException("Variable name must not be empty");
+        }
         try {
             calculate();
         } catch (InstantiationException | CompilationFailedException e) {
@@ -202,7 +207,8 @@ public class StringManipulationVariableNodeModel extends NodeModel implements Fl
      */
     @Override
     protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
-        new StringManipulationSettings().loadSettingsInModel(settings);
+     // code is commented out for AP-25761.
+       // new StringManipulationSettings().loadSettingsInModel(settings);
     }
 
     /**

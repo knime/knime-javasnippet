@@ -83,6 +83,7 @@ import org.knime.node.parameters.widget.choices.Label;
 import org.knime.node.parameters.widget.choices.ValueSwitchWidget;
 import org.knime.node.parameters.widget.message.TextMessage;
 import org.knime.node.parameters.widget.text.TextInputWidget;
+import org.knime.node.parameters.widget.text.TextInputWidgetValidation.PatternValidation.IsNotBlankValidation;
 
 /**
  * @author Ali Asghar Marvi, KNIME GmbH, Berlin, Germany
@@ -175,7 +176,7 @@ class StringManipulationVariableScriptingNodeParameters implements NodeParameter
 
         @Widget(title = "New variable name", description = "The name of the new flow variable to append.")
         @Effect(predicate = IsReplace.class, type = EffectType.HIDE)
-        @TextInputWidget
+        @TextInputWidget(patternValidation = IsNotBlankValidation.class)
         public String m_variableNameAppend = "new variable";
 
         @Widget(title = "Replace variable", description = "The name of the flow variable to replace.")

@@ -131,9 +131,15 @@ public class StringManipulationSettings {
 
     private Class<?> m_returnType;
 
-    String m_colName;
+    /**
+     * Variable that holds the column or variable name, in case the new modified column/variable has to be appended.
+     */
+    public String m_colName;
 
-    boolean m_isReplace;
+    /**
+     * Flag that checks if column or variable is to be replaced or appended.
+     */
+    public boolean m_isReplace;
 
     /**
      * Only important for dialog: Test the syntax of the snippet code when the dialog closes, bug fix #1229.
