@@ -81,6 +81,8 @@ import org.knime.node.parameters.widget.choices.ValueSwitchWidget;
 import org.knime.node.parameters.widget.choices.util.AllColumnsProvider;
 import org.knime.node.parameters.widget.choices.util.ColumnSelectionUtil;
 import org.knime.node.parameters.widget.message.TextMessage;
+import org.knime.node.parameters.widget.text.TextInputWidget;
+import org.knime.node.parameters.widget.text.TextInputWidgetValidation.PatternValidation.IsNotBlankValidation;
 
 /**
  * Configuration parameters in the WebUI dialog for the String Manipulation node
@@ -169,6 +171,7 @@ class StringManipulationScriptingNodeParameters implements NodeParameters {
         ReplaceOrAppend m_replaceOrAppend;
 
         @Widget(title = "New column name", description = "The name of the new column to append.")
+        @TextInputWidget(patternValidation = IsNotBlankValidation.class)
         @Effect(predicate = IsReplace.class, type = EffectType.HIDE)
         String m_columnNameAppend = "";
 

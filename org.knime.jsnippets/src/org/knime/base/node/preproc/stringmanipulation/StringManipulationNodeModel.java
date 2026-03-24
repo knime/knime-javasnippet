@@ -73,8 +73,7 @@ import org.knime.ext.sun.nodes.script.settings.JavaScriptingSettings;
  *
  * @author Heiko Hofer
  */
-public class StringManipulationNodeModel extends AbstractConditionalStreamingNodeModel
-    implements FlowVariableProvider {
+public class StringManipulationNodeModel extends AbstractConditionalStreamingNodeModel implements FlowVariableProvider {
 
     private final StringManipulationSettings m_settings;
 
@@ -92,8 +91,11 @@ public class StringManipulationNodeModel extends AbstractConditionalStreamingNod
      * {@inheritDoc}
      */
     @Override
-    protected DataTableSpec[] configure(final DataTableSpec[] inSpecs)
-            throws InvalidSettingsException {
+    protected DataTableSpec[] configure(final DataTableSpec[] inSpecs) throws InvalidSettingsException {
+        //validation check is ported from validateSettings() method that further calls loadSettingsInModel() from StringManipulationSettings
+        if (!m_settings.m_isReplace && (m_settings.m_colName == null || m_settings.m_colName.length() == 0)) {
+            throw new InvalidSettingsException("Column name must not be empty");
+        }
         // only used for configuration, so no warnings are actually issued
         ColumnRearranger c = createColumnRearranger(inSpecs[0], WarningConsumer.log(getLogger()));
         return new DataTableSpec[]{c.createSpec()};
@@ -103,15 +105,14 @@ public class StringManipulationNodeModel extends AbstractConditionalStreamingNod
      * {@inheritDoc}
      */
     @Override
-    protected BufferedDataTable[] execute(final BufferedDataTable[] inData,
-            final ExecutionContext exec) throws Exception {
+    protected BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec)
+        throws Exception {
         DataTableSpec inSpec = inData[0].getDataTableSpec();
         var messageBuilder = createMessageBuilder();
         ColumnRearranger c = createColumnRearranger(inSpec, WarningConsumer.wrap(messageBuilder, 0));
         m_rowCount = inData[0].size();
         try {
-            BufferedDataTable o = exec.createColumnRearrangeTable(
-                    inData[0], c, exec);
+            BufferedDataTable o = exec.createColumnRearrangeTable(inData[0], c, exec);
             setWarningIfNecessary(messageBuilder);
             return new BufferedDataTable[]{o};
         } finally {
@@ -124,22 +125,20 @@ public class StringManipulationNodeModel extends AbstractConditionalStreamingNod
         if (issueCount == 1) {
             messageBuilder.withSummary("Problems in one row: " + messageBuilder.getFirstIssue().orElseThrow());
         } else if (issueCount > 1) {
-            messageBuilder.withSummary("Problems in " + issueCount + " rows. First error: "
-                + messageBuilder.getFirstIssue().orElseThrow());
+            messageBuilder.withSummary(
+                "Problems in " + issueCount + " rows. First error: " + messageBuilder.getFirstIssue().orElseThrow());
         }
         messageBuilder.build().ifPresent(this::setWarning);
     }
 
-
     private ColumnRearranger createColumnRearranger(final DataTableSpec spec, final WarningConsumer warningConsumer)
-            throws InvalidSettingsException {
+        throws InvalidSettingsException {
         if (m_settings.getExpression() == null) {
             throw new InvalidSettingsException("No expression has been set.");
         }
         boolean isReplace = m_settings.isReplace();
         String colName = m_settings.getColName();
-        JavaScriptingSettings settings =
-            m_settings.getJavaScriptingSettings();
+        JavaScriptingSettings settings = m_settings.getJavaScriptingSettings();
         try {
             settings.setInputAndCompile(spec);
             ColumnCalculator cc = new ColumnCalculator(settings, this, warningConsumer);
@@ -157,6 +156,7 @@ public class StringManipulationNodeModel extends AbstractConditionalStreamingNod
 
     /**
      * {@inheritDoc}
+     *
      * @since 3.2
      */
     @Override
@@ -190,8 +190,8 @@ public class StringManipulationNodeModel extends AbstractConditionalStreamingNod
     protected boolean usesRowIndex() {
         boolean uses = m_settings.getExpression().contains(Expression.ROWINDEX);
         if (uses) {
-            getLogger()
-                .warn("The ROWINDEX field is used in the expression. Manipulations cannot be done in distributed manner!");
+            getLogger().warn(
+                "The ROWINDEX field is used in the expression. Manipulations cannot be done in distributed manner!");
         }
         return uses;
     }
@@ -210,16 +210,22 @@ public class StringManipulationNodeModel extends AbstractConditionalStreamingNod
         }
     }
 
-    /** {@inheritDoc}
-     * @deprecated*/
+    /**
+     * {@inheritDoc}
+     *
+     * @deprecated
+     */
     @Deprecated
     @Override
     public int getRowCount() {
         return KnowsRowCountTable.checkRowCount(m_rowCount);
     }
 
-    /** {@inheritDoc}
-     * @since 3.2 */
+    /**
+     * {@inheritDoc}
+     *
+     * @since 3.2
+     */
     @Override
     public long getRowCountLong() {
         return m_rowCount;
@@ -229,9 +235,8 @@ public class StringManipulationNodeModel extends AbstractConditionalStreamingNod
      * {@inheritDoc}
      */
     @Override
-    protected void loadInternals(final File nodeInternDir,
-            final ExecutionMonitor exec)
-            throws IOException, CanceledExecutionException {
+    protected void loadInternals(final File nodeInternDir, final ExecutionMonitor exec)
+        throws IOException, CanceledExecutionException {
         // no internals
     }
 
@@ -239,9 +244,8 @@ public class StringManipulationNodeModel extends AbstractConditionalStreamingNod
      * {@inheritDoc}
      */
     @Override
-    protected void saveInternals(final File nodeInternDir,
-            final ExecutionMonitor exec)
-            throws IOException, CanceledExecutionException {
+    protected void saveInternals(final File nodeInternDir, final ExecutionMonitor exec)
+        throws IOException, CanceledExecutionException {
         // no internals
     }
 
@@ -257,17 +261,16 @@ public class StringManipulationNodeModel extends AbstractConditionalStreamingNod
      * {@inheritDoc}
      */
     @Override
-    protected void validateSettings(final NodeSettingsRO settings)
-            throws InvalidSettingsException {
-        new StringManipulationSettings().loadSettingsInModel(settings);
+    protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
+        // code is commented out for AP-25761.
+        //new StringManipulationSettings().loadSettingsInModel(settings);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected void loadValidatedSettingsFrom(final NodeSettingsRO settings)
-            throws InvalidSettingsException {
+    protected void loadValidatedSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
         m_settings.loadSettingsInModel(settings);
     }
 

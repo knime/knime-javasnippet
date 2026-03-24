@@ -131,9 +131,9 @@ public class StringManipulationSettings {
 
     private Class<?> m_returnType;
 
-    private String m_colName;
+    String m_colName;
 
-    private boolean m_isReplace;
+    boolean m_isReplace;
 
     /**
      * Only important for dialog: Test the syntax of the snippet code when the dialog closes, bug fix #1229.
@@ -172,9 +172,11 @@ public class StringManipulationSettings {
         m_expression = settings.getString(CFG_EXPRESSION);
         m_colName = settings.getString(CFG_COLUMN_NAME);
         m_isReplace = settings.getBoolean(CFG_IS_REPLACE);
-        if (!m_isReplace && (m_colName == null || m_colName.length() == 0)) {
-            throw new InvalidSettingsException("Column name must not be empty");
-        }
+
+        //Following section is commented out because of AP-25761
+//        if (!m_isReplace && (m_colName == null || m_colName.length() == 0)) {
+//            throw new InvalidSettingsException("Column name must not be empty");
+//        }
         String returnType = settings.getString(CFG_RETURN_TYPE, null);
         m_returnType = null == returnType ? null : getClassForReturnType(returnType);
         // this setting is not available in 1.2.x
