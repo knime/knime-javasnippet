@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config xmlns="http://www.knime.org/2008/09/XMLConfig" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.knime.org/2008/09/XMLConfig http://www.knime.org/XMLConfig_2008_09.xsd" key="test">
+    <entry key="dictionaryMode" type="xstring" value="RULE"/>
+    <entry key="ruleColumn" type="xstring" value="Rule"/>
+    <entry key="conditionColumn" type="xstring" value="Rule"/>
+    <entry key="valueColumn" type="xstring" isnull="true" value=""/>
+    <entry key="treat.outcomes.with.dollar.as.references" type="xboolean" value="false"/>
+    <entry key="disallowLongOutputForCompatibility" type="xboolean" value="true"/>
+    <entry key="is.replaced.column" type="xboolean" value="false"/>
+    <entry key="append.column" type="xstring" value="Prediction"/>
+    <entry key="replace.column" type="xstring" value="ChurnFlag"/>
+    <entry key="is.pmml.ruleset" type="xboolean" value="true"/>
+    <entry key="rule.selection.method" type="xstring" value="FirstHit"/>
+    <entry key="has.default.score" type="xboolean" value="false"/>
+    <entry key="default.score" type="xstring" value=""/>
+    <entry key="has.default.confidence" type="xboolean" value="false"/>
+    <entry key="default.confidence" type="xdouble" value="1.0"/>
+    <entry key="rule.confidence.column" type="xstring" isnull="true" value=""/>
+    <entry key="has.default.weight" type="xboolean" value="false"/>
+    <entry key="default.weight" type="xdouble" value="1.0"/>
+    <entry key="rule.weight.column" type="xstring" isnull="true" value=""/>
+    <entry key="compute.confidence" type="xboolean" value="false"/>
+    <entry key="prediction.confidence.column" type="xstring" value="Confidence"/>
+    <entry key="provide.statistics" type="xboolean" value="true"/>
+    <entry key="validate.column" type="xstring" isnull="true" value=""/>
+</config>
