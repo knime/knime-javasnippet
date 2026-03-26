@@ -50,6 +50,7 @@ package org.knime.base.node.jsnippet;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.knime.core.node.Node;
 import org.knime.core.node.NodeLogger;
@@ -62,6 +63,7 @@ import org.knime.core.webui.node.dialog.scripting.InputOutputModel;
 import org.knime.core.webui.node.dialog.scripting.InputOutputModelNameAndTypeUtils;
 import org.knime.core.webui.node.dialog.scripting.ScriptingService;
 import org.knime.core.webui.node.dialog.scripting.WorkflowControl;
+import org.knime.core.webui.node.dialog.scripting.lsp.LanguageServerConnection;
 
 /**
  * Custom {@link ScriptingService} for the Java Snippet node that delegates {@code getCompletions} to
@@ -83,17 +85,15 @@ public class JavaSnippetScriptingService extends ScriptingService {
      * @param javaName the Java field name used in the snippet class
      * @param javaType the simple Java type name (e.g. {@code "Integer"}, {@code "String"})
      */
-    public record FieldMapping(String knimeName, String javaName, String javaType) {}
+    public record FieldMapping(String knimeName, String javaName, String javaType) {
+    }
 
-    record FieldMappings(
-            FieldMapping[] inputColumns,
-            FieldMapping[] inputFlowVariables,
-            FieldMapping[] outputColumns,
-            FieldMapping[] outputFlowVariables) {
+    record FieldMappings(FieldMapping[] inputColumns, FieldMapping[] inputFlowVariables, FieldMapping[] outputColumns,
+        FieldMapping[] outputFlowVariables) {
 
         boolean isEmpty() {
-            return inputColumns.length == 0 && inputFlowVariables.length == 0
-                && outputColumns.length == 0 && outputFlowVariables.length == 0;
+            return inputColumns.length == 0 && inputFlowVariables.length == 0 && outputColumns.length == 0
+                && outputFlowVariables.length == 0;
         }
     }
 
@@ -110,9 +110,13 @@ public class JavaSnippetScriptingService extends ScriptingService {
      * @param workflowControl the workflow control for the node
      */
     public JavaSnippetScriptingService(final WorkflowControl workflowControl) {
-        super(() -> new JavaSnippetLanguageServer(workflowControl, () -> m_currentMappings),
-            t -> t == StringType.INSTANCE || t == IntType.INSTANCE || t == DoubleType.INSTANCE,
-            workflowControl);
+        super(t -> t == StringType.INSTANCE || t == IntType.INSTANCE || t == DoubleType.INSTANCE, workflowControl);
+    }
+
+    @SuppressWarnings("resource") // is closed by ScriptingService::onDeactivate
+    @Override
+    protected Optional<LanguageServerConnection> getLanguageServerConnection() {
+        return Optional.of(new JavaSnippetLanguageServer(getWorkflowControl(), () -> m_currentMappings));
     }
 
     @Override
@@ -131,8 +135,7 @@ public class JavaSnippetScriptingService extends ScriptingService {
                 return;
             }
             try {
-                m_currentMappings = new FieldMappings(
-                    extractFieldArray(currentModelSettings, "inputColumns"),
+                m_currentMappings = new FieldMappings(extractFieldArray(currentModelSettings, "inputColumns"),
                     extractFieldArray(currentModelSettings, "inputFlowVariables"),
                     extractFieldArray(currentModelSettings, "outputColumns"),
                     extractFieldArray(currentModelSettings, "outputFlowVariables"));
@@ -146,19 +149,15 @@ public class JavaSnippetScriptingService extends ScriptingService {
             if (!(raw instanceof List<?> list)) {
                 return new FieldMapping[0];
             }
-            return list.stream()
-                .filter(Map.class::isInstance)
-                .map(Map.class::cast)
-                .map(m -> new FieldMapping(
-                    m.get("knimeName") instanceof String s ? s : "",
-                    m.get("javaName") instanceof String s ? s : "",
-                    m.get("javaType") instanceof String s ? s : ""))
+            return list.stream().filter(Map.class::isInstance).map(Map.class::cast)
+                .map(m -> new FieldMapping(m.get("knimeName") instanceof String s ? s : "",
+                    m.get("javaName") instanceof String s ? s : "", m.get("javaType") instanceof String s ? s : ""))
                 .toArray(FieldMapping[]::new);
         }
 
         @Override
-        protected CodeGenerationRequest getCodeSuggestionRequest(final String userPrompt,
-                final String currentCode, final InputOutputModel[] inputModels) {
+        protected CodeGenerationRequest getCodeSuggestionRequest(final String userPrompt, final String currentCode,
+            final InputOutputModel[] inputModels) {
             var nodeDescription = Node.invokeGetNodeDescription(new JavaSnippetNodeFactory());
             var nodeName = nodeDescription.getNodeName();
 
@@ -169,39 +168,37 @@ public class JavaSnippetScriptingService extends ScriptingService {
                 if (m_currentMappings.inputColumns().length > 0) {
                     contextInfo.append("CONFIGURED INPUT COLUMNS (available as Java fields in the snippet class):\n");
                     for (var field : m_currentMappings.inputColumns()) {
-                        contextInfo.append("- Java field: ").append(field.javaName())
-                            .append(" (").append(field.javaType()).append(")")
-                            .append(" \u2014 reads from KNIME column \"").append(field.knimeName()).append("\"\n");
+                        contextInfo.append("- Java field: ").append(field.javaName()).append(" (")
+                            .append(field.javaType()).append(")").append(" \u2014 reads from KNIME column \"")
+                            .append(field.knimeName()).append("\"\n");
                     }
                     contextInfo.append("\n");
                 }
                 if (m_currentMappings.inputFlowVariables().length > 0) {
-                    contextInfo.append(
-                        "CONFIGURED INPUT FLOW VARIABLES (available as Java fields in the snippet class):\n");
+                    contextInfo
+                        .append("CONFIGURED INPUT FLOW VARIABLES (available as Java fields in the snippet class):\n");
                     for (var field : m_currentMappings.inputFlowVariables()) {
-                        contextInfo.append("- Java field: ").append(field.javaName())
-                            .append(" (").append(field.javaType()).append(")")
-                            .append(" \u2014 reads from KNIME flow variable \"").append(field.knimeName())
-                            .append("\"\n");
+                        contextInfo.append("- Java field: ").append(field.javaName()).append(" (")
+                            .append(field.javaType()).append(")").append(" \u2014 reads from KNIME flow variable \"")
+                            .append(field.knimeName()).append("\"\n");
                     }
                     contextInfo.append("\n");
                 }
                 if (m_currentMappings.outputColumns().length > 0) {
                     contextInfo.append("CONFIGURED OUTPUT COLUMNS (assign values to these Java fields):\n");
                     for (var field : m_currentMappings.outputColumns()) {
-                        contextInfo.append("- Java field: ").append(field.javaName())
-                            .append(" (").append(field.javaType()).append(")")
-                            .append(" \u2014 writes to KNIME column \"").append(field.knimeName()).append("\"\n");
+                        contextInfo.append("- Java field: ").append(field.javaName()).append(" (")
+                            .append(field.javaType()).append(")").append(" \u2014 writes to KNIME column \"")
+                            .append(field.knimeName()).append("\"\n");
                     }
                     contextInfo.append("\n");
                 }
                 if (m_currentMappings.outputFlowVariables().length > 0) {
                     contextInfo.append("CONFIGURED OUTPUT FLOW VARIABLES (assign values to these Java fields):\n");
                     for (var field : m_currentMappings.outputFlowVariables()) {
-                        contextInfo.append("- Java field: ").append(field.javaName())
-                            .append(" (").append(field.javaType()).append(")")
-                            .append(" \u2014 writes to KNIME flow variable \"").append(field.knimeName())
-                            .append("\"\n");
+                        contextInfo.append("- Java field: ").append(field.javaName()).append(" (")
+                            .append(field.javaType()).append(")").append(" \u2014 writes to KNIME flow variable \"")
+                            .append(field.knimeName()).append("\"\n");
                     }
                     contextInfo.append("\n");
                 }
@@ -214,8 +211,7 @@ public class JavaSnippetScriptingService extends ScriptingService {
                     contextInfo.append(
                         "AVAILABLE INPUT TABLE COLUMNS (configure them as input columns in the node settings panel):\n");
                     for (var column : inputTables[0]) {
-                        contextInfo.append("- ").append(column.name())
-                            .append(" (").append(column.type()).append(")\n");
+                        contextInfo.append("- ").append(column.name()).append(" (").append(column.type()).append(")\n");
                     }
                     contextInfo.append("\n");
                 }
@@ -223,43 +219,43 @@ public class JavaSnippetScriptingService extends ScriptingService {
                     contextInfo.append(
                         "AVAILABLE FLOW VARIABLES (configure them as input variables in the node settings panel):\n");
                     for (var flowVar : flowVariables) {
-                        contextInfo.append("- ").append(flowVar.name())
-                            .append(" (").append(flowVar.type()).append(")\n");
+                        contextInfo.append("- ").append(flowVar.name()).append(" (").append(flowVar.type())
+                            .append(")\n");
                     }
                     contextInfo.append("\n");
                 }
             }
 
             String systemPrompt = """
-                You are a code assistant for KNIME's Java Snippet node. The user writes Java code inside \
-                a class that extends AbstractJSnippet.
+                    You are a code assistant for KNIME's Java Snippet node. The user writes Java code inside \
+                    a class that extends AbstractJSnippet.
 
-                The code is structured in three sections:
-                1. Import statements (at the top)
-                2. Field declarations (inside the class body, before the method)
-                3. Method body (inside `public void snippet() throws TypeException, ColumnException, Abort`)
+                    The code is structured in three sections:
+                    1. Import statements (at the top)
+                    2. Field declarations (inside the class body, before the method)
+                    3. Method body (inside `public void snippet() throws TypeException, ColumnException, Abort`)
 
-                Available API from AbstractJSnippet:
-                - ROWID (String): Current row ID
-                - ROWINDEX (int): Current row index (0-based)
-                - ROWCOUNT (int): Total number of rows
-                - getCell(String column, T type): Get cell value for a column
-                - isMissing(String column): Check if a cell value is missing
-                - getColumnCount(): Get the number of input columns
-                - getColumnName(int index): Get column name by index
-                - columnExists(String column): Check if a column exists
-                - getFlowVariable(String name, T type): Get a flow variable value
-                - flowVariableExists(String name): Check if a flow variable exists
-                - logInfo/logWarn/logError/logDebug(Object): Log messages
+                    Available API from AbstractJSnippet:
+                    - ROWID (String): Current row ID
+                    - ROWINDEX (int): Current row index (0-based)
+                    - ROWCOUNT (int): Total number of rows
+                    - getCell(String column, T type): Get cell value for a column
+                    - isMissing(String column): Check if a cell value is missing
+                    - getColumnCount(): Get the number of input columns
+                    - getColumnName(int index): Get column name by index
+                    - columnExists(String column): Check if a column exists
+                    - getFlowVariable(String name, T type): Get a flow variable value
+                    - flowVariableExists(String name): Check if a flow variable exists
+                    - logInfo/logWarn/logError/logDebug(Object): Log messages
 
-                Input columns and flow variables are mapped to Java fields that are already declared as \
-                class members in the snippet class. The field names and types are configured in the node \
-                settings panel and shown in the context above. Use these exact field names in your code.
-                Output columns are also Java fields; assign a value to them to produce output.
+                    Input columns and flow variables are mapped to Java fields that are already declared as \
+                    class members in the snippet class. The field names and types are configured in the node \
+                    settings panel and shown in the context above. Use these exact field names in your code.
+                    Output columns are also Java fields; assign a value to them to produce output.
 
-                Default imports: AbstractJSnippet, Abort, Cell, ColumnException, TypeException, Type.*, \
-                java.util.Date, java.util.Calendar, org.w3c.dom.Document
-                """;
+                    Default imports: AbstractJSnippet, Abort, Cell, ColumnException, TypeException, Type.*, \
+                    java.util.Date, java.util.Calendar, org.w3c.dom.Document
+                    """;
 
             String prompt = """
                     %s
@@ -300,8 +296,8 @@ public class JavaSnippetScriptingService extends ScriptingService {
                     <body here>
                       }
                     }
-                    """.formatted(systemPrompt, contextInfo.toString(),
-                    nodeDescription.getXMLDescription(), currentCode, userPrompt);
+                    """.formatted(systemPrompt, contextInfo.toString(), nodeDescription.getXMLDescription(),
+                currentCode, userPrompt);
 
             return new CodeGenerationRequest("/prompt", new PromptRequestBody(prompt, nodeName));
         }
