@@ -25,6 +25,8 @@ Core of the Java Snippet node:
 - **`JavaSnippetCompletionService`** — Provides dynamic autocompletion items for the WebUI dialog:
   - *P0 (always available)*: row metadata (`ROWID`, `ROWINDEX`, `ROWCOUNT`), input columns, flow variables, `AbstractJSnippet` methods, Java keywords.
   - *P1 (dot-triggered)*: reflection-based type resolution for the identifier before `.`, returning matching public methods and fields.
+- **`JavaSnippetLanguageServer`** — LSP adapter that wraps `JavaSnippetCompletionService` and `JavaSnippetDiagnosticsService` behind the `InProcessLanguageServer` JSON-RPC protocol. Handles `textDocument/completion` (delegates to completion service with 1-based→0-based position mapping), `textDocument/didOpen`/`didChange` (triggers debounced diagnostics via a single-thread scheduled executor), and `close` (shuts the executor and awaits termination). A generation counter eliminates stale diagnostic publishes when edits arrive rapidly.
+- **`JavaSnippetDiagnosticsService`** — Compiles the full editor text (with system imports preamble) using Eclipse JDT in-process and returns `DiagnosticItem` records with editor-relative 1-based positions. The preamble line count is subtracted so reported lines refer to user code.
 - **`JavaSnippetScriptingNodeParameters`** — `NodeParameters` (WebUI settings) class for the Modern UI dialog.
 - **`JavaSnippetSettings`** — Legacy settings container (XML serialization via `NodeSettings`).
 
@@ -67,3 +69,15 @@ Column values are accessed via `$columnName$`.
 - System imports (auto-prepended) include: `AbstractJSnippet`, `Abort`, `Cell`, `ColumnException`, `TypeException`, `static Type.*`, `java.util.Date`, `java.util.Calendar`, `org.w3c.dom.Document`.
 - All WebUI classes from `org.knime.core.webui` are restricted API; code using them is annotated with `@SuppressWarnings("restriction")`.
 - Do NOT modify the `JavaSnippetModel` or `JavaSnippetSettings` classes when migrating dialog changes — only the dialog and parameters classes should change.
+
+## Test Coverage
+
+Tests live in `org.knime.jsnippets.tests/src/org/knime/base/node/jsnippet/`.
+
+| Test class | What is covered |
+|---|---|
+| `JavaSnippetCompletionServiceTest` | P0/P1 completions: keywords, row metadata, columns, flow variables, AbstractJSnippet methods, dot-triggered reflection |
+| `JavaSnippetDiagnosticsServiceTest` | In-memory JDT compilation: syntax/type errors, position mapping, preamble line offset |
+| `JavaSnippetLanguageServerTest` | Full JSON-RPC adapter: initialize capabilities, completion kind mapping (string→int), trigger-kind mapping, diagnostics publish after `didOpen`, debounce on rapid `didChange`, clean shutdown |
+| `JavaSnippetScriptingServiceTest` | RPC layer: `preSuggestCodeHook` field mapping extraction, flow variable type filtering |
+| `JavaSnippetTest` | Legacy execution engine and settings round-trips |
