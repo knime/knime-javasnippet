@@ -58,9 +58,6 @@ import org.knime.core.node.workflow.VariableType.IntType;
 import org.knime.core.node.workflow.VariableType.StringType;
 import org.knime.core.webui.node.dialog.scripting.CodeGenerationRequest;
 import org.knime.core.webui.node.dialog.scripting.CodeGenerationRequest.PromptRequestBody;
-import org.knime.core.webui.node.dialog.scripting.DiagnosticItem;
-import org.knime.core.webui.node.dialog.scripting.DynamicCompletionItem;
-import org.knime.core.webui.node.dialog.scripting.DynamicCompletionRequest;
 import org.knime.core.webui.node.dialog.scripting.InputOutputModel;
 import org.knime.core.webui.node.dialog.scripting.InputOutputModelNameAndTypeUtils;
 import org.knime.core.webui.node.dialog.scripting.ScriptingService;
@@ -113,7 +110,7 @@ public class JavaSnippetScriptingService extends ScriptingService {
      * @param workflowControl the workflow control for the node
      */
     public JavaSnippetScriptingService(final WorkflowControl workflowControl) {
-        super(null,
+        super(() -> new JavaSnippetLanguageServer(workflowControl, () -> m_currentMappings),
             t -> t == StringType.INSTANCE || t == IntType.INSTANCE || t == DoubleType.INSTANCE,
             workflowControl);
     }
@@ -309,17 +306,5 @@ public class JavaSnippetScriptingService extends ScriptingService {
             return new CodeGenerationRequest("/prompt", new PromptRequestBody(prompt, nodeName));
         }
 
-        private final JavaSnippetDiagnosticsService m_diagnosticsService = new JavaSnippetDiagnosticsService();
-
-        @Override
-        public List<DiagnosticItem> getDiagnostics(final DynamicCompletionRequest request) {
-            return m_diagnosticsService.getDiagnostics(request);
-        }
-
-        @Override
-        public List<DynamicCompletionItem> getCompletions(final DynamicCompletionRequest request) {
-            return new JavaSnippetCompletionService(getWorkflowControl(), m_currentMappings)
-                .getCompletions(request);
-        }
     }
 }

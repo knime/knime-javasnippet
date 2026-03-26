@@ -126,11 +126,8 @@ public class JavaSnippetScriptingNodeDialog extends AbstractDefaultScriptingNode
         // Add the script sections to the builder
         builder.addScriptSectionData(scriptSections);
 
-        // Enable dynamic completion triggered by "."
-        builder.enableDynamicCompletion(".");
-
-        // Enable dynamic diagnostics (compile errors/warnings shown as Monaco markers)
-        builder.enableDynamicDiagnostics();
+        // Enable Language Server Protocol support (completion + diagnostics via LSP)
+        builder.enableLanguageServer();
 
         // Show the control bar so the AI button is visible
         builder.showAIAssistant();
