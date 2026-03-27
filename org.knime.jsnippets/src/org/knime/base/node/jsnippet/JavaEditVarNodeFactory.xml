@@ -70,7 +70,7 @@
 			the snippet involves heavy computation, network access or another kind of I/O operation. If unsure, set this
 			option to run the script during node configuration.
         </option>
-        <link href="https://www.knime.com/knime-introductory-course/chapter7/section1/creation-and-usage-of-flow-variables">
+        <link href="https://docs.knime.com/ap/latest/analytics_platform_flow_control_guide/#flow-variables">
             KNIME E-Learning Course: Creation and usage of Flow Variables in a KNIME workflow
         </link>
     </fullDescription>

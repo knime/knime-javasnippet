@@ -46,7 +46,7 @@
 		  Specify whether you want to overwrite an existing variable or define
 		  a new variable.
 		</option>
-		<link href="https://www.knime.com/knime-introductory-course/chapter7/section1/creation-and-usage-of-flow-variables">
+		<link href="https://docs.knime.com/ap/latest/analytics_platform_flow_control_guide/#flow-variables">
 			KNIME E-Learning Course: Creation and usage of Flow Variables in a KNIME workflow
 		</link>
 	</fullDescription>
