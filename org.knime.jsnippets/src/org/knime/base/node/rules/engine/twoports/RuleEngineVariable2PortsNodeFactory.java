@@ -143,7 +143,7 @@ $${SFlowVar10}$$ MATCHES $${SFlowVar0}$$ OR $${DFlowVar2}$$ &lt; $${IFlowVar1}$$
             """;
 
     private static final List<ExternalResource> EXTERNAL_RESOURCES = List.of(new ExternalResource(
-        "https://www.knime.com/knime-introductory-course/chapter7/section1/creation-and-usage-of-flow-variables",
+        "https://docs.knime.com/ap/latest/analytics_platform_flow_control_guide/#flow-variables",
         "KNIME E-Learning Course: Creation and usage of Flow Variables in a KNIME workflow"));
 
     private static final List<PortDescription> INPUT_PORTS = List.of( //
