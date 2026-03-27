@@ -127,6 +127,7 @@ import org.knime.core.util.Pair;
  * This is the model implementation of PMML41RuleEditor. Edits PMML RuleSets.
  *
  * @author Gabor Bakos
+ * @since 5.12
  */
 public class PMMLRuleEditorNodeModel extends NodeModel {
 
@@ -364,6 +365,7 @@ public class PMMLRuleEditorNodeModel extends NodeModel {
      */
     @Override
     protected PortObjectSpec[] configure(final PortObjectSpec[] inSpecs) throws InvalidSettingsException {
+        validateRules(m_settings.rules());
         RuleSet ruleSet = RuleSet.Factory.newInstance();
         PMMLRuleParser parser = new PMMLRuleParser((DataTableSpec)inSpecs[0], getAvailableInputFlowVariables());
         try {
@@ -399,11 +401,19 @@ public class PMMLRuleEditorNodeModel extends NodeModel {
     protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
         RuleEngineSettings res = new RuleEngineSettings();
         res.loadSettings(settings);
+    }
+
+    /**
+     * @param rules
+     * @throws InvalidSettingsException
+     * @since 5.12
+     */
+    protected void validateRules(final Iterable<String> rules) throws InvalidSettingsException {
         RuleFactory ruleFactory = RuleFactory.getInstance(RuleNodeSettings.PMMLRule).cloned();
         ruleFactory.disableColumnChecks();
         ruleFactory.disableFlowVariableChecks();
         Map<String, FlowVariable> flowVars = getAvailableInputFlowVariables();
-        for (String rule : res.rules()) {
+        for (String rule : rules) {
             try {
                 ruleFactory.parse(rule, null, flowVars);
             } catch (ParseException e) {

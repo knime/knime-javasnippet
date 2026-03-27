@@ -65,6 +65,8 @@ import org.knime.node.parameters.widget.choices.ChoicesProvider;
 import org.knime.node.parameters.widget.choices.ValueSwitchWidget;
 import org.knime.node.parameters.widget.choices.util.AllColumnsProvider;
 import org.knime.node.parameters.widget.message.TextMessage;
+import org.knime.node.parameters.widget.text.TextInputWidget;
+import org.knime.node.parameters.widget.text.TextInputWidgetValidation.PatternValidation.IsNotBlankValidation;
 
 /**
  * This class registers and handles the generic configuration options for the Ruleset Editor node in modern UI.
@@ -87,6 +89,7 @@ class PMMLRuleEditorScriptingNodeParameters implements NodeParameters {
     RuleEngineScriptingNodeParameters.ReplaceOrAppend m_replaceOrAppend = ReplaceOrAppend.APPEND;
 
     @Widget(title = "Append column", description = "The name of the new column to append.")
+    @TextInputWidget(patternValidation = IsNotBlankValidation.class)
     @Effect(predicate = RuleEngineScriptingNodeParameters.IsReplace.class, type = EffectType.HIDE)
     @Persist(configKey = RuleEngineSettings.NEW_COLUMN_NAME)
     String m_newColName = "prediction";

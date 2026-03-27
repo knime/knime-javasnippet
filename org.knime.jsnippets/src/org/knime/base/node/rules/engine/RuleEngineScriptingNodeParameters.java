@@ -81,6 +81,8 @@ import org.knime.node.parameters.widget.choices.ValueSwitchWidget;
 import org.knime.node.parameters.widget.choices.util.AllColumnsProvider;
 import org.knime.node.parameters.widget.choices.util.ColumnSelectionUtil;
 import org.knime.node.parameters.widget.message.TextMessage;
+import org.knime.node.parameters.widget.text.TextInputWidget;
+import org.knime.node.parameters.widget.text.TextInputWidgetValidation.PatternValidation.IsNotBlankValidation;
 
 /**
  * This class registers and handles the generic configuration options for the Rule Engine node in modern UI.
@@ -121,6 +123,7 @@ public final class RuleEngineScriptingNodeParameters implements NodeParameters {
     }
 
     @Widget(title = "Append column", description = "The name of the new column to append.")
+    @TextInputWidget(patternValidation = IsNotBlankValidation.class)
     @Effect(predicate = IsReplace.class, type = EffectType.HIDE)
     @Persist(configKey = RuleEngineSettings.NEW_COLUMN_NAME)
     String m_newColName = "prediction";

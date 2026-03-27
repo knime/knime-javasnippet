@@ -255,6 +255,7 @@ public class RuleEngineVariableNodeModel extends NodeModel implements FlowVariab
 
     /**
      * {@inheritDoc}
+     *
      * @deprecated
      */
     @Deprecated
@@ -300,8 +301,8 @@ public class RuleEngineVariableNodeModel extends NodeModel implements FlowVariab
      * {@inheritDoc}
      */
     @Override
-    protected void loadInternals(final File nodeInternDir, final ExecutionMonitor exec) throws IOException,
-        CanceledExecutionException {
+    protected void loadInternals(final File nodeInternDir, final ExecutionMonitor exec)
+        throws IOException, CanceledExecutionException {
     }
 
     /**
@@ -323,8 +324,8 @@ public class RuleEngineVariableNodeModel extends NodeModel implements FlowVariab
      * {@inheritDoc}
      */
     @Override
-    protected void saveInternals(final File nodeInternDir, final ExecutionMonitor exec) throws IOException,
-        CanceledExecutionException {
+    protected void saveInternals(final File nodeInternDir, final ExecutionMonitor exec)
+        throws IOException, CanceledExecutionException {
     }
 
     /**
@@ -342,22 +343,26 @@ public class RuleEngineVariableNodeModel extends NodeModel implements FlowVariab
     protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
         RuleEngineSettings s = new RuleEngineSettings();
         s.loadSettings(settings);
-        validateRules(s.rules());
+        // Following line is commented to allow users to save invalid settings.
+        // This validation is already a part of configure method, therefore commenting out this function shall suffice.
+        //validateRules(s.rules());
     }
 
-    /**
-     * @param rules The rules from a settings.
-     * @throws InvalidSettingsException Parsing failed.
-     */
-    protected void validateRules(final Iterable<String> rules) throws InvalidSettingsException {
-        RuleFactory ruleFactory = RuleFactory.getInstance(RuleNodeSettings.VariableRule).cloned();
-        ruleFactory.disableFlowVariableChecks();
-        for (String rule : rules) {
-            try {
-                ruleFactory.parse(rule, null, getAvailableInputFlowVariables());
-            } catch (ParseException e) {
-                throw new InvalidSettingsException(e.getMessage(), e);
-            }
-        }
-    }
+    // This method is commented out,since its only usage in this class (and package) is not needed anymore
+
+    //    /**
+    //     * @param rules The rules from a settings.
+    //     * @throws InvalidSettingsException Parsing failed.
+    //     */
+    //    protected void validateRules(final Iterable<String> rules) throws InvalidSettingsException {
+    //        RuleFactory ruleFactory = RuleFactory.getInstance(RuleNodeSettings.VariableRule).cloned();
+    //        ruleFactory.disableFlowVariableChecks();
+    //        for (String rule : rules) {
+    //            try {
+    //                ruleFactory.parse(rule, null, getAvailableInputFlowVariables());
+    //            } catch (ParseException e) {
+    //                throw new InvalidSettingsException(e.getMessage(), e);
+    //            }
+    //        }
+    //    }
 }

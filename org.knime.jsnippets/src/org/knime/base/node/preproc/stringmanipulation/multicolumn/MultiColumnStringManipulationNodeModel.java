@@ -179,11 +179,26 @@ class MultiColumnStringManipulationNodeModel extends AbstractConditionalStreamin
 
         m_inputSpecification = inSpecs[IN_PORT];
 
+        //Check if expression is entered by user or not
+        CheckUtils.checkSetting(m_settings.getExpression() != null && m_settings.getExpression().length() > 0,
+            "No expression has been set.");
+
         m_configurator = new MultiColumnStringManipulationConfigurator(m_settings, m_inputSpecification);
 
         if (m_configurator.isPassThrough()) {
             warnPassThrough();
             return inSpecs;
+        }
+
+        // Check if expression is valid before execution
+
+        try (final MultiColumnStringManipulationCalculator validationCellFactory =
+            MultiColumnStringManipulationCalculator.create(m_configurator, -1, m_flowVariableProvider,
+                m_settings.isFailOnEvaluationException(), m_settings.isEvaluateWithMissingValues())) {
+        } catch (IOException e) {
+            warnIOException(e);
+        } catch (CompilationFailedException | InstantiationException e1) {
+            throw new InvalidSettingsException(e1);
         }
 
         return new DataTableSpec[]{new DataTableSpec(m_configurator.getOutputColumnSpecs())};
@@ -201,7 +216,6 @@ class MultiColumnStringManipulationNodeModel extends AbstractConditionalStreamin
 
         exec.setMessage(() -> "Compiling expression.");
 
-
         if (m_configurator == null) {
             throw new InvalidSettingsException("Node can not be executed, since it has not been properly configured.");
         }
@@ -213,12 +227,9 @@ class MultiColumnStringManipulationNodeModel extends AbstractConditionalStreamin
 
         final long rowCount = inData[IN_PORT].size();
 
-        try (final MultiColumnStringManipulationCalculator cellFactory = MultiColumnStringManipulationCalculator
-            .create(m_configurator,
-                rowCount,
-                m_flowVariableProvider,
-                m_settings.isFailOnEvaluationException(),
-                m_settings.isEvaluateWithMissingValues())) {
+        try (final MultiColumnStringManipulationCalculator cellFactory =
+            MultiColumnStringManipulationCalculator.create(m_configurator, rowCount, m_flowVariableProvider,
+                m_settings.isFailOnEvaluationException(), m_settings.isEvaluateWithMissingValues())) {
 
             final ColumnRearranger rearranger = m_configurator.createColumnRearranger(dataTableSpec, cellFactory);
             final BufferedDataTable o = exec.createColumnRearrangeTable(inData[0], rearranger, exec);
@@ -241,31 +252,7 @@ class MultiColumnStringManipulationNodeModel extends AbstractConditionalStreamin
         // load settings to validate them
         validationSettings.loadSettingsInModel(settings);
 
-        CheckUtils.checkSetting(
-            validationSettings.getExpression() != null && validationSettings.getExpression().length() > 0,
-            "No expression has been set.");
-
-        if (m_inputSpecification != null) {
-
-            MultiColumnStringManipulationConfigurator validationConfigurator =
-                new MultiColumnStringManipulationConfigurator(validationSettings, m_inputSpecification);
-
-            if (!validationConfigurator.isPassThrough()) {
-
-                try (final MultiColumnStringManipulationCalculator validationCellFactory =
-                    MultiColumnStringManipulationCalculator.create(validationConfigurator,
-                        -1,
-                        m_flowVariableProvider,
-                        validationSettings.isFailOnEvaluationException(),
-                        m_settings.isEvaluateWithMissingValues())) {
-                } catch (IOException e) {
-                    warnIOException(e);
-                } catch (CompilationFailedException | InstantiationException e1) {
-                    throw new InvalidSettingsException(e1);
-                }
-            }
-
-        }
+        // validation of expression compilation logic is ported to the configure method to allow saving invalid state
 
     }
 
@@ -314,12 +301,9 @@ class MultiColumnStringManipulationNodeModel extends AbstractConditionalStreamin
         }
 
         try {
-            m_multiCalculatorCompiled = MultiColumnStringManipulationCalculator.create(
-                m_configurator,
-                rowCount,
-                m_flowVariableProvider,
-                m_settings.isFailOnEvaluationException(),
-                m_settings.isEvaluateWithMissingValues());
+            m_multiCalculatorCompiled =
+                MultiColumnStringManipulationCalculator.create(m_configurator, rowCount, m_flowVariableProvider,
+                    m_settings.isFailOnEvaluationException(), m_settings.isEvaluateWithMissingValues());
         } catch (InstantiationException | CompilationFailedException e) {
             throw new InvalidSettingsException(e);
         }
@@ -405,8 +389,8 @@ class MultiColumnStringManipulationNodeModel extends AbstractConditionalStreamin
     }
 
     /**
-     * Display a visual warning indicator on the node that no columns are selected.
-     * Trumps the warning that an empty output table has been created.
+     * Display a visual warning indicator on the node that no columns are selected. Trumps the warning that an empty
+     * output table has been created.
      */
     private void warnPassThrough() {
         setWarningMessage("No columns are selected. Will have no effect.");

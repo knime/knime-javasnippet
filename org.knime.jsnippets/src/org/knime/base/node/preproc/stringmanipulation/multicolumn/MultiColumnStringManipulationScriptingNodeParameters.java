@@ -156,11 +156,14 @@ class MultiColumnStringManipulationScriptingNodeParameters implements NodeParame
     @Layout(ErrorHandlingSection.class)
     boolean m_evaluateWithMissingValues = true;
 
-    @Widget(title = "Fail if expression cannot be evaluated",
+    // Since now the expressions will be validated regardless of this option being enabled or not
+    // during the configuration stage, this widget serves no purpose.
+
+    /*    @Widget(title = "Fail if expression cannot be evaluated",
         description = "Whether to stop node execution when an expression cannot be evaluated. This could happen if "
             + "an input column contains values that the expression cannot handle (e.g., toInt() on a column "
             + "containing non-numeric strings). If unchecked, errors during evaluation will produce missing values "
-            + "instead of failing the node.")
+            + "instead of failing the node.")*/
     @Persist(configKey = "Abort execution on evaluation errors")
     @Layout(ErrorHandlingSection.class)
     boolean m_failOnEvaluationException = true;

@@ -56,6 +56,8 @@ import org.knime.node.parameters.persistence.Persist;
 import org.knime.node.parameters.persistence.Persistor;
 import org.knime.node.parameters.persistence.legacy.EnumBooleanPersistor;
 import org.knime.node.parameters.widget.message.TextMessage;
+import org.knime.node.parameters.widget.text.TextInputWidget;
+import org.knime.node.parameters.widget.text.TextInputWidgetValidation.PatternValidation.IsNotBlankValidation;
 
 /**
  * This class registers and handles the generic configuration options for the Rule Engine Variable node in modern UI.
@@ -77,6 +79,7 @@ final class RuleEngineVariableScriptingNodeParameters implements NodeParameters 
     ReplaceOrAppend m_replaceOrAppend = ReplaceOrAppend.APPEND;
 
     @Widget(title = "New flow variable name", description = "The name of the new flow variable.")
+    @TextInputWidget(patternValidation = IsNotBlankValidation.class)
     @Persist(configKey = RuleEngineSettings.NEW_COLUMN_NAME)
     String m_newVarName = "prediction";
 
